@@ -1,0 +1,105 @@
+// ==========================================================
+// FEATURE: Phase 1 database schema - Auth, email verification,
+// and password reset.
+// INSTALLATION: none extra - Prisma CLI is already a devDependency
+// of @sih/database. After ANY change to this file, run:
+//   pnpm db:generate   (regenerates the typed Prisma client)
+//   pnpm db:push       (applies the change to your local Postgres)
+//
+// New in this update vs the original Phase 1:
+//   - User.emailVerified is now actively used (set on verify-email)
+//   - EmailVerificationToken: one-time link sent after signup
+//   - PasswordResetToken: one-time link sent from "forgot password"
+// ==========================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CITIZEN
+  DEPARTMENT_OFFICIAL
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(CITIZEN)
+
+  accounts               Account[]
+  sessions               Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+// Required by the Auth.js Prisma adapter shape if/when OAuth providers
+// (Google/GitHub) are added later - unused by Credentials-only auth today.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---- Email verification (sent via Resend right after signup) ----
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime // 24h from creation - see lib/tokens.ts
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---- Password reset (sent via Resend from the "forgot password" form) ----
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime // 1h from creation - shorter-lived than email verification
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
