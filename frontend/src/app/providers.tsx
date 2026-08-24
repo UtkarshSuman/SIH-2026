@@ -1,16 +1,18 @@
 /**
- * FEATURE: Client-side wrapper around NextAuth's SessionProvider. This
- * MUST be its own "use client" file rather than being used directly
- * inside layout.tsx (a Server Component) - rendering a context-providing
- * client component directly inside a server file is what causes the
- * "React Context is unavailable in Server Components" error. Isolating
- * it here gives Next.js a clean client/server boundary.
-
+ * FEATURE: All client-side context providers in one place - NextAuth
+ * session + tRPC/React Query. Kept as its own "use client" file, separate
+ * from the server-rendered layout.tsx, to avoid the "React Context is
+ * unavailable in Server Components" error.
  */
 "use client";
 
 import { SessionProvider } from "next-auth/react";
+import { TRPCProvider } from "@/components/dashboard/trpc-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return (
+    <SessionProvider>
+      <TRPCProvider>{children}</TRPCProvider>
+    </SessionProvider>
+  );
 }
