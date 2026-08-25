@@ -16,6 +16,8 @@ export const env = createEnv({
     DIRECT_URL: z.string().url(),
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.string().url().optional(),
+    ML_SERVICE_URL: z.string().url(),
+    ML_SERVICE_API_KEY: z.string().min(1),
     REQUIRE_EMAIL_VERIFICATION: z
       .string()
       .default("false")
@@ -30,6 +32,8 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
+    ML_SERVICE_URL: process.env.ML_SERVICE_URL,
+    ML_SERVICE_API_KEY: process.env.ML_SERVICE_API_KEY,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION,

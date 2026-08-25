@@ -5,10 +5,12 @@
  * INSTALLATION: none.
  */
 import { createTRPCRouter } from "../trpc";
+import { mlRouter } from "./ml";
 import { userRouter } from "./user";
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
+  ml:mlRouter,
 });
 
 export type AppRouter = typeof appRouter;
