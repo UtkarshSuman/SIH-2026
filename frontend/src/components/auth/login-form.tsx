@@ -25,7 +25,7 @@ import { loginSchema, type LoginFormValues } from "@/lib/validators";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const verified = searchParams.get("verified");
 
   const [values, setValues] = useState<LoginFormValues>({ email: "", password: "" });

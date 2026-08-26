@@ -1,36 +1,36 @@
 /**
- * FEATURE: Public landing page. CTA links point straight at the split
- * auth-card (/login for sign-in side, /login?mode=register for the signup
- * side) - there's no separate marketing-styled register page anymore,
- * per the single-card design.
- *
- * RESPONSIVE: buttons stack full-width on mobile (`flex-col`) and sit
- * side-by-side from `sm:` up.
+ * FEATURE: Marketing page - the site's actual home page (Requirement 1),
+ * now assembled from: Navbar, hero, the logged-in-only WelcomeSection
+ * (Requirement 2), the services carousel, the problem/solution stack,
+ * and the footer (Requirement 4). The old inline Log in/Sign up buttons
+ * are gone - Navbar is the entry point into the auth-card now.
+ * INSTALLATION: none beyond what each imported component needs.
  */
-import Link from "next/link";
+import { Navbar } from "@/components/marketing/navbar";
+import { WelcomeSection } from "@/components/marketing/welcome-section";
+import { ServicesCarousel } from "@/components/marketing/services-carousel";
+import { ProblemSolutionStack } from "@/components/marketing/problem-solution-stack";
+import { Footer } from "@/components/marketing/footer";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="text-3xl font-bold">SIH Project</h1>
-      <p className="max-w-md text-sm text-foreground/70">
-        Phase 1: authentication foundation with email verification and
-        password reset. Sign up or log in to reach the protected dashboard.
-      </p>
-      <div className="flex w-full max-w-xs flex-col gap-3 sm:w-auto sm:flex-row">
-        <Link
-          href="/login"
-          className="rounded-md border border-border px-4 py-2 text-sm"
-        >
-          Log in
-        </Link>
-        <Link
-          href="/login?mode=register"
-          className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
-        >
-          Sign up
-        </Link>
-      </div>
-    </main>
+    <>
+      <Navbar />
+
+      <main>
+        <section className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center sm:px-8">
+          <h1 className="text-3xl font-bold sm:text-4xl">SIH Project</h1>
+          <p className="max-w-md text-sm text-foreground/70">
+            Placeholder hero text - replace once the problem statement is finalized.
+          </p>
+        </section>
+
+        <WelcomeSection />
+        <ServicesCarousel />
+        <ProblemSolutionStack />
+      </main>
+
+      <Footer />
+    </>
   );
 }
