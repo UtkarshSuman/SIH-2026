@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const parsed = resetPasswordSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: { code: "VALIDATION_ERROR", message: parsed.error.errors[0]?.message } },
+      { success: false, error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message } },
       { status: 400 }
     );
   }
