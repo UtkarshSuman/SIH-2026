@@ -29,7 +29,7 @@ export function RegisterForm() {
 
     const parsed = registerSchema.safeParse(values);
     if (!parsed.success) {
-      setError(parsed.error.errors[0]?.message ?? "Invalid input");
+      setError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
 
