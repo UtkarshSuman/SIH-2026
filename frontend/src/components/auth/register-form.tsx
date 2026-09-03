@@ -16,9 +16,10 @@
 
 import { useState } from "react";
 import { registerSchema, type RegisterFormValues } from "@/lib/validators";
+import { locations } from "@/data/location";
 
 export function RegisterForm() {
-  const [values, setValues] = useState<RegisterFormValues>({ name: "", email: "", password: "" });
+  const [values, setValues] = useState<RegisterFormValues>({ name: "", email: "", password: "", mobileNumber: "", location: "", });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
@@ -105,6 +106,39 @@ export function RegisterForm() {
           className="rounded-md border border-border px-3 py-2 text-sm"
           required
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="mobileNumber" className="text-sm font-medium">
+          Mobile number <span className="text-foreground/40">(optional)</span>
+        </label>
+        <input
+          id="mobileNumber"
+          type="tel"
+          value={values.mobileNumber}
+          onChange={(e) => setValues((v) => ({ ...v, mobileNumber: e.target.value }))}
+          className="rounded-md border border-border px-3 py-2 text-sm"
+          placeholder="10-digit mobile number"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="location" className="text-sm font-medium">
+          Location <span className="text-foreground/40">(optional)</span>
+        </label>
+        <select
+          id="location"
+          value={values.location}
+          onChange={(e) => setValues((v) => ({ ...v, location: e.target.value }))}
+          className="rounded-md border border-border px-3 py-2 text-sm"
+        >
+          <option value="">Select your location</option>
+          {locations.map((loc) => (
+            <option key={loc.value} value={loc.value}>
+              {loc.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <button

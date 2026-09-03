@@ -11,6 +11,12 @@ export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  mobileNumber: z
+    .string()
+    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number")
+    .optional()
+    .or(z.literal("")),
+  location: z.string().optional(),
 });
 
 export const loginSchema = z.object({

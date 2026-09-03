@@ -1,11 +1,6 @@
 /**
- * FEATURE: Type-safe environment variables - fails loudly at boot if a
- * required var is missing, instead of silently breaking at runtime (e.g. a
- * missing RESEND_API_KEY would otherwise only surface as emails silently
- * not sending).
- * INSTALLATION: npm install @t3-oss/env-nextjs zod
- *   (already listed in frontend/package.json - run `pnpm install` at the
- *   repo root to fetch it)
+ * FEATURE: Type-safe environment variables.
+ * INSTALLATION: npm install @t3-oss/env-nextjs zod (already installed)
  */
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
@@ -13,17 +8,18 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url(),
-    DIRECT_URL: z.string().url(),
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.string().url().optional(),
-    ML_SERVICE_URL: z.string().url(),
-    ML_SERVICE_API_KEY: z.string().min(1),
     REQUIRE_EMAIL_VERIFICATION: z
       .string()
       .default("false")
       .transform((v) => v === "true"),
-    RESEND_API_KEY: z.string().min(1),
-    EMAIL_FROM: z.string().min(1),
+    BREVO_API_KEY: z.string().min(1),
+    BREVO_SENDER_EMAIL: z.string().email(),
+    BREVO_SENDER_NAME: z.string().min(1),
+    FAST2SMS_API_KEY: z.string().min(1),
+    ML_SERVICE_URL: z.string().url(),
+    ML_SERVICE_API_KEY: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),
@@ -31,14 +27,15 @@ export const env = createEnv({
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: process.env.DIRECT_URL,
-    ML_SERVICE_URL: process.env.ML_SERVICE_URL,
-    ML_SERVICE_API_KEY: process.env.ML_SERVICE_API_KEY,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    EMAIL_FROM: process.env.EMAIL_FROM,
+    BREVO_API_KEY: process.env.BREVO_API_KEY,
+    BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
+    BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME,
+    FAST2SMS_API_KEY: process.env.FAST2SMS_API_KEY,
+    ML_SERVICE_URL: process.env.ML_SERVICE_URL,
+    ML_SERVICE_API_KEY: process.env.ML_SERVICE_API_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
   },
