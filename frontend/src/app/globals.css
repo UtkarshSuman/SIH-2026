@@ -8,6 +8,7 @@
  *   (already in frontend/package.json - see postcss.config.mjs)
  */
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;

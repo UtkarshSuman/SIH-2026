@@ -24,12 +24,14 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),
     NEXT_PUBLIC_APP_NAME: z.string().min(1),
+    NEXT_PUBLIC_ML_SERVICE_URL: z.string().url(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION,
+    NEXT_PUBLIC_ML_SERVICE_URL: process.env.NEXT_PUBLIC_ML_SERVICE_URL,
     BREVO_API_KEY: process.env.BREVO_API_KEY,
     BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
     BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME,
