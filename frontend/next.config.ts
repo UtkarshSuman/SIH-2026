@@ -9,6 +9,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false,
   transpilePackages: ["@sih/database", "@sih/types"],
 };
 

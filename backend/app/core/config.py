@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     internal_api_key: str = "internal-shared-secret-change-me"
     database_url: str = ""
 
+    brevo_api_key: str = ""
+    brevo_sender_email: str = ""
+    brevo_sender_name: str = "SIH Project"
+    fast2sms_api_key: str = ""
+    refresh_cooldown_seconds: int = 300
+
     # Groq (free-tier LLM inference) - https://console.groq.com
     groq_api_key: str = ""
     llm_model: str = "llama-3.3-70b-versatile"
