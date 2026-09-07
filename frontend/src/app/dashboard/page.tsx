@@ -6,17 +6,20 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/server/auth/config";
 
-export default async function DashboardIndexPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) redirect("/login");
+export const metadata = {
+  title: "Rescue Arc GIS Dashboard",
+  description:
+    "Multi-hazard red-zone identification and relocation decision-support system",
+};
 
-  switch (session.user.role) {
-    case "ADMIN":
-    case "SUPER_ADMIN":
-      redirect("/dashboard/admin");
-    case "DEPARTMENT_OFFICIAL":
-      redirect("/dashboard/official");
-    default:
-      redirect("/dashboard/citizen");
-  }
+export default function DashboardPage() {
+  return (
+    <main className="w-screen h-screen overflow-hidden">
+      <iframe
+        src="/gis-dashboard.html"
+        title="Rescue Arc GIS Dashboard"
+        className="w-full h-full border-0"
+      />
+    </main>
+  );
 }

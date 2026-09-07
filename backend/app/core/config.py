@@ -14,12 +14,13 @@ class Settings(BaseSettings):
 
     internal_api_key: str = "internal-shared-secret-change-me"
     database_url: str = ""
-
+    opentopo_api_key: str = ""
     brevo_api_key: str = ""
     brevo_sender_email: str = ""
     brevo_sender_name: str = "SIH Project"
     fast2sms_api_key: str = ""
     refresh_cooldown_seconds: int = 300
+    alerts_dry_run: bool = True 
 
     # Groq (free-tier LLM inference) - https://console.groq.com
     groq_api_key: str = ""

@@ -11,6 +11,7 @@ import { WelcomeSection } from "@/components/marketing/welcome-section";
 import { ServicesCarousel } from "@/components/marketing/services-carousel";
 import { ProblemSolutionStack } from "@/components/marketing/problem-solution-stack";
 import { Footer } from "@/components/marketing/footer";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -23,7 +24,16 @@ export default function HomePage() {
           <p className="max-w-md text-sm text-foreground/70">
             Placeholder hero text - replace once the problem statement is finalized.
           </p>
+
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700"
+        >
+          Open GIS Dashboard
+        </Link>
         </section>
+
+        
 
         <WelcomeSection />
         <ServicesCarousel />

@@ -56,3 +56,4 @@ packages/database/prisma/migrations/dev/
 docker/postgres/data/
 
 .env.example 
+cache/

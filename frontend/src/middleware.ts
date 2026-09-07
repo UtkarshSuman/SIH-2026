@@ -10,20 +10,17 @@
  * "use the chatbot -> must log in first" work.
  */
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
 
-export default withAuth(
-  function middleware() {
-    return NextResponse.next();
+export default withAuth({
+  pages: {
+    signIn: "/login",
   },
-  {
-    pages: { signIn: "/login" },
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-  }
-);
+});
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: [
+    "/dashboard/admin/:path*",
+    "/dashboard/official/:path*",
+    "/dashboard/citizen/:path*",
+  ],
 };

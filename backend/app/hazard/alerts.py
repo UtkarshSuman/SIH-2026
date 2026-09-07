@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.gis.database import SessionLocal
 from app.services.email import send_alert_email
 from app.services.sms import send_alert_sms
+from app.core.config import settings
 
 MESSAGES = {
     "RED": {
@@ -43,6 +44,7 @@ async def send_zone_alert(zone_slug: str, zone_name: str, hazard_type: str, stat
     body = template["body"].format(hazard=hazard_type, zone=zone_name, score=round(risk_score, 2))
 
     for email, mobile in rows:
+        
         if email:
             try:
                 await send_alert_email(email, subject, f"<p>{body}</p>")
