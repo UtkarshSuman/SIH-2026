@@ -97,4 +97,4 @@ export function AuthCard({ initialMode }: { initialMode: AuthMode }) {
       <AuthVisualPanel />
     </div>
   );
-}
+} 

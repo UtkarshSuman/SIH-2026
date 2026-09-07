@@ -15,7 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <TRPCProvider>
         {children}
-        <ChatWidget />
+        {/* <ChatWidget /> */}
       </TRPCProvider>
     </SessionProvider>
   );

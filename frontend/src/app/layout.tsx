@@ -20,12 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <script
-  src="http://localhost:3000/widget.js"
-  data-chatbot-id="cmtoygv8z0007eg10fpw72nij"
-  data-api-key="sk_live_2e614e9bf29e289979297d555d6a44dd9bcb4360ebcf1171"
-  data-api-base="http://localhost:3000">
-</script>
+        
         <Providers>{children}</Providers>
       </body>
     </html>

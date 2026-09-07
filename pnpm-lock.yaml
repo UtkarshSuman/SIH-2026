@@ -44,6 +44,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      joblib:
+        specifier: ^10.1.1
+        version: 10.1.1
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -1695,6 +1698,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  joblib@10.1.1:
+    resolution: {integrity: sha512-GtqO4EZGnDMiZS9gZqH0Ne1jvkh6623FH+K/0nFvvIlYgUwYMNJrKnf2KKhwFsrwO2YLEHPHAUgXU90EJ+gspw==}
 
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
@@ -4075,6 +4081,8 @@ snapshots:
       set-function-name: 2.0.2
 
   jiti@2.7.0: {}
+
+  joblib@10.1.1: {}
 
   jose@4.15.9: {}
 
