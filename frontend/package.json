@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "pnpm --filter @sih/database generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
