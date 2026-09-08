@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "turbo run dev",
-    "build": "turbo run build",
+    "build": "pnpm db:generate && turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
