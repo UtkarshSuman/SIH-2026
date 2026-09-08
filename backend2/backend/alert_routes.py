@@ -12,6 +12,7 @@ Also requires a Firebase service account key file (see README.md) placed at:
     firebase-service-account.json
 """
 import os
+import json
 import re
 from pathlib import Path
 import psycopg2
@@ -47,10 +48,16 @@ def register_device(req: RegisterDeviceRequest):
         from firebase_admin import credentials, messaging
 
         firebase_credentials_path = Path(__file__).resolve().parents[1] / "Alert-system" / "firebase-service-account.json"
-        if not firebase_credentials_path.exists():
+        firebase_credentials_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+        if not firebase_credentials_json and not firebase_credentials_path.exists():
             raise HTTPException(status_code=503, detail="Firebase alert service is not configured")
         if not firebase_admin._apps:
-            firebase_admin.initialize_app(credentials.Certificate(str(firebase_credentials_path)))
+            certificate = (
+                credentials.Certificate(json.loads(firebase_credentials_json))
+                if firebase_credentials_json
+                else credentials.Certificate(str(firebase_credentials_path))
+            )
+            firebase_admin.initialize_app(certificate)
 
         response = messaging.subscribe_to_topic([req.token], topic)
         if response.failure_count > 0:

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: rescue-arc-backend
+    runtime: python
+    rootDir: backend2/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_URL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
