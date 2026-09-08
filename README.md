@@ -1,9 +1,21 @@
-# SIH Project — Team Setup Guide
+# SIH Project — Rescue Arc Setup & Architecture Guide
 
-This document is the single source of truth for getting this project running
-on your machine. Read it fully before writing any code — most setup errors
-this team has already hit (and lost hours to) are covered in the
-Troubleshooting section at the bottom.
+## 🚀 Latest Updates: Single-Page Auto-Scroll Home Architecture & Light Green Design
+
+The home page (`/`) now integrates **all marketing sections on a single scrollable page** with working navbar auto-scroll links:
+
+### 📱 Single-Page Auto-Scroll Section Layout (`page.jsx`)
+1. `Navbar.jsx`: Translucent fixed header with auto-scroll anchor links (`/#home`, `/#authorities`, `/#features`, `/#how-it-works`, `/#about`, `/#impact`, `/#contact`) and NDRF 1078 helpline button.
+2. `HomeSection.jsx` (`#home`): Hero section with interactive MODIS & NDRF command dashboard.
+3. `AuthorityHubSection.jsx` (`#authorities`): Dedicated NDRF 1078 emergency hotline & battalion readiness matrix.
+4. `FeaturesSection.jsx` (`#features`): Multi-hazard surveillance (Forest Fires, Flash Floods, Landslides, Cyclones).
+5. `HowItWorkSection.jsx` (`#how-it-works`): 5-step rapid response protocol.
+6. `AboutSection.jsx` (`#about`): Platform principles & ecosystem canopy protection mission.
+7. `ImpactSection.jsx` (`#impact`): Operational metrics (1.2M+ citizens covered, <3 min alert speed).
+8. `ContactSection.jsx` (`#contact`): 24x7 NDRF hotline card & official agency contact form.
+9. `footer.tsx`: Clean light green footer.
+
+---
 
 ## 1. What this project is
 

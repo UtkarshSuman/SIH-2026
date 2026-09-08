@@ -1,22 +1,3 @@
-/**
- * FEATURE: The single split-card auth container used by both /login and
- * /register. Left side shows LoginForm or RegisterForm depending on
- * `mode`, with a text link at the bottom that switches modes WITHOUT a
- * full page navigation (just swaps which form renders + updates the URL
- * so refreshing keeps you on the same mode). Right side is the static
- * AuthVisualPanel (image/animation placeholder). A cross (X) button in the
- * top-right corner sends the user straight back to the home page.
- *
- * RESPONSIVE:
- *   - Mobile (<640px): card is full-width, visual panel hidden, form
- *     panel gets full padding.
- *   - Tablet (640-768px): card gets a max-width and centers, visual panel
- *     still hidden (not enough room for it to look good).
- *   - Laptop (>=768px, `md:`): full split card, both panels visible.
- *
- * INSTALLATION: npm install lucide-react   (for the X icon - already in
- *   frontend/package.json)
- */
 "use client";
 
 import { useState } from "react";
@@ -34,67 +15,100 @@ export function AuthCard({ initialMode }: { initialMode: AuthMode }) {
 
   function switchMode(next: AuthMode) {
     setMode(next);
-    // Keep the URL in sync (e.g. /login -> /login?mode=register) so a
-    // refresh or shared link lands on the same form, without a full
-    // Next.js navigation/re-render of the page.
     const url = next === "register" ? "/login?mode=register" : "/login";
     window.history.replaceState(null, "", url);
   }
 
   return (
-    <div className="relative flex w-full max-w-3xl overflow-hidden rounded-xl border border-border shadow-lg md:h-[520px]">
+    <div className="relative flex w-full max-w-4xl overflow-hidden rounded-3xl border border-emerald-200/80 bg-white shadow-2xl shadow-emerald-950/10 min-h-[580px]">
+      {/* Return to Home Close Button */}
       <Link
         href="/"
         aria-label="Close and return to home"
-        className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-foreground/60 hover:bg-black/5"
+        className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-600 backdrop-blur-md shadow-xs transition-all hover:bg-slate-100 hover:text-slate-900"
         onClick={(e) => {
           e.preventDefault();
           router.push("/");
         }}
       >
-        <X size={20} />
+        <X size={18} />
       </Link>
 
-      {/* Left panel - form. Full width on mobile, half width from md: up. */}
-      <div className="flex w-full flex-col justify-center gap-6 bg-background p-6 sm:p-10 md:w-1/2">
-        {mode === "login" ? (
-          <>
-            <div>
-              <h1 className="text-2xl font-semibold">Log in</h1>
-              <p className="mt-1 text-sm text-foreground/60">
-                New here?{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("register")}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Create an account
-                </button>
-              </p>
-            </div>
-            <LoginForm />
-          </>
-        ) : (
-          <>
-            <div>
-              <h1 className="text-2xl font-semibold">Create an account</h1>
-              <p className="mt-1 text-sm text-foreground/60">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("login")}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Log in
-                </button>
-              </p>
-            </div>
-            <RegisterForm />
-          </>
-        )}
+      {/* Form Panel */}
+      <div className="flex w-full flex-col justify-between p-6 sm:p-10 lg:w-1/2">
+        <div>
+          {/* TAB MODE SWITCHER */}
+          <div className="mb-6 flex rounded-2xl border border-slate-200 bg-slate-100/80 p-1">
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
+                mode === "login"
+                  ? "bg-white text-emerald-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("register")}
+              className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
+                mode === "register"
+                  ? "bg-white text-emerald-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Register Agency
+            </button>
+          </div>
+
+          {/* HEADER */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              {mode === "login" ? "Official Command Login" : "Register Disaster Cell"}
+            </h1>
+            <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+              {mode === "login"
+                ? "Enter your verified credentials to access real-time early warning telemetry."
+                : "Join the NDRF & state disaster response coordination network."}
+            </p>
+          </div>
+
+          {/* FORM */}
+          {mode === "login" ? <LoginForm /> : <RegisterForm />}
+        </div>
+
+        {/* BOTTOM SWITCHER LINK */}
+        <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-600">
+          {mode === "login" ? (
+            <p>
+              New responding agency or officer?{" "}
+              <button
+                type="button"
+                onClick={() => switchMode("register")}
+                className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline ml-1"
+              >
+                Register organization
+              </button>
+            </p>
+          ) : (
+            <p>
+              Already registered your authority cell?{" "}
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+                className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline ml-1"
+              >
+                Sign in
+              </button>
+            </p>
+          )}
+        </div>
       </div>
 
+      {/* Visual Panel on Desktop */}
       <AuthVisualPanel />
     </div>
   );
-} 
+}

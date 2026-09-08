@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rescue Arc Frontend — Marketing & Dashboard App
 
-## Getting Started
+## 🌿 Fresh Natural White & Light Green Design System
 
-First, run the development server:
+The Rescue Arc frontend features a scrollable, high-impact marketing experience built with Next.js 15, Tailwind v4, and custom geospatial telemetry components.
+
+### 🎨 Theme & Color Variables (`src/app/globals.css`)
+- `--bg-light-white`: `#ffffff` (Pure crisp white backgrounds)
+- `--bg-light-sage`: `#f0fdf4` (Light sage green section container backdrops)
+- `--bg-light-mint`: `#e6f4ea` (Soft mint accents)
+- `--forest-pine`: `#064e3b` (Deep evergreen text & headings)
+- `--forest-leaf`: `#059669` (Fresh leaf green highlights)
+- `--earth-amber`: `#d97706` (Wildfire, landslide & warning highlights)
+- `--authority-navy`: `#1e3a8a` (NDRF & official authority badge slate navy)
+
+### 🧩 Marketing Page Components (`src/components/marketing/`)
+- `Navbar.jsx`: Translucent white/sage navigation bar with smooth scroll anchors (`#home`, `#authorities`, `#features`, `#how-it-works`, `#impact`) and NDRF 1078 helpline button.
+- `Home/HomeSection.jsx`: Scrollable hero section with real-time multi-hazard monitor, NDRF operational status pill, and impact stat cards.
+- `Authority/AuthorityHubSection.jsx`: Dedicated NDRF, SDMA, Forest Dept, and Central Water Commission operational matrix.
+- `Features/FeaturesSection.jsx`: Multi-hazard interactive switcher (Wildfires, Flash Floods, Landslides, Cyclones).
+- `HowItWorks/HowItWorkSection.jsx`: 4-step authority & citizen response protocol.
+- `Impact/ImpactSection.jsx`: Real-time impact metrics and organizational onboarding CTA.
+- `footer.tsx`: Light green multi-column footer with emergency numbers & disaster management links.
+
+## 🚀 Running the Frontend
+
+Run from root directory or `frontend/` directory using `pnpm`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Visit [http://localhost:3000](http://localhost:3000) to view the application.

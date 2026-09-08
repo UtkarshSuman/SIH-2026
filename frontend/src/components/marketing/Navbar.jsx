@@ -1,20 +1,67 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { label: "Home", href: "/" },
-  { label: "Features", href: "/features" },
-  { label: "How It Works", href: "/how-it-works" },
-  { label: "Impact", href: "/impact" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "Home", href: "#home" },
+  { label: "NDRF Authorities", href: "#authorities" },
+  { label: "Features", href: "#features" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "About", href: "#about" },
+  { label: "Impact", href: "#impact" },
+  { label: "Contact", href: "#contact" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState("home");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Only run intersection observer on marketing home page
+    if (pathname !== "/" && pathname !== "") return;
+
+    const sectionIds = ["home", "authorities", "features", "how-it-works", "about", "impact", "contact"];
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 120;
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveSection(id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [pathname]);
+
+  const handleNavClick = (e, href) => {
+    if (pathname === "/" || pathname === "") {
+      e.preventDefault();
+      const targetId = href.replace("#", "").replace("/#", "");
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", `#${targetId}`);
+        setActiveSection(targetId);
+        setMobileMenuOpen(false);
+      }
+    } else {
+      // If we are on another route (e.g. /login), navigate to /#section
+      setMobileMenuOpen(false);
+    }
+  };
 
   return (
     <nav
@@ -25,28 +72,29 @@ export default function Navbar() {
         top-0
         z-50
         border-b
-        border-white/[0.08]
-        bg-[#061b10]/25
+        border-emerald-900/10
+        bg-white/95
         backdrop-blur-md
+        shadow-xs
       "
     >
       <div
         className="
           mx-auto
           flex
-          h-[68px]
+          h-[72px]
           w-full
           max-w-[1500px]
           items-center
-          px-7
-          lg:px-9
+          px-5
+          sm:px-8
+          lg:px-12
         "
       >
-        {/* =====================================================
-            LOGO + BRAND
-        ====================================================== */}
-        <Link
-          href="/"
+        {/* LOGO + BRAND */}
+        <a
+          href="#home"
+          onClick={(e) => handleNavClick(e, "#home")}
           className="
             group
             flex
@@ -55,26 +103,29 @@ export default function Navbar() {
             gap-3
           "
         >
-          {/* Your Rescue Arc Logo */}
           <div
             className="
               relative
-              h-[48px]
-              w-[48px]
+              h-[44px]
+              w-[44px]
               shrink-0
               overflow-hidden
-              rounded-full
-              bg-transparent
+              rounded-xl
+              border border-emerald-200
+              bg-emerald-50
+              p-1
+              shadow-sm
             "
           >
             <Image
               src="/logo.jpeg"
-              alt="Rescue Arc"
+              alt="Rescue Arc Logo"
               fill
               priority
-              sizes="48px"
+              sizes="44px"
               className="
-                object-contain
+                object-cover
+                rounded-lg
                 transition-transform
                 duration-300
                 group-hover:scale-105
@@ -82,130 +133,140 @@ export default function Navbar() {
             />
           </div>
 
-          {/* Brand */}
           <div className="flex flex-col">
             <span
               className="
-                text-[21px]
-                font-bold
+                text-xl
+                font-extrabold
                 leading-none
-                tracking-[-0.035em]
-                text-white
+                tracking-tight
+                text-slate-900
               "
             >
-              Rescue <span className="text-[#aaf27d]">Arc</span>
+              Rescue <span className="text-emerald-700">Arc</span>
             </span>
 
             <span
               className="
                 mt-1
-                text-[8px]
-                font-medium
+                text-[9px]
+                font-bold
                 uppercase
-                tracking-[0.16em]
-                text-white/35
+                tracking-widest
+                text-emerald-800/80
               "
             >
-              Safer Communities, Stronger Tomorrow
+              NDRF & Forest Response Hub
             </span>
           </div>
-        </Link>
+        </a>
 
-        {/* =====================================================
-            NAVIGATION
-        ====================================================== */}
+        {/* DESKTOP NAVIGATION LINKS */}
         <div
           className="
             ml-auto
-            mr-8
+            mr-6
             hidden
             items-center
-            gap-7
+            gap-5
             md:flex
-            lg:mr-10
-            lg:gap-8
+            lg:mr-8
+            lg:gap-6
           "
         >
           {navItems.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
+            const sectionId = item.href.replace("#", "");
+            const isActive = activeSection === sectionId;
+            const targetHref = pathname === "/" || pathname === "" ? item.href : `/${item.href}`;
 
             return (
-              <Link
+              <a
                 key={item.href}
-                href={item.href}
+                href={targetHref}
+                onClick={(e) => handleNavClick(e, item.href)}
                 className={`
                   group
                   relative
                   whitespace-nowrap
-                  py-2.5
-                  text-[12px]
+                  py-2
+                  text-xs
                   font-semibold
                   transition-colors
                   duration-300
-                  ${
-                    active ? "text-[#aaf27d]" : "text-white/60 hover:text-white"
-                  }
+                  ${isActive ? "text-emerald-800 font-bold" : "text-slate-700 hover:text-emerald-800"}
                 `}
               >
                 {item.label}
-
-                {/* Active underline */}
                 <span
                   className={`
                     absolute
                     bottom-0
-                    left-1/2
+                    left-0
                     h-[2px]
-                    -translate-x-1/2
                     rounded-full
-                    bg-[#aaf27d]
+                    bg-emerald-600
                     transition-all
                     duration-300
-                    ${
-                      active
-                        ? "w-full opacity-100"
-                        : "w-0 opacity-0 group-hover:w-full group-hover:opacity-70"
-                    }
+                    ${isActive ? "w-full" : "w-0 group-hover:w-full"}
                   `}
                 />
-              </Link>
+              </a>
             );
           })}
         </div>
 
-        {/* =====================================================
-            RIGHT ACTIONS
-        ====================================================== */}
+        {/* RIGHT ACTIONS */}
         <div
           className="
             flex
             shrink-0
             items-center
-            gap-2.5
+            gap-2 sm:gap-3
           "
         >
+          {/* NDRF Emergency Phone Button */}
+          <a
+            href="tel:1078"
+            className="
+              hidden
+              sm:flex
+              items-center
+              gap-2
+              rounded-full
+              border border-amber-300
+              bg-amber-50
+              px-3.5
+              py-1.5
+              text-xs
+              font-bold
+              text-amber-900
+              shadow-xs
+              transition-all
+              duration-300
+              hover:bg-amber-100
+            "
+          >
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+            NDRF 1078
+          </a>
+
           {/* Login */}
           <Link
             href="/login"
             className="
               rounded-xl
               border
-              border-white/[0.14]
-              bg-white/[0.025]
-              px-6
-              py-2.5
-              text-[12px]
+              border-slate-200
+              bg-slate-50
+              px-3.5 sm:px-4
+              py-2
+              text-xs
               font-semibold
-              text-white/85
+              text-slate-800
               transition-all
               duration-300
-              hover:border-[#aaf27d]/40
-              hover:bg-white/[0.06]
-              hover:text-white
+              hover:border-emerald-300
+              hover:bg-emerald-50
             "
           >
             Login
@@ -216,22 +277,65 @@ export default function Navbar() {
             href="/register"
             className="
               rounded-xl
-              bg-[#aaf27d]
-              px-6
-              py-2.5
-              text-[12px]
+              bg-emerald-700
+              px-4 sm:px-4.5
+              py-2
+              text-xs
               font-bold
-              text-[#102918]
+              text-white
+              shadow-sm
               transition-all
               duration-300
-              hover:bg-[#baf58f]
-              hover:-translate-y-[1px]
+              hover:bg-emerald-800
+              hover:shadow-md
             "
           >
             Sign Up
           </Link>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden ml-1 p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+            aria-label="Toggle Navigation Menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {mobileMenuOpen ? (
+                <path d="M18 6 6 18M6 6l12 12" />
+              ) : (
+                <path d="M4 12h16M4 6h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* MOBILE DROPDOWN MENU */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-emerald-100 bg-white/98 px-5 py-4 shadow-lg">
+          <div className="flex flex-col space-y-3">
+            {navItems.map((item) => {
+              const targetHref = pathname === "/" || pathname === "" ? item.href : `/${item.href}`;
+              return (
+                <a
+                  key={item.href}
+                  href={targetHref}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className="py-2 text-sm font-semibold text-slate-800 hover:text-emerald-800 border-b border-slate-100"
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+            <a
+              href="tel:1078"
+              className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-white shadow-sm"
+            >
+              Call NDRF Helpline 1078
+            </a>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

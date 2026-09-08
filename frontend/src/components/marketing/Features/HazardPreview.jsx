@@ -1,88 +1,165 @@
 "use client";
 
+import React from "react";
+
 export default function HazardPreview({
-  title = "Flood Risk",
+  title = "Flood Inundation Vector",
   status = "High Risk Area",
+  hazard = "flood",
 }) {
+  const getHazardDetails = () => {
+    switch (hazard) {
+      case "flood":
+        return {
+          markerColor: "bg-blue-600 border-blue-200 shadow-blue-500/50",
+          pingColor: "bg-blue-400",
+          confidence: "94.6%",
+          sensorSource: "CWC River Basin Telemetry & Sentinel-1 SAR",
+          metricName: "Water Crest Level",
+          metricValue: "+2.4m above danger threshold",
+          advisory: "Immediate low-lying zone evacuation alert active.",
+        };
+      case "landslide":
+        return {
+          markerColor: "bg-amber-600 border-amber-200 shadow-amber-500/50",
+          pingColor: "bg-amber-400",
+          confidence: "91.2%",
+          sensorSource: "Slope Inclinometers & Rainfall Radar",
+          metricName: "Displacement Rate",
+          metricValue: "4.8 mm/hr critical shear stress",
+          advisory: "Ghat road diversion activated by district cell.",
+        };
+      case "cyclone":
+        return {
+          markerColor: "bg-indigo-600 border-indigo-200 shadow-indigo-500/50",
+          pingColor: "bg-indigo-400",
+          confidence: "97.1%",
+          sensorSource: "INSAT-3D Doppler Weather Radar",
+          metricName: "Sustained Gusts",
+          metricValue: "115 km/h eastward track",
+          advisory: "Coastal harbor warning signal #8 hoisted.",
+        };
+      case "rainfall":
+        return {
+          markerColor: "bg-teal-600 border-teal-200 shadow-teal-500/50",
+          pingColor: "bg-teal-400",
+          confidence: "93.4%",
+          sensorSource: "IMD Automated Weather Stations (AWS)",
+          metricName: "Precipitation Accumulation",
+          metricValue: "182 mm in last 6 hours",
+          advisory: "Flash flood advisory issued for catchment basins.",
+        };
+      case "wildfire":
+        return {
+          markerColor: "bg-rose-600 border-rose-200 shadow-rose-500/50",
+          pingColor: "bg-rose-400",
+          confidence: "96.8%",
+          sensorSource: "MODIS / VIIRS 375m Thermal Hotspots",
+          metricName: "FRP (Fire Radiative Power)",
+          metricValue: "420 MW thermal intensity",
+          advisory: "Forest beat taskforces & drone counters deployed.",
+        };
+      default:
+        return {
+          markerColor: "bg-emerald-600 border-emerald-200 shadow-emerald-500/50",
+          pingColor: "bg-emerald-400",
+          confidence: "95.0%",
+          sensorSource: "Multi-Sensor Geospatial Fusion",
+          metricName: "Status",
+          metricValue: "Active Geospatial Feed",
+          advisory: "System syncing with NDRF Command Cell.",
+        };
+    }
+  };
+
+  const details = getHazardDetails();
+
   return (
-    <div className="relative min-h-[500px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0b281a] p-6">
-      {/* Map background */}
+    <div className="relative min-h-[480px] overflow-hidden rounded-3xl border border-emerald-200 bg-slate-900 p-6 shadow-xl flex flex-col justify-between text-white">
+      {/* Background satellite / terrain effect */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-70"
+        className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity"
         style={{
           backgroundImage: "url('/background-image.png')",
         }}
       />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/80 to-slate-950/90" />
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-[#061b10]/55" />
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 opacity-15"
+        style={{
+          backgroundImage:
+            "linear-gradient(#10b981 1px, transparent 1px), linear-gradient(to right, #10b981 1px, transparent 1px)",
+          backgroundSize: "36px 36px",
+        }}
+      />
 
-      {/* Content */}
-      <div className="relative z-10 flex h-full min-h-[450px] flex-col justify-between">
-        {/* Top */}
-        <div className="flex items-center justify-between">
-          <div className="rounded-full border border-white/10 bg-[#09291a]/80 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.15em] text-white/60">
-            <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#aaf27d]" />
-            Live Hazard Map
-          </div>
+      {/* TOP BAR */}
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/70 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          Live Geospatial Radar Sync
+        </div>
 
-          <div className="rounded-xl border border-white/10 bg-[#09291a]/80 px-3 py-2 text-[10px] text-white/50">
-            LIVE
+        <span className="text-[10px] font-mono text-emerald-300/80 bg-slate-800/80 border border-slate-700 px-2.5 py-1 rounded-lg">
+          GPS: 13.0827° N, 80.2707° E
+        </span>
+      </div>
+
+      {/* CENTER RADAR TARGET MARKER */}
+      <div className="relative z-10 my-8 flex items-center justify-center">
+        {/* Radar rings */}
+        <div className="relative flex items-center justify-center">
+          <div className="absolute h-48 w-48 rounded-full border border-emerald-500/20 animate-ping opacity-30" />
+          <div className="absolute h-36 w-36 rounded-full border border-emerald-500/30" />
+          <div className="absolute h-20 w-20 rounded-full border border-emerald-500/40" />
+
+          {/* Focal Node */}
+          <div
+            className={`relative flex h-14 w-14 items-center justify-center rounded-full border-2 text-white shadow-lg transition-all duration-500 ${details.markerColor}`}
+          >
+            <span className={`absolute h-full w-full rounded-full animate-ping opacity-40 ${details.pingColor}`} />
+            <span className="font-extrabold text-sm">LIVE</span>
           </div>
         </div>
 
-        {/* Hazard marker */}
-        <div className="relative flex flex-1 items-center justify-center">
-          <div className="absolute h-28 w-28 rounded-full bg-[#ff7656]/10" />
-
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-[#ff7656] text-white shadow-[0_0_35px_rgba(255,100,70,.5)]">
-            ●
+        {/* Floating Callout badge */}
+        <div className="absolute -right-2 top-2 sm:right-6 sm:top-4 rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-xl backdrop-blur-xl max-w-[210px]">
+          <div className="text-xs font-extrabold text-white">{title}</div>
+          <div className="mt-1 text-[10px] font-bold text-amber-300 uppercase tracking-wide">
+            {status}
           </div>
-
-          <div className="absolute ml-52 mt-[-100px] rounded-2xl border border-white/10 bg-[#10281b]/90 px-4 py-3 backdrop-blur-xl">
-            <div className="text-xs font-bold text-white">{title}</div>
-
-            <div className="mt-1 text-[9px] font-bold text-[#ff9b83]">
-              {status}
-            </div>
+          <div className="mt-2 text-[10px] text-slate-300 leading-snug">
+            {details.sensorSource}
           </div>
         </div>
+      </div>
 
-        {/* Bottom analysis card */}
-        <div className="rounded-[20px] border border-white/10 bg-[#092719]/90 p-5 backdrop-blur-xl">
-          <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/35">
-            AI ANALYSIS
-          </div>
-
-          <div className="mt-2 flex items-end justify-between gap-5">
-            <div>
-              <div className="text-sm font-semibold text-white">
-                Risk detected in monitored area
-              </div>
-
-              <div className="mt-1 text-[10px] text-white/40">
-                Continuous geospatial monitoring active
-              </div>
+      {/* BOTTOM TELEMETRY CARD */}
+      <div className="relative z-10 rounded-2xl border border-emerald-500/20 bg-slate-950/85 p-5 backdrop-blur-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+          <div>
+            <div className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
+              {details.metricName}
             </div>
-
+            <div className="text-sm font-extrabold text-white mt-0.5">
+              {details.metricValue}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             <div className="text-right">
-              <div className="text-[9px] font-semibold text-white/30">
-                CONFIDENCE
-              </div>
-
-              <div className="mt-1 text-xl font-bold text-[#aaf27d]">94%</div>
+              <div className="text-[9px] font-mono uppercase text-slate-400">AI Confidence</div>
+              <div className="text-base font-extrabold text-emerald-400">{details.confidence}</div>
             </div>
           </div>
+        </div>
 
-          <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-            <span className="text-[9px] font-semibold text-white/40">
-              ● REAL-TIME MONITORING
-            </span>
-
-            <span className="text-[9px] font-bold text-white/40">
-              RISK: <span className="text-[#ff957c]">HIGH</span>
-            </span>
-          </div>
+        <div className="mt-3 flex items-center justify-between text-xs text-slate-300">
+          <span className="text-[11px] text-emerald-200">
+            &bull; {details.advisory}
+          </span>
+          <span className="text-[10px] font-bold text-slate-400">Synced to NDRF</span>
         </div>
       </div>
     </div>
