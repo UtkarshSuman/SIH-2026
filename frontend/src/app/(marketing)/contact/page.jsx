@@ -26,7 +26,7 @@ export default function ContactPage() {
             Connect with <span className="text-emerald-700">Rescue Arc</span>
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Reach out for disaster management cell integration, technical support, or emergency agency command hotline details.
+            Reach out for red zone assessment integration, carrying capacity onboarding, or relocation planning technical support.
           </p>
         </section>
 
@@ -39,17 +39,17 @@ export default function ContactPage() {
               National Emergency Response
             </div>
             <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
-              NDRF Toll-Free Emergency Hotline
+              NDMA Toll-Free Emergency Hotline
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed mb-6">
-              For active disaster emergencies requiring immediate National Disaster Response Force battalion dispatch:
+              For active disaster emergencies or urgent red zone relocation coordination requiring National Disaster Management Authority response:
             </p>
             <div className="space-y-3">
               <a
                 href="tel:1078"
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3 text-xs font-bold text-white shadow-sm transition-all"
               >
-                <PhoneCallIcon size={16} /> NDRF Helpline: 1078
+                <PhoneCallIcon size={16} /> NDMA Helpline: 1078
               </a>
               <div className="text-xs font-bold text-slate-800">
                 National Emergency Response Center: <span className="text-amber-900">112</span>
@@ -60,19 +60,19 @@ export default function ContactPage() {
           {/* ORGANIZATION ONBOARDING CARD */}
           <div className="rounded-2xl border border-emerald-200 bg-white p-8 shadow-sm">
             <div className="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">
-              Agency Onboarding
+               Authority Onboarding
             </div>
             <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
-              Register Disaster Management Cell
+               Register Red Zone Assessment Cell
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              District collectorates, SDMA state cells, forest beat offices, and NGO rescue units can apply for API access.
+              District collectors, DDMA officers, GSI officials, and state disaster management authorities can apply for red zone intelligence API access.
             </p>
             <Link
               href="/register"
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-6 py-3 text-xs font-bold text-white shadow-sm transition-all"
             >
-              Register Official Cell &rarr;
+              Register Authority Cell &rarr;
             </Link>
           </div>
 

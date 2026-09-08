@@ -21,26 +21,27 @@ export interface ServiceItem {
 
 export const services: ServiceItem[] = [
   {
-    slug: "example-service-one",
-    title: "Example Service One",
-    shortText: "Placeholder short text - shown on the carousel box.",
+    slug: "red-zone-mapping",
+    title: "Red Zone Mapping",
+    shortText: "AI-powered identification of hazard-based red zones using multi-hazard geospatial overlays.",
     description:
-      "Placeholder long description - shown on the /services/example-service-one page. Replace once the problem statement is finalized.",
+      "Rescue Arc uses satellite imagery, seismic zonation data, flood inundation models, and landslide susceptibility indices to intelligently classify hazard-based red zones. Each habitation is scored against multiple natural hazard parameters to determine its red zone category.",
     requiresAuth: false,
   },
   {
-    slug: "example-service-two",
-    title: "Example Service Two (login required)",
-    shortText: "This one demonstrates the auth-gated flow.",
+    slug: "carrying-capacity-assessment",
+    title: "Carrying Capacity Assessment (Login Required)",
+    shortText: "Evaluate terrain load-bearing capacity and population density limits for settlements.",
     description:
-      "Placeholder long description for a service that requires login. Logged-out users clicking this are redirected to /login first.",
+      "Our AI models assess terrain load-bearing capacity, population density thresholds, and infrastructure stress indices to determine whether habitations exceed safe limits. Settlements exceeding their carrying capacity are flagged for priority review by DDMA authorities.",
     requiresAuth: true,
   },
   {
-    slug: "example-service-three",
-    title: "Example Service Three",
-    shortText: "Another placeholder box to show the carousel with 3+ items.",
-    description: "Placeholder long description for service three.",
+    slug: "relocation-priority-engine",
+    title: "Relocation Priority Engine",
+    shortText: "Multi-factor urgency scoring to prioritize vulnerable habitations for immediate relocation.",
+    description:
+      "Combining red zone severity, carrying capacity exceedance, and settlement vulnerability factors, the Relocation Priority Engine generates actionable urgency rankings. NDMA and DDMA authorities receive prioritized dashboards with safe resettlement site recommendations.",
     requiresAuth: false,
   },
 ];
@@ -54,17 +55,17 @@ export interface ProblemSolutionItem {
 export const problemSolutions: ProblemSolutionItem[] = [
   {
     id: "1",
-    problem: "Placeholder problem statement one - what pain point this addresses.",
-    solution: "Placeholder solution text one - how the project solves it.",
+    problem: "Thousands of vulnerable habitations exist in hazard-prone areas, but there is no unified system to intelligently identify and classify these red zones using multi-hazard data.",
+    solution: "Rescue Arc overlays seismic, flood, landslide, and cyclone hazard data to automatically classify red zones and flag at-risk settlements for authorities.",
   },
   {
     id: "2",
-    problem: "Placeholder problem statement two.",
-    solution: "Placeholder solution text two.",
+    problem: "Settlements often exceed their terrain's carrying capacity — population density, infrastructure load, and ecological stress are rarely assessed together before disaster strikes.",
+    solution: "Our AI-driven carrying capacity models evaluate terrain load-bearing limits, population thresholds, and infrastructure stress to identify over-capacity habitations before they fail.",
   },
   {
     id: "3",
-    problem: "Placeholder problem statement three.",
-    solution: "Placeholder solution text three.",
+    problem: "When relocation is necessary, there is no data-driven system to prioritize which settlements need immediate action versus longer-term planning.",
+    solution: "The Relocation Priority Engine computes multi-factor urgency scores and delivers ranked relocation dashboards to NDMA and DDMA authorities for evidence-based decision-making.",
   },
 ];

@@ -15,27 +15,27 @@ function ShieldCheckIcon({ size = 20 }) {
 const principles = [
   {
     number: "01",
-    title: "Preparedness First",
+    title: "Red Zone Mapping",
     description:
-      "The best disaster response begins before severe impact occurs. Rescue Arc turns early satellite telemetry into active community readiness.",
+      "Intelligently classify hazard-based red zones using multi-parameter geospatial analysis — seismic, flood, landslide, and cyclone risk overlays for every habitation.",
   },
   {
     number: "02",
-    title: "Clarity Over Complexity",
+    title: "Carrying Capacity Assessment",
     description:
-      "Disaster data can be overwhelming. We streamline MODIS thermal hotspots, CWC river telemetry, and slope displacement sensors into clear actionable alerts.",
+      "Evaluate terrain load-bearing limits, population density thresholds, and infrastructure stress to determine whether settlements can safely sustain their current population.",
   },
   {
     number: "03",
-    title: "Ecosystem & Canopy Protection",
+    title: "Relocation Prioritization",
     description:
-      "Geospatial AI and environmental telemetry serve a dual mission: protecting citizen lives and preserving vulnerable forest habitats.",
+      "Combine red zone severity scores with carrying capacity exceedance data to generate relocation urgency rankings for vulnerable habitations across districts.",
   },
   {
     number: "04",
-    title: "Authority Field Synchronization",
+    title: "Authority Decision Support",
     description:
-      "True resilience happens when NDRF battalions, SDMA emergency control cells, and local forest taskforces operate on a single shared dashboard.",
+      "Equip NDMA, DDMA, and State Disaster Management Authorities with real-time dashboards for evidence-based relocation decisions and resource allocation.",
   },
 ];
 
@@ -50,10 +50,10 @@ export default function AboutSection() {
             <ShieldCheckIcon size={16} className="text-emerald-700" /> About Our Platform & Mission
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Building Safer Communities & <span className="text-emerald-700">Resilient Ecosystems</span>
+            Safeguarding Vulnerable Settlements Through <span className="text-emerald-700">Intelligent Hazard Analysis</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Rescue Arc is a monorepo geospatial disaster intelligence platform built for Smart India Hackathon, bridging satellite telemetry with NDRF and state emergency responders.
+            Rescue Arc is a geospatial intelligence platform built for SIH Problem 26191 — intelligently identifying hazard-based red zones, assessing carrying capacity, and determining immediate relocation needs for vulnerable habitations across India.
           </p>
         </div>
 
@@ -74,10 +74,10 @@ export default function AboutSection() {
         {/* MISSION BANNER */}
         <div className="mt-16 rounded-3xl border border-emerald-300 bg-gradient-to-r from-white via-[#e6f4ea] to-white p-8 lg:p-12 text-center shadow-md">
           <h3 className="text-2xl font-extrabold text-slate-900">
-            Integrated with National & State Disaster Response Forces
+            Integrated with NDMA, DDMA & State Disaster Management Authorities
           </h3>
           <p className="mt-3 text-sm text-slate-700 max-w-xl mx-auto leading-relaxed">
-            From MODIS canopy thermal sensors to Central Water Commission gauges, Rescue Arc bridges tech innovation with official responder workflows.
+            From satellite hazard overlays to carrying capacity AI models, Rescue Arc bridges geospatial innovation with official authority workflows for vulnerable habitation relocation.
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Link

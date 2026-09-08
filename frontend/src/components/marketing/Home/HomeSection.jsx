@@ -296,7 +296,7 @@ export default function HomeSection() {
               "
             >
               <ShieldBadgeIcon size={16} className="text-emerald-700" />
-              <span>National Disaster Response Force (NDRF) & SDMA Partner</span>
+              <span>AUTOMATING THE HAZARD PREVENTION SYSTEM</span>
             </div>
 
             {/* TITLE */}
@@ -311,9 +311,9 @@ export default function HomeSection() {
                 text-slate-900
               "
             >
-              Protecting Forest Communities &{" "}
-              <span className="text-emerald-700 underline decoration-emerald-300 decoration-wavy decoration-2">
-                Natural Resources
+              Identifying Hazard Red Zones &{" "}
+              <span className="text-emerald-700  decoration-emerald-300 decoration-wavy decoration-2">
+                Relocating Vulnerable Habitations
               </span>
             </h1>
 
@@ -327,7 +327,7 @@ export default function HomeSection() {
                 text-slate-600
               "
             >
-              Rescue Arc connects satellite geospatial intelligence, forest canopy sensors, and river gauges with ground-level responders like <strong className="text-emerald-900 font-semibold">NDRF battalions</strong> and <strong className="text-emerald-900 font-semibold">State Disaster Management Authorities</strong>.
+              Rescue Arc uses AI-driven geospatial intelligence and multi-hazard risk modeling to intelligently identify <strong className="text-emerald-900 font-semibold">hazard-based red zones</strong>, assess <strong className="text-emerald-900 font-semibold">terrain carrying capacity</strong>, and prioritize immediate relocation needs for vulnerable settlements across India.
             </p>
 
             {/* ACTION BUTTONS */}
@@ -352,7 +352,7 @@ export default function HomeSection() {
                   hover:-translate-y-0.5
                 "
               >
-                Register for Alerts
+                Assess Your Settlement
                 <ArrowIcon />
               </Link>
 
@@ -378,14 +378,14 @@ export default function HomeSection() {
                 "
               >
                 <MapIcon />
-                View NDRF Matrix & Map
+                View Red Zone Map
               </a>
             </div>
 
             {/* TRUST LINE */}
             <div className="flex items-center gap-3 pt-3 text-xs font-semibold text-slate-600">
               <UsersIcon size={18} className="text-emerald-700" />
-              <span>Monitoring 300+ forest protection zones and high-risk river basins</span>
+              <span>Mapping 5,000+ vulnerable habitations across multi-hazard red zones</span>
             </div>
           </div>
 
@@ -402,50 +402,50 @@ export default function HomeSection() {
                   <div>
                     <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
                       <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-                      Live Environmental Feed
+                      Live Red Zone Feed
                     </div>
-                    <div className="text-sm font-bold text-slate-900">Multi-Hazard Status</div>
+                    <div className="text-sm font-bold text-slate-900">Settlement Risk Status</div>
                   </div>
                 </div>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  NDRF Synced
+                  NDMA Synced
                 </span>
               </div>
 
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100 text-xs font-medium text-slate-800">
                   <span className="flex items-center gap-2 text-emerald-800 font-semibold">
-                    <FireIcon size={18} /> Forest Fires & Canopy Heat
+                    <FireIcon size={18} /> Seismic & Earthquake Zones
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                    MODIS Active
+                    IMD Active
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs font-medium text-slate-800">
                   <span className="flex items-center gap-2 text-slate-800 font-semibold">
-                    <FloodIcon size={18} /> River Inundation & Flash Floods
+                    <FloodIcon size={18} /> Flood Inundation & Red Zones
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200">
-                    Gauges Live
+                    CWC Live
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs font-medium text-slate-800">
                   <span className="flex items-center gap-2 text-slate-800 font-semibold">
-                    <MountainIcon size={18} /> Landslide Vulnerability
+                    <MountainIcon size={18} /> Landslide Susceptibility
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                    Slope Monitoring
+                    GSI Active
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs font-medium text-slate-800">
                   <span className="flex items-center gap-2 text-slate-800 font-semibold">
-                    <WindIcon size={18} /> Coastal Storm Trajectory
+                    <WindIcon size={18} /> Carrying Capacity Index
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300">
-                    Radar Active
+                    AI Active
                   </span>
                 </div>
               </div>
@@ -454,8 +454,8 @@ export default function HomeSection() {
               <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 flex items-start gap-3">
                 <AlertIcon size={18} className="text-amber-700 shrink-0 mt-0.5" />
                 <div className="text-xs">
-                  <div className="font-bold text-amber-950">Forest Conservation Alert &bull; Zone 4</div>
-                  <div className="text-amber-900/80 mt-0.5">NDRF 10th Battalion & Forest Fire teams deployed.</div>
+                  <div className="font-bold text-amber-950">Relocation Priority Alert &bull; Red Zone R-4</div>
+                  <div className="text-amber-900/80 mt-0.5">48 vulnerable habitations flagged for immediate relocation assessment.</div>
                 </div>
               </div>
             </div>
@@ -464,7 +464,7 @@ export default function HomeSection() {
             <div className="rounded-2xl border border-emerald-100 bg-white p-4 text-xs flex items-center justify-between text-slate-700 shadow-xs">
               <span className="flex items-center gap-2 font-medium">
                 <ClockIcon size={16} className="text-emerald-700" />
-                Average Warning Dispatch: <strong className="text-slate-900">Under 3 mins</strong>
+                Risk Assessment Cycle: <strong className="text-slate-900">Every 6 hours</strong>
               </span>
               <span className="text-emerald-800 font-bold">100% Operational</span>
             </div>
@@ -477,23 +477,23 @@ export default function HomeSection() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={<UsersIcon />}
-              value="1.2M+"
-              label="Citizens Covered Under Early Warning"
+              value="5,000+"
+              label="Vulnerable Habitations Mapped"
             />
             <StatCard
               icon={<PinIcon />}
-              value="300+"
-              label="Forest & Coastal High-Risk Zones"
+              value="850+"
+              label="Hazard-Based Red Zones Identified"
             />
             <StatCard
               icon={<ClockIcon />}
               value="24/7"
-              label="Continuous NDRF Telemetry Sync"
+              label="Carrying Capacity Monitoring"
             />
             <StatCard
               icon={<LeafIcon />}
-              value="85K+ Ha"
-              label="Forest Canopy & Habitat Monitored"
+              value="1,200+"
+              label="Settlements Prioritized for Relocation"
             />
           </div>
         </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import FeatureCard from "./FeatureCard";
-import HazardPreview from "./HazardPreview";
+import FeatureCard from "./Featurecard";
+import HazardPreview from "./Hazardpreview";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (
@@ -17,52 +17,52 @@ const hazards = [
   {
     id: "flood",
     type: "flood",
-    title: "Floods & River Inundation",
+    title: "Flood-Prone Red Zones",
     status: "HIGH RISK",
     description:
-      "Detect flood-prone basins using CWC river telemetry, terrain elevation, and Sentinel-1 SAR imagery.",
-    previewTitle: "Flood Inundation Vector",
+      "Identify flood-prone habitations using CWC river gauge data, terrain elevation models, and Sentinel-1 SAR inundation mapping for red zone classification.",
+    previewTitle: "Flood Red Zone Overlay",
     previewStatus: "Critical Watch",
   },
   {
     id: "wildfire",
     type: "wildfire",
-    title: "Forest Fires & Canopy Heat",
+    title: "Seismic & Earthquake Zones",
     status: "MONITORED",
     description:
-      "MODIS and VIIRS 375m thermal hotspot detection protects wildlife habitats and tribal forest fringe settlements.",
-    previewTitle: "Canopy Thermal Anomaly",
-    previewStatus: "Active Patrol",
+      "Map seismic vulnerability of settlements using BIS seismic zonation data, fault-line proximity, and soil amplification factors to flag high-risk habitations.",
+    previewTitle: "Seismic Risk Heatmap",
+    previewStatus: "Zone Assessment",
   },
   {
     id: "landslide",
     type: "landslide",
-    title: "Landslide Vulnerability",
+    title: "Landslide Susceptibility",
     status: "MONITORED",
     description:
-      "Monitor mountain slope displacement, soil saturation, and heavy precipitation thresholds.",
-    previewTitle: "Slope Shear Vector",
-    previewStatus: "Sensor Active",
+      "Assess slope instability, soil saturation, and rainfall thresholds around hill settlements to determine red zone boundaries and relocation priority.",
+    previewTitle: "Slope Failure Risk Map",
+    previewStatus: "GSI Active",
   },
   {
     id: "cyclone",
     type: "cyclone",
-    title: "Cyclones & Coastal Surges",
+    title: "Carrying Capacity Analysis",
     status: "LIVE TRACKING",
     description:
-      "Track cyclonic eye coordinates, storm surge height, and wind landfall vectors with Doppler radars.",
-    previewTitle: "Storm Surge Contour",
-    previewStatus: "Radar Sync",
+      "Evaluate terrain load-bearing capacity, population density thresholds, and infrastructure stress indices to determine if habitations exceed safe limits.",
+    previewTitle: "Capacity Index Overlay",
+    previewStatus: "AI Scoring",
   },
   {
     id: "rainfall",
     type: "rainfall",
-    title: "Extreme Precipitation",
+    title: "Relocation Priority Index",
     status: "LIVE MONITORING",
     description:
-      "Identify intense cloudburst pockets and calculate rapid downstream runoff accumulation.",
-    previewTitle: "Precipitation Spike",
-    previewStatus: "Catchment Alert",
+      "Compute multi-hazard relocation urgency scores combining red zone severity, carrying capacity exceedance, and settlement vulnerability for immediate action.",
+    previewTitle: "Relocation Priority Map",
+    previewStatus: "Decision Ready",
   },
 ];
 
@@ -81,13 +81,13 @@ export default function FeaturesSection() {
         {/* HEADER */}
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Multi-Hazard Intelligence Grid
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Red Zone Intelligence Engine
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            One Unified Map. <span className="text-emerald-700">All Critical Hazards.</span>
+            One Unified Map. <span className="text-emerald-700">All Red Zones & Capacity Scores.</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Rescue Arc fuses disparate satellite observations, river gauges, and forest canopy sensors into a single actionable operational picture.
+            Rescue Arc fuses multi-hazard geospatial data, terrain carrying capacity models, and settlement vulnerability indices into a single red zone intelligence picture.
           </p>
         </div>
 

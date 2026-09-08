@@ -12,10 +12,10 @@ function ShieldCheckIcon({ size = 20 }) {
 }
 
 const stats = [
-  { value: "1.2M+", label: "Citizens Protected Under Early Warning" },
-  { value: "12", label: "NDRF Battalions Synced via Telemetry" },
-  { value: "300+", label: "Forest & Coastal Risk Zones Monitored" },
-  { value: "< 3 Min", label: "Early Warning Dispatch Speed" },
+  { value: "5,000+", label: "Vulnerable Habitations Assessed" },
+  { value: "850+", label: "Hazard-Based Red Zones Classified" },
+  { value: "1,200+", label: "Settlements Flagged for Relocation" },
+  { value: "96.2%", label: "Carrying Capacity Model Accuracy" },
 ];
 
 export default function ImpactPage() {
@@ -31,10 +31,10 @@ export default function ImpactPage() {
             <ShieldCheckIcon size={16} className="text-emerald-700" /> Operational Impact
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Measurable <span className="text-emerald-700">Community Safety</span>
+            Measurable <span className="text-emerald-700">Red Zone & Relocation Impact</span>
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Rescue Arc transforms satellite telemetry and hazard AI into real-world lives saved and protected forest ecosystems across India.
+            Rescue Arc translates geospatial AI and carrying capacity modeling into real-world vulnerable habitation assessments and relocation outcomes across India.
           </p>
         </section>
 
@@ -54,17 +54,17 @@ export default function ImpactPage() {
 
           <div className="mt-16 rounded-3xl border border-emerald-300 bg-gradient-to-r from-[#f0fdf4] via-[#e6f4ea] to-[#f4fbf7] p-8 lg:p-12 text-center shadow-md">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Join the Disaster Protection Network
+              Join India's Hazard-Based Red Zone Intelligence Network
             </h2>
             <p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto">
-              Onboard your district or regional response force to Rescue Arc today.
+              Onboard your district authority to Rescue Arc for red zone assessment and relocation planning.
             </p>
             <div className="mt-6 flex justify-center gap-4">
               <Link
                 href="/register"
                 className="rounded-xl bg-emerald-700 hover:bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5"
               >
-                Register Organization
+                Register Authority
               </Link>
             </div>
           </div>

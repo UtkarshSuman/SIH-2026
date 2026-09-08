@@ -15,41 +15,41 @@ const steps = [
   {
     number: "01",
     label: "COLLECT",
-    title: "Geospatial & Telemetry Gathering",
+    title: "Multi-Hazard Data Ingestion",
     description:
-      "Rescue Arc brings together MODIS satellite thermal hotspots, CWC river basin telemetry, and mountain slope displacement sensors into one unified view.",
+      "Rescue Arc ingests seismic zonation maps, CWC flood telemetry, GSI landslide susceptibility data, and IMD weather feeds into a unified geospatial pipeline.",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
   {
     number: "02",
-    label: "ANALYZE",
-    title: "AI Risk Vector Contours",
+    label: "IDENTIFY",
+    title: "Red Zone Classification",
     description:
-      "Machine learning models evaluate developing environmental threats, calculating flood inundation timelines and wildfire propagation contours.",
+      "AI models overlay multiple hazard layers to intelligently identify and classify red zones — areas where natural hazards pose unacceptable risk to existing habitations.",
     tagColor: "bg-teal-100 text-teal-900 border-teal-300",
   },
   {
     number: "03",
-    label: "DISPATCH",
-    title: "NDRF & SDMA Alert Trigger",
+    label: "ASSESS",
+    title: "Carrying Capacity Evaluation",
     description:
-      "High-confidence alerts trigger automated dispatches to NDRF 24x7 Control Rooms, State SDMA cells, and village disaster committees.",
+      "Terrain load-bearing analysis, population density modeling, and infrastructure stress indices determine whether settlements exceed safe habitation limits.",
     tagColor: "bg-amber-100 text-amber-900 border-amber-300",
   },
   {
     number: "04",
-    label: "EVACUATE",
-    title: "Citizen Safe Route Navigation",
+    label: "PRIORITIZE",
+    title: "Relocation Urgency Scoring",
     description:
-      "Affected citizens receive real-time safe route guidance away from hazard contours while NDRF inflatable rescue boats deploy dynamically.",
+      "A multi-factor scoring engine ranks vulnerable habitations by combined red zone severity, capacity exceedance, and settlement exposure for immediate action.",
     tagColor: "bg-blue-100 text-blue-900 border-blue-300",
   },
   {
     number: "05",
-    label: "RESTORE",
-    title: "Post-Disaster Resource Allocation",
+    label: "RELOCATE",
+    title: "Authority Decision & Resettlement",
     description:
-      "Emergency medical camps, relief shelters, and forest restoration teams receive dynamic priority mapping for rapid recovery.",
+      "NDMA and DDMA authorities receive prioritized relocation dashboards with safe resettlement site recommendations and resource allocation plans.",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
 ];
@@ -64,13 +64,13 @@ export default function HowItWorksPage() {
         {/* HERO */}
         <section className="relative px-5 sm:px-8 lg:px-12 py-12 max-w-7xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Rapid Response Protocol
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Five-Phase Assessment Pipeline
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
             How <span className="text-emerald-700">Rescue Arc</span> Operates
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            From early satellite observation to NDRF ground force mobilization — five synchronized steps protecting lives and natural ecosystems.
+            From hazard data ingestion to authority-level relocation decisions — five synchronized steps identifying red zones and safeguarding vulnerable habitations.
           </p>
         </section>
 
@@ -103,20 +103,20 @@ export default function HowItWorksPage() {
               Need Immediate Authority Integration?
             </h2>
             <p className="mt-2 text-sm text-slate-600 max-w-lg mx-auto">
-              Call the NDRF Helpline 1078 or register your local disaster management cell.
+              Call the NDMA Helpline 1078 or register your district's red zone assessment authority cell.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <a
                 href="tel:1078"
                 className="rounded-xl bg-amber-500 hover:bg-amber-600 px-7 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5"
               >
-                NDRF Helpline 1078
+                NDMA Helpline 1078
               </a>
               <Link
                 href="/register"
                 className="rounded-xl bg-emerald-700 hover:bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5"
               >
-                Register Official Cell
+                Register Authority Cell
               </Link>
             </div>
           </div>

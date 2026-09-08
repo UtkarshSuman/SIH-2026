@@ -15,59 +15,59 @@ export default function HazardPreview({
           pingColor: "bg-blue-400",
           confidence: "94.6%",
           sensorSource: "CWC River Basin Telemetry & Sentinel-1 SAR",
-          metricName: "Water Crest Level",
-          metricValue: "+2.4m above danger threshold",
-          advisory: "Immediate low-lying zone evacuation alert active.",
+          metricName: "Red Zone Classification",
+          metricValue: "Zone R-3 — 120 habitations at risk",
+          advisory: "Immediate low-lying settlement evacuation assessment active.",
         };
       case "landslide":
         return {
           markerColor: "bg-amber-600 border-amber-200 shadow-amber-500/50",
           pingColor: "bg-amber-400",
           confidence: "91.2%",
-          sensorSource: "Slope Inclinometers & Rainfall Radar",
-          metricName: "Displacement Rate",
-          metricValue: "4.8 mm/hr critical shear stress",
-          advisory: "Ghat road diversion activated by district cell.",
+          sensorSource: "GSI Slope Inclinometers & Rainfall Radar",
+          metricName: "Slope Failure Risk",
+          metricValue: "4.8 mm/hr critical displacement near 32 settlements",
+          advisory: "Hill settlement relocation assessment triggered.",
         };
       case "cyclone":
         return {
           markerColor: "bg-indigo-600 border-indigo-200 shadow-indigo-500/50",
           pingColor: "bg-indigo-400",
           confidence: "97.1%",
-          sensorSource: "INSAT-3D Doppler Weather Radar",
-          metricName: "Sustained Gusts",
-          metricValue: "115 km/h eastward track",
-          advisory: "Coastal harbor warning signal #8 hoisted.",
+          sensorSource: "AI Terrain & Population Density Models",
+          metricName: "Carrying Capacity",
+          metricValue: "Exceeded by 2.3x in 8 settlements",
+          advisory: "Capacity breach flagged — relocation planning initiated.",
         };
       case "rainfall":
         return {
           markerColor: "bg-teal-600 border-teal-200 shadow-teal-500/50",
           pingColor: "bg-teal-400",
           confidence: "93.4%",
-          sensorSource: "IMD Automated Weather Stations (AWS)",
-          metricName: "Precipitation Accumulation",
-          metricValue: "182 mm in last 6 hours",
-          advisory: "Flash flood advisory issued for catchment basins.",
+          sensorSource: "Multi-Hazard Risk Scoring Engine",
+          metricName: "Relocation Urgency",
+          metricValue: "Priority 1 — 45 settlements flagged",
+          advisory: "Immediate relocation recommendation dispatched to DDMA.",
         };
       case "wildfire":
         return {
           markerColor: "bg-rose-600 border-rose-200 shadow-rose-500/50",
           pingColor: "bg-rose-400",
           confidence: "96.8%",
-          sensorSource: "MODIS / VIIRS 375m Thermal Hotspots",
-          metricName: "FRP (Fire Radiative Power)",
-          metricValue: "420 MW thermal intensity",
-          advisory: "Forest beat taskforces & drone counters deployed.",
+          sensorSource: "BIS Seismic Zonation & Fault-Line Proximity",
+          metricName: "Seismic Vulnerability",
+          metricValue: "Zone IV — 68 habitations in high-risk belt",
+          advisory: "Structural assessment teams dispatched to flagged settlements.",
         };
       default:
         return {
           markerColor: "bg-emerald-600 border-emerald-200 shadow-emerald-500/50",
           pingColor: "bg-emerald-400",
           confidence: "95.0%",
-          sensorSource: "Multi-Sensor Geospatial Fusion",
-          metricName: "Status",
-          metricValue: "Active Geospatial Feed",
-          advisory: "System syncing with NDRF Command Cell.",
+          sensorSource: "Integrated Geospatial Intelligence",
+          metricName: "Settlement Risk Score",
+          metricValue: "Multi-parameter assessment active",
+          advisory: "System syncing with NDMA & DDMA Command Cells.",
         };
     }
   };
@@ -99,7 +99,7 @@ export default function HazardPreview({
       <div className="relative z-10 flex items-center justify-between">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/70 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          Live Geospatial Radar Sync
+          Live Red Zone Radar
         </div>
 
         <span className="text-[10px] font-mono text-emerald-300/80 bg-slate-800/80 border border-slate-700 px-2.5 py-1 rounded-lg">
@@ -159,7 +159,7 @@ export default function HazardPreview({
           <span className="text-[11px] text-emerald-200">
             &bull; {details.advisory}
           </span>
-          <span className="text-[10px] font-bold text-slate-400">Synced to NDRF</span>
+          <span className="text-[10px] font-bold text-slate-400">Synced to NDMA</span>
         </div>
       </div>
     </div>

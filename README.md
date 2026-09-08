@@ -5,14 +5,14 @@
 The home page (`/`) now integrates **all marketing sections on a single scrollable page** with working navbar auto-scroll links:
 
 ### 📱 Single-Page Auto-Scroll Section Layout (`page.jsx`)
-1. `Navbar.jsx`: Translucent fixed header with auto-scroll anchor links (`/#home`, `/#authorities`, `/#features`, `/#how-it-works`, `/#about`, `/#impact`, `/#contact`) and NDRF 1078 helpline button.
-2. `HomeSection.jsx` (`#home`): Hero section with interactive MODIS & NDRF command dashboard.
-3. `AuthorityHubSection.jsx` (`#authorities`): Dedicated NDRF 1078 emergency hotline & battalion readiness matrix.
-4. `FeaturesSection.jsx` (`#features`): Multi-hazard surveillance (Forest Fires, Flash Floods, Landslides, Cyclones).
-5. `HowItWorkSection.jsx` (`#how-it-works`): 5-step rapid response protocol.
-6. `AboutSection.jsx` (`#about`): Platform principles & ecosystem canopy protection mission.
-7. `ImpactSection.jsx` (`#impact`): Operational metrics (1.2M+ citizens covered, <3 min alert speed).
-8. `ContactSection.jsx` (`#contact`): 24x7 NDRF hotline card & official agency contact form.
+1. `Navbar.jsx`: Translucent fixed header with auto-scroll anchor links (`/#home`, `/#authorities`, `/#features`, `/#how-it-works`, `/#about`, `/#impact`, `/#contact`) and NDMA 1078 helpline button.
+2. `HomeSection.jsx` (`#home`): Hero section with interactive red zone monitor & settlement risk dashboard.
+3. `AuthorityHubSection.jsx` (`#authorities`): Dedicated NDMA 1078 emergency hotline & DDMA district assessment matrix.
+4. `FeaturesSection.jsx` (`#features`): Red zone intelligence switcher (Flood Zones, Seismic Zones, Landslides, Carrying Capacity, Relocation Priority).
+5. `HowItWorkSection.jsx` (`#how-it-works`): 5-step red zone assessment & relocation pipeline.
+6. `AboutSection.jsx` (`#about`): Platform principles & hazard-based red zone classification mission.
+7. `ImpactSection.jsx` (`#impact`): Operational metrics (5,000+ habitations assessed, 850+ red zones classified, 1,200+ relocation priorities).
+8. `ContactSection.jsx` (`#contact`): 24x7 NDMA hotline card & official authority contact form.
 9. `footer.tsx`: Clean light green footer.
 
 ---

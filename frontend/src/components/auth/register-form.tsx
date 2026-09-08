@@ -127,7 +127,7 @@ export function RegisterForm() {
       {/* FULL NAME */}
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-xs font-bold text-slate-700">
-          Full Name / Officer Name
+          Full Name / Authority Officer
         </label>
         <div className="relative flex items-center">
           <span className="absolute left-3.5 text-slate-400">
@@ -136,7 +136,7 @@ export function RegisterForm() {
           <input
             id="name"
             type="text"
-            placeholder="e.g. Commander Rajesh Kumar"
+            placeholder="e.g. District Collector Rajesh Kumar"
             value={values.name}
             onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
             className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
@@ -157,7 +157,7 @@ export function RegisterForm() {
           <input
             id="email"
             type="email"
-            placeholder="officer@disaster.gov.in"
+            placeholder="officer@ddma.gov.in"
             value={values.email}
             onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
             className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
@@ -210,7 +210,7 @@ export function RegisterForm() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="location" className="text-xs font-bold text-slate-700">
-            Assigned Disaster Zone
+            Assigned Assessment Zone
           </label>
           <div className="relative flex items-center">
             <span className="absolute left-3.5 text-slate-400">
@@ -222,7 +222,7 @@ export function RegisterForm() {
               onChange={(e) => setValues((v) => ({ ...v, location: e.target.value }))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
             >
-              <option value="">Select district / zone</option>
+              <option value="">Select district / red zone</option>
               {locations.map((loc) => (
                 <option key={loc.value} value={loc.value}>
                   {loc.label}
@@ -239,7 +239,7 @@ export function RegisterForm() {
         disabled={loading}
         className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
       >
-        {loading ? "Registering Agency Cell..." : "Create Authority Account"}
+        {loading ? "Registering Authority Cell..." : "Create Authority Account"}
         {!loading && <ArrowRightIcon />}
       </button>
     </form>

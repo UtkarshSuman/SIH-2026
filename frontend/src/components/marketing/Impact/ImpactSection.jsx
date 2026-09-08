@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import ImpactStat from "./ImpactStat";
+import ImpactStat from "./Impactstat";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (
@@ -56,49 +56,49 @@ function TreeIcon({ size = 20 }) {
 
 const operationalStats = [
   {
-    value: "1.2M+",
-    label: "Citizens in Warning Radius",
-    subtext: "Geo-targeted alerts across 8 coastal & river districts",
+    value: "5,000+",
+    label: "Vulnerable Habitations Assessed",
+    subtext: "Multi-hazard risk profiling across 12 high-risk districts",
     icon: <UsersIcon size={20} />,
   },
   {
-    value: "12",
-    label: "NDRF Battalions Synced",
-    subtext: "Direct telemetry to National Control Room 1078",
+    value: "850+",
+    label: "Red Zones Classified",
+    subtext: "Flood, seismic, landslide & cyclone hazard overlays",
     icon: <RadioIcon size={20} />,
   },
   {
-    value: "< 3 Min",
-    label: "Warning Dispatch Latency",
-    subtext: "Automated AI risk detection to SMS dissemination",
+    value: "1,200+",
+    label: "Settlements Flagged for Relocation",
+    subtext: "AI-scored urgency ranking sent to DDMA authorities",
     icon: <ClockIcon size={20} />,
   },
   {
-    value: "85K+ Ha",
-    label: "Forest Canopy Monitored",
-    subtext: "Thermal hotspot surveillance in vulnerable ecosystems",
+    value: "96.2%",
+    label: "Carrying Capacity Accuracy",
+    subtext: "Validated against GSI and NRSC ground-truth data",
     icon: <TreeIcon size={20} />,
   },
 ];
 
 const highlights = [
   {
-    title: "Western Ghats Flash Flood Readiness",
-    tag: "Monsoon Watch",
-    description: "Integrated 42 CWC automated water level sensors to generate 6-hour inundation forecasts for river basin communities.",
-    stat: "100% telemetry uptime",
+    title: "Western Ghats Landslide Red Zone Mapping",
+    tag: "Red Zone Identification",
+    description: "Classified 180+ hill settlements into hazard-based red zones using GSI slope data, rainfall thresholds, and soil saturation indices.",
+    stat: "180 settlements classified",
   },
   {
-    title: "Eastern Coast Cyclone Response Track",
-    tag: "Coastal Defense",
-    description: "Coupled INSAT-3D Doppler storm radar with dynamic safe evacuation routes for 150+ village disaster committees.",
-    stat: "45K citizens alerted",
+    title: "Brahmaputra Basin Carrying Capacity Study",
+    tag: "Capacity Assessment",
+    description: "Assessed terrain load-bearing and population density across 320 flood-prone habitations, flagging 94 settlements exceeding safe capacity limits.",
+    stat: "94 over-capacity settlements",
   },
   {
-    title: "Canopy & Forest Fire Thermal Grid",
-    tag: "Ecosystem Defense",
-    description: "MODIS / VIIRS 375m thermal anomaly pipeline dispatched automated coordinates to local forest beat squads within 4 minutes.",
-    stat: "62 hotspots isolated",
+    title: "Odisha Coastal Relocation Priority Index",
+    tag: "Relocation Planning",
+    description: "Generated relocation urgency scores for 450+ cyclone-exposed coastal habitations, with top 120 flagged for immediate DDMA action.",
+    stat: "120 priority relocations",
   },
 ];
 
@@ -113,13 +113,13 @@ export default function ImpactSection() {
         {/* HEADER */}
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Proven Operational Impact
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Proven Assessment Impact
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Measurable Safety & <span className="text-emerald-700">Rapid Response</span>
+            Measurable Red Zone Coverage & <span className="text-emerald-700">Relocation Outcomes</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Rescue Arc translates geospatial AI and multi-sensor telemetry into real-world lives saved and protected ecosystems across India.
+            Rescue Arc translates geospatial AI and carrying capacity modeling into real-world vulnerable habitation assessments and relocation outcomes across India.
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export default function ImpactSection() {
         {/* FIELD DEPLOYMENT HIGHLIGHTS */}
         <div className="mt-16">
           <h3 className="text-2xl font-extrabold text-slate-900 mb-6 text-center">
-            Recent Telemetry & Deployment Highlights
+            Recent Red Zone & Relocation Highlights
           </h3>
 
           <div className="grid gap-6 md:grid-cols-3">
@@ -168,10 +168,10 @@ export default function ImpactSection() {
         {/* BOTTOM CALLOUT */}
         <div className="mt-16 rounded-3xl border border-emerald-300 bg-white p-8 lg:p-10 text-center shadow-md max-w-4xl mx-auto">
           <h3 className="text-2xl font-extrabold text-slate-900">
-            Join India&apos;s Next-Generation Disaster Intelligence Network
+            Join India&apos;s Hazard-Based Red Zone Intelligence Network
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
-            Enable AI-powered hazard detection, automated NDRF alert dispatches, and citizen evacuation routing for your district.
+            Enable AI-powered red zone identification, carrying capacity assessment, and relocation prioritization for your district&apos;s vulnerable settlements.
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Link

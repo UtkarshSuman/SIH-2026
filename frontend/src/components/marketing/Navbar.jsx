@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { label: "Home", href: "#home" },
-  { label: "NDRF Authorities", href: "#authorities" },
+  { label: "NDMA Authorities", href: "#authorities" },
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "About", href: "#about" },
@@ -156,7 +156,7 @@ export default function Navbar() {
                 text-emerald-800/80
               "
             >
-              NDRF & Forest Response Hub
+              Hazard Red Zone Hub
             </span>
           </div>
         </a>
@@ -247,7 +247,7 @@ export default function Navbar() {
             "
           >
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-            NDRF 1078
+             NDMA 1078
           </a>
 
           {/* Login */}
@@ -331,7 +331,7 @@ export default function Navbar() {
               href="tel:1078"
               className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-white shadow-sm"
             >
-              Call NDRF Helpline 1078
+              Call NDMA Helpline 1078
             </a>
           </div>
         </div>

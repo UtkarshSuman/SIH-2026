@@ -14,50 +14,50 @@ function ShieldCheckIcon({ size = 20 }) {
 const features = [
   {
     number: "01",
-    title: "Forest Fires & Wildfire Detection",
+    title: "Flood Red Zone Delineation",
     description:
-      "Detect canopy thermal hotspots and fire vectors using MODIS satellite imagery and forest moisture indices.",
-    status: "MODIS SYNCED",
+      "Identify flood-prone habitations using CWC river gauge data, terrain elevation models, and Sentinel-1 SAR inundation mapping for red zone classification.",
+    status: "CWC SYNCED",
     tagColor: "bg-amber-100 text-amber-900 border-amber-300",
   },
   {
     number: "02",
-    title: "River Basin Flood Risk Gauges",
+    title: "Seismic & Earthquake Zonation",
     description:
-      "Monitor river inundation and streamflow levels in real time via Central Water Commission telemetry.",
-    status: "CWC LIVE",
+      "Map seismic vulnerability of settlements using BIS seismic zonation data, fault-line proximity, and soil amplification factors.",
+    status: "GSI ACTIVE",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
   {
     number: "03",
-    title: "NDRF Force Dispatch Matrix",
+    title: "Landslide Susceptibility Index",
     description:
-      "Automated threat triangulation directly connected with NDRF 24x7 Control Rooms and SDMA cells.",
-    status: "NDRF READY",
+      "Assess slope instability, soil saturation, and rainfall thresholds around hill settlements to determine red zone boundaries.",
+    status: "GSI MAPPED",
     tagColor: "bg-blue-100 text-blue-900 border-blue-300",
   },
   {
     number: "04",
-    title: "Landslide Slope Susceptibility",
+    title: "Carrying Capacity AI Engine",
     description:
-      "Identify vulnerable mountainous corridors, soil moisture saturation, and slope displacement risks.",
-    status: "SLOPE SENSORS",
+      "Evaluate terrain load-bearing capacity, population density thresholds, and infrastructure stress to flag over-capacity settlements.",
+    status: "AI ACTIVE",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
   {
     number: "05",
-    title: "Citizen Safe Evacuation Routing",
+    title: "Relocation Priority Scoring",
     description:
-      "Map real-time safe routes and relief shelter locations for affected local communities.",
-    status: "SAFE ROUTES",
+      "Compute multi-hazard relocation urgency scores combining red zone severity, capacity exceedance, and vulnerability indices.",
+    status: "DECISION READY",
     tagColor: "bg-teal-100 text-teal-900 border-teal-300",
   },
   {
     number: "06",
-    title: "Geospatial Early Alert Dispatch",
+    title: "Authority Decision Dashboard",
     description:
-      "Disseminate SMS, mobile app, and local siren alerts in under 3 minutes during emerging crises.",
-    status: "< 3 MIN DISPATCH",
+      "Provide NDMA and DDMA authorities with real-time red zone maps, settlement risk profiles, and relocation priority rankings.",
+    status: "NDMA SYNCED",
     tagColor: "bg-amber-100 text-amber-900 border-amber-300",
   },
 ];
@@ -72,13 +72,13 @@ export default function FeaturesPage() {
         {/* HERO SECTION */}
         <section className="relative px-5 sm:px-8 lg:px-12 py-12 max-w-7xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Multi-Hazard Intelligence Matrix
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Red Zone Intelligence Engine
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Features Built for <span className="text-emerald-700">Resilience</span>
+            Features Built for <span className="text-emerald-700">Vulnerable Settlement Safety</span>
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Rescue Arc aggregates satellite observations, environmental telemetry, and NDRF readiness metrics into a single natural interface.
+            Rescue Arc aggregates multi-hazard data, carrying capacity models, and settlement vulnerability indices into a unified red zone intelligence platform.
           </p>
         </section>
 
@@ -108,20 +108,20 @@ export default function FeaturesPage() {
               Ready to Explore Live Intelligence?
             </h2>
             <p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto">
-              View the real-time hazard map or register your organization for early warnings.
+              View the red zone intelligence map or register your authority for settlement assessments.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href="/register"
                 className="rounded-xl bg-emerald-700 hover:bg-emerald-800 px-7 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5"
               >
-                Register for Alerts
+                Assess Your Settlement
               </Link>
               <Link
                 href="/#authorities"
                 className="rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 px-7 py-3 text-xs font-semibold text-emerald-900 shadow-xs transition-all hover:-translate-y-0.5"
               >
-                View NDRF Matrix
+                View Red Zone Map
               </Link>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import ProcessStep from "./ProcessStep";
+import ProcessStep from "./Processstep";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (
@@ -25,41 +25,41 @@ const workflowSteps = [
   {
     number: "01",
     label: "COLLECT",
-    title: "Geospatial & Telemetry Gathering",
+    title: "Multi-Hazard Data Ingestion",
     description:
-      "Rescue Arc continuously captures MODIS thermal hotspots, CWC river telemetry, and IMD Doppler weather streams into one unified pipeline.",
+      "Rescue Arc ingests seismic zonation maps, CWC flood telemetry, GSI landslide susceptibility data, and IMD weather feeds into a unified geospatial pipeline.",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
   {
     number: "02",
-    label: "ANALYZE",
-    title: "AI Risk Vector Modeling",
+    label: "IDENTIFY",
+    title: "Red Zone Classification",
     description:
-      "Predictive machine learning calculates flood inundation timelines, slope slip risks, and wildfire propagation speeds before impact.",
+      "AI models overlay hazard layers to intelligently identify and classify red zones — areas where natural hazards pose unacceptable risk to existing habitations.",
     tagColor: "bg-teal-100 text-teal-900 border-teal-300",
   },
   {
     number: "03",
-    label: "DISPATCH",
-    title: "Automated Authority Alerting",
+    label: "ASSESS",
+    title: "Carrying Capacity Evaluation",
     description:
-      "Instant telemetry dispatches go directly to NDRF 24x7 Control Rooms, State SDMA cells, and local forest protection divisions.",
+      "Terrain load-bearing analysis, population density modeling, and infrastructure stress indices determine whether settlements exceed safe habitation limits.",
     tagColor: "bg-amber-100 text-amber-900 border-amber-300",
   },
   {
     number: "04",
-    label: "EVACUATE",
-    title: "Citizen Safe Route Guidance",
+    label: "PRIORITIZE",
+    title: "Relocation Urgency Scoring",
     description:
-      "Vulnerable communities receive geo-targeted safe evacuation routes away from hazard zones with offline SMS support.",
+      "Multi-factor scoring engine ranks vulnerable habitations by combined red zone severity, capacity exceedance, and settlement exposure for immediate action.",
     tagColor: "bg-blue-100 text-blue-900 border-blue-300",
   },
   {
     number: "05",
-    label: "RESTORE",
-    title: "Resource & Relief Allocation",
+    label: "RELOCATE",
+    title: "Authority Decision & Action",
     description:
-      "Inflatable rescue boats, emergency medical shelters, and forest recovery units receive real-time priority distribution maps.",
+      "NDMA and DDMA authorities receive prioritized relocation dashboards with safe resettlement site recommendations and resource allocation plans.",
     tagColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
 ];
@@ -75,13 +75,13 @@ export default function HowItWorkSection() {
         {/* HEADER */}
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Five-Phase Rapid Protocol
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Five-Phase Assessment Pipeline
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             How <span className="text-emerald-700">Rescue Arc</span> Operates
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            From early satellite observation to NDRF ground force mobilization — a closed-loop disaster intelligence lifecycle.
+            From hazard data ingestion to authority-level relocation decisions — a closed-loop red zone intelligence and settlement safety lifecycle.
           </p>
         </div>
 
@@ -106,10 +106,10 @@ export default function HowItWorkSection() {
               Ready for Integration
             </span>
             <h3 className="mt-1 text-2xl font-extrabold text-slate-900">
-              Onboard Your District or Response Division
+              Onboard Your District or Authority Cell
             </h3>
             <p className="mt-2 text-xs text-slate-600 max-w-xl">
-              Connect your emergency control cell to the national early warning network with verified government access.
+              Connect your district disaster management authority to the national red zone intelligence network with verified government access.
             </p>
           </div>
 
@@ -118,13 +118,13 @@ export default function HowItWorkSection() {
               href="tel:1078"
               className="rounded-xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5 flex items-center gap-2"
             >
-              <PhoneCallIcon size={16} /> NDRF Hotline 1078
+              <PhoneCallIcon size={16} /> NDMA Hotline 1078
             </a>
             <Link
               href="/register"
               className="rounded-xl bg-emerald-700 hover:bg-emerald-800 px-6 py-3 text-xs font-bold text-white shadow-sm transition-all hover:-translate-y-0.5"
             >
-              Register Unit
+              Register Authority
             </Link>
           </div>
         </div>

@@ -35,13 +35,13 @@ export function Footer() {
                   Rescue <span className="text-emerald-400">Arc</span>
                 </span>
                 <span className="text-[9px] uppercase tracking-widest text-emerald-400/80 font-bold">
-                  NDRF & Forest Response Hub
+                  Hazard Red Zone Hub
                 </span>
               </div>
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              Monorepo geospatial disaster intelligence and early warning coordination platform built for Smart India Hackathon.
+              Geospatial hazard intelligence platform for intelligent red zone identification, carrying capacity assessment, and vulnerable habitation relocation — built for SIH Problem 26191.
             </p>
 
             <div className="pt-2 text-xs text-amber-400 font-bold flex items-center gap-2">
@@ -71,7 +71,7 @@ export function Footer() {
                   onClick={(e) => handleScroll(e, "authorities")}
                   className="hover:text-emerald-400 transition-colors"
                 >
-                  NDRF Authorities
+                  NDMA Authorities
                 </a>
               </li>
               <li>
@@ -80,7 +80,7 @@ export function Footer() {
                   onClick={(e) => handleScroll(e, "features")}
                   className="hover:text-emerald-400 transition-colors"
                 >
-                  Hazard Intelligence Grid
+                  Red Zone Intelligence
                 </a>
               </li>
               <li>
@@ -164,11 +164,11 @@ export function Footer() {
 
         {/* BOTTOM COPYRIGHT */}
         <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-          <p>© {new Date().getFullYear()} Rescue Arc &bull; Smart India Hackathon. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Rescue Arc • SIH Problem 26191 • Smart India Hackathon. All rights reserved.</p>
           <div className="flex gap-6">
-            <span>NDRF Telemetry Gateway</span>
-            <span>CWC Streamflow Sync</span>
-            <span>MODIS Hotspot Grid</span>
+             <span>Red Zone Classification</span>
+            <span>Carrying Capacity AI</span>
+            <span>Relocation Priority Engine</span>
           </div>
         </div>
       </div>

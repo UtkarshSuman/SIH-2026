@@ -35,13 +35,13 @@ export default function ContactSection() {
         {/* HEADER */}
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-900 shadow-xs mb-4">
-            <PhoneCallIcon size={16} className="text-amber-700" /> Emergency Hotline & Command Contact
+            <PhoneCallIcon size={16} className="text-amber-700" /> Emergency Hotline & Authority Contact
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Connect with <span className="text-emerald-700">Rescue Arc Command</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Reach out for NDRF command cell telemetry integration, district collectorate onboarding, or technical assistance.
+            Reach out for red zone assessment integration, district carrying capacity onboarding, or technical assistance with relocation planning.
           </p>
         </div>
 
@@ -54,9 +54,9 @@ export default function ContactSection() {
               <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
                 24x7 Emergency Operations
               </span>
-              <h3 className="text-2xl font-extrabold text-slate-900 mt-4">NDRF National Emergency Hotline</h3>
+              <h3 className="text-2xl font-extrabold text-slate-900 mt-4">NDMA National Emergency Hotline</h3>
               <p className="text-xs text-slate-700 leading-relaxed mt-2">
-                For active disaster emergencies requiring immediate National Disaster Response Force battalion mobilization:
+                For active disaster emergencies or urgent red zone relocation coordination requiring National Disaster Management Authority response:
               </p>
             </div>
 
@@ -68,7 +68,7 @@ export default function ContactSection() {
                 <PhoneCallIcon size={20} />
                 <div>
                   <div className="text-[10px] text-amber-100 uppercase tracking-widest font-semibold">Toll-Free Helpline</div>
-                  <div>NDRF Hotline: 1078</div>
+                  <div>NDMA Hotline: 1078</div>
                 </div>
               </a>
 
@@ -86,9 +86,9 @@ export default function ContactSection() {
 
           {/* AGENCY ONBOARDING FORM */}
           <div className="lg:col-span-7 rounded-3xl border border-emerald-200 bg-white p-8 shadow-md">
-            <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Agency & Cell Contact Form</h3>
+            <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Authority & District Contact Form</h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              District collectorates, SDMA state cells, forest beat offices, and emergency response teams can contact our engineering team.
+              District collectors, DDMA officers, GSI officials, and state disaster management teams can contact our engineering team for red zone assessment integration.
             </p>
 
             {submitted ? (
@@ -102,7 +102,7 @@ export default function ContactSection() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. District Disaster Cell / Forest Department"
+                    placeholder="e.g. District Collector Office / DDMA Cell"
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-all"
                   />
                 </div>
@@ -129,11 +129,11 @@ export default function ContactSection() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Message / Telemetry Request</label>
+                  <label className="block font-bold text-slate-700 mb-1">Message / Assessment Request</label>
                   <textarea
                     rows={3}
                     required
-                    placeholder="Specify forest region, river basin, or NDRF sync request..."
+                    placeholder="Specify red zone assessment area, settlement carrying capacity query, or relocation planning request..."
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-all"
                   />
                 </div>

@@ -53,7 +53,7 @@ export function AuthVisualPanel() {
       <div className="relative z-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/70 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          NDRF & State Disaster Gateway
+          NDMA & DDMA Red Zone Gateway
         </div>
       </div>
 
@@ -61,11 +61,11 @@ export function AuthVisualPanel() {
       <div className="relative z-10 my-auto py-6 space-y-5">
         <div className="space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug text-white">
-            Unified Geospatial <br />
-            <span className="text-emerald-400">Disaster Command</span>
+            Red Zone Intelligence &<br />
+            <span className="text-emerald-400">Relocation Command</span>
           </h2>
           <p className="text-xs text-slate-300 leading-relaxed max-w-sm">
-            Access real-time telemetry, automated flood and wildfire vectors, and official battalion dispatch alerts.
+            Access hazard-based red zone maps, carrying capacity assessments, and settlement relocation priority dashboards.
           </p>
         </div>
 
@@ -76,8 +76,8 @@ export function AuthVisualPanel() {
               <ShieldCheckIcon size={16} />
             </div>
             <div className="text-xs">
-              <div className="font-bold text-white">NDRF Command Sync</div>
-              <div className="text-[10px] text-slate-400">12 Battalions active via automated telemetry</div>
+              <div className="font-bold text-white">NDMA Red Zone Sync</div>
+              <div className="text-[10px] text-slate-400">12 Districts active via hazard classification engine</div>
             </div>
           </div>
 
@@ -86,8 +86,8 @@ export function AuthVisualPanel() {
               <RadioIcon size={16} />
             </div>
             <div className="text-xs">
-              <div className="font-bold text-white">Multi-Sensor AI Vectors</div>
-              <div className="text-[10px] text-slate-400">MODIS thermal + CWC river flood gauges</div>
+              <div className="font-bold text-white">Carrying Capacity AI</div>
+              <div className="text-[10px] text-slate-400">Terrain load-bearing + population density analysis</div>
             </div>
           </div>
 
@@ -96,8 +96,8 @@ export function AuthVisualPanel() {
               <BellIcon size={16} />
             </div>
             <div className="text-xs">
-              <div className="font-bold text-white">Early Citizen Warning</div>
-              <div className="text-[10px] text-slate-400">Geo-targeted safe route SMS & evacuations</div>
+              <div className="font-bold text-white">Relocation Priority Alerts</div>
+              <div className="text-[10px] text-slate-400">AI-scored urgency ranking for vulnerable settlements</div>
             </div>
           </div>
         </div>
@@ -109,7 +109,7 @@ export function AuthVisualPanel() {
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
           Helpline: 1078
         </span>
-        <span className="font-mono text-emerald-300/80">Smart India Hackathon</span>
+        <span className="font-mono text-emerald-300/80">SIH Problem 26191</span>
       </div>
     </div>
   );

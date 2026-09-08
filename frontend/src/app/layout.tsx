@@ -12,8 +12,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "SIH Project",
-  description: "Smart India Hackathon project",
+  title: "Rescue Arc — Hazard Red Zone Identification & Relocation Intelligence",
+  description: "Intelligent identification of hazard-based red zones, carrying capacity assessment, and immediate relocation needs for vulnerable habitations. SIH Problem 26191.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

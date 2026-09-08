@@ -105,28 +105,28 @@ function TreePineIcon({ size = 22 }) {
 
 const authorityPartners = [
   {
-    name: "NDRF Command Cell",
-    badge: "National Response",
-    role: "Rapid Deployment & Field Forces",
-    details: "Direct telemetry connection to NDRF 24x7 Control Rooms for instant force deployment.",
+    name: "NDMA Command Cell",
+    badge: "National Authority",
+    role: "Red Zone Policy & Relocation Oversight",
+    details: "Direct integration with National Disaster Management Authority for hazard-based red zone classification and relocation directives.",
     bgCard: "bg-white border-slate-200",
     badgeTag: "bg-blue-100 text-blue-900 border-blue-200",
     icon: <ShieldCheckIcon className="text-blue-800" size={24} />,
   },
   {
-    name: "State SDMA Network",
-    badge: "State Operations",
-    role: "District Collectorate Alert Dissemination",
-    details: "Real-time sync with State Disaster Management Authorities for localized emergency alerts.",
+    name: "State DDMA Network",
+    badge: "District Operations",
+    role: "Settlement Assessment & Relocation Execution",
+    details: "Real-time sync with District Disaster Management Authorities for localized carrying capacity assessments and relocation coordination.",
     bgCard: "bg-white border-emerald-200",
     badgeTag: "bg-emerald-100 text-emerald-900 border-emerald-200",
     icon: <RadioTowerIcon className="text-emerald-700" size={24} />,
   },
   {
-    name: "Forest Protection Dept",
-    badge: "Ecological Monitoring",
-    role: "Canopy & Wildfire Surveillance",
-    details: "MODIS/VIIRS thermal hotspot telemetry for forest beat officers and tribal community protection.",
+    name: "Geological Survey of India",
+    badge: "Hazard Data",
+    role: "Seismic & Landslide Zonation",
+    details: "GSI seismic zonation maps, landslide susceptibility indices, and fault-line proximity data feed red zone classification models.",
     bgCard: "bg-white border-amber-200",
     badgeTag: "bg-amber-100 text-amber-900 border-amber-200",
     icon: <TreePineIcon className="text-amber-800" size={24} />,
@@ -134,8 +134,8 @@ const authorityPartners = [
   {
     name: "Central Water Commission",
     badge: "Hydrological Data",
-    role: "Inundation & Flood Gauges",
-    details: "Automated streamflow monitoring and dam discharge tracking across national river basins.",
+    role: "Flood Red Zone Delineation",
+    details: "Automated streamflow monitoring and flood inundation mapping for identifying flood-prone habitations requiring relocation.",
     bgCard: "bg-white border-teal-200",
     badgeTag: "bg-teal-100 text-teal-900 border-teal-200",
     icon: <TruckHelicopterIcon className="text-teal-800" size={24} />,
@@ -143,10 +143,10 @@ const authorityPartners = [
 ];
 
 const liveBattalions = [
-  { battalion: "4th NDRF Battalion", location: "Arakkonam / Coastal South", status: "STANDBY READY", statusColor: "bg-emerald-100 text-emerald-900 border-emerald-300" },
-  { battalion: "10th NDRF Battalion", location: "Vijayawada / Eastern Basin", status: "ACTIVE DISPATCH", statusColor: "bg-amber-100 text-amber-900 border-amber-300" },
-  { battalion: "1st NDRF Battalion", location: "Guwahati / Brahmaputra Zone", status: "MONITORING", statusColor: "bg-blue-100 text-blue-900 border-blue-300" },
-  { battalion: "State Forest Taskforce", location: "Western Ghats Division", status: "CANOPY PATROL", statusColor: "bg-emerald-100 text-emerald-900 border-emerald-300" },
+  { battalion: "DDMA Uttarakhand", location: "Chamoli / Landslide Red Zone", status: "ASSESSMENT ACTIVE", statusColor: "bg-emerald-100 text-emerald-900 border-emerald-300" },
+  { battalion: "DDMA Odisha", location: "Puri / Coastal Cyclone Zone", status: "RELOCATION PLANNED", statusColor: "bg-amber-100 text-amber-900 border-amber-300" },
+  { battalion: "DDMA Assam", location: "Dhemaji / Flood Red Zone", status: "CAPACITY EXCEEDED", statusColor: "bg-blue-100 text-blue-900 border-blue-300" },
+  { battalion: "DDMA Kerala", location: "Wayanad / Hill Settlement Zone", status: "RED ZONE MAPPED", statusColor: "bg-emerald-100 text-emerald-900 border-emerald-300" },
 ];
 
 export default function AuthorityHubSection() {
@@ -168,7 +168,7 @@ export default function AuthorityHubSection() {
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-900">National Emergency Operations Hotline</span>
               </div>
               <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">
-                NDRF Helpline: <span className="text-amber-800">1078</span> &bull; Emergency Response: <span className="text-emerald-800">112</span>
+                NDMA Helpline: <span className="text-amber-800">1078</span> &bull; Emergency Response: <span className="text-emerald-800">112</span>
               </p>
             </div>
           </div>
@@ -188,13 +188,13 @@ export default function AuthorityHubSection() {
         {/* SECTION HEADER */}
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-900 shadow-xs mb-4">
-            <ShieldCheckIcon size={16} className="text-emerald-700" /> Government & Response Agency Integration
+            <ShieldCheckIcon size={16} className="text-emerald-700" /> Government & Authority Integration
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
-            Official Coordination with <span className="text-emerald-700">NDRF & State Authorities</span>
+            Official Coordination with <span className="text-emerald-700">NDMA, DDMA & GSI</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Rescue Arc provides a unified, secure data pipeline connecting state disaster cells, forest conservation taskforces, and NDRF command centers.
+            Rescue Arc provides a unified, secure data pipeline connecting national disaster management authorities, district collectors, and geological survey agencies for red zone classification and relocation planning.
           </p>
         </div>
 
@@ -235,16 +235,16 @@ export default function AuthorityHubSection() {
             <div>
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-widest">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
-                Live Response Battalion Status
+                Live Red Zone Assessment Status
               </div>
-              <h3 className="mt-1 text-xl font-bold text-slate-900">NDRF & State Disaster Taskforce Units</h3>
+              <h3 className="mt-1 text-xl font-bold text-slate-900">DDMA & State Authority Assessment Units</h3>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold">
-                12 Battalions Synced
+                12 Districts Synced
               </span>
               <span className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 font-bold">
-                GPS Telemetry Active
+                Red Zone Data Active
               </span>
             </div>
           </div>
