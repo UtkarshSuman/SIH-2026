@@ -8,7 +8,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url(),
-    BACKEND2_URL: z.string().url(),
+    BACKEND2_URL: z.string().url().default("http://localhost:8000"),
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.string().url().optional(),
     REQUIRE_EMAIL_VERIFICATION: z
@@ -43,4 +43,4 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
   },
-});
+});
