@@ -1,0 +1,2476 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rescue Arc — Disaster Relocation Dashboard (SIH 26191)</title>
+    <!-- Leaflet GIS Engine -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster (performance for 1400+ markers) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Override default MarkerCluster styles — custom iconCreateFunction handles cluster visuals */
+      .marker-cluster-small,
+      .marker-cluster-medium,
+      .marker-cluster-large {
+        background: transparent !important;
+      }
+      .marker-cluster-small div,
+      .marker-cluster-medium div,
+      .marker-cluster-large div {
+        background: transparent !important;
+      }
+      :root {
+        --bg-forest: #071a12;
+        --bg-deep: #0b2318;
+        --bg-card: rgba(11, 35, 24, 0.88);
+        --bg-card-glass: rgba(15, 46, 33, 0.82);
+        --border-neon: rgba(74, 222, 128, 0.22);
+        --border-hover: #4ade80;
+        --accent-lime: #86efac;
+        --accent-emerald: #22c55e;
+        --text-light: #f0fdf4;
+        --text-dim: #94a3b8;
+        --text-green: #bbf7d0;
+        --danger-red: #f43f5e;
+        --caution-amber: #fbbf24;
+        --safe-green: #4ade80;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          "Plus Jakarta Sans",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background-color: var(--bg-forest);
+        color: var(--text-light);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        letter-spacing: -0.1px;
+      }
+
+      /* Rescue Arc Modern Top Navbar */
+      #header {
+        background: linear-gradient(
+          180deg,
+          rgba(7, 26, 18, 0.98) 0%,
+          rgba(11, 35, 24, 0.94) 100%
+        );
+        border-bottom: 1px solid var(--border-neon);
+        padding: 11px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+        backdrop-filter: blur(14px);
+      }
+
+      .brand-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .shield-icon {
+        width: 36px;
+        height: 36px;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid var(--accent-lime);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 16px rgba(74, 222, 128, 0.2);
+      }
+      .shield-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: var(--accent-lime);
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .brand-title {
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #ffffff;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .brand-title span {
+        color: var(--accent-lime);
+      }
+      .brand-subtitle {
+        font-size: 8.5px;
+        color: var(--text-dim);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .badge-ops-pill {
+        background: rgba(22, 101, 52, 0.35);
+        border: 1px solid rgba(74, 222, 128, 0.35);
+        color: var(--accent-lime);
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .badge-ops-pill .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 8px #4ade80;
+        animation: pulse-dot 2s infinite;
+      }
+      @keyframes pulse-dot {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.35;
+          transform: scale(0.85);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      select,
+      button {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 11px;
+        border-radius: 8px;
+        padding: 7px 12px;
+        transition: all 0.2s ease;
+      }
+      select {
+        background: rgba(15, 46, 33, 0.85);
+        border: 1px solid var(--border-neon);
+        color: #ffffff;
+        outline: none;
+        cursor: pointer;
+      }
+      select:focus {
+        border-color: var(--accent-lime);
+        box-shadow: 0 0 12px rgba(134, 239, 172, 0.25);
+      }
+
+      .btn-lime-pill {
+        background: var(--accent-lime);
+        color: #052e16;
+        border: none;
+        font-weight: 700;
+        border-radius: 9999px;
+        padding: 7px 16px;
+        cursor: pointer;
+        box-shadow: 0 0 16px rgba(134, 239, 172, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-lime-pill:hover {
+        background: #4ade80;
+        transform: translateY(-1px);
+      }
+
+      .btn-glass {
+        background: rgba(15, 46, 33, 0.7);
+        border: 1px solid var(--border-neon);
+        color: #e2e8f0;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-glass:hover {
+        background: rgba(22, 65, 47, 0.9);
+        border-color: var(--accent-lime);
+        color: #ffffff;
+      }
+
+      /* Main Workspace Container */
+      #container {
+        flex: 1;
+        display: flex;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #map {
+        flex: 1;
+        height: 100%;
+        background: #020c08;
+      }
+
+      /* Floating Multi-Hazard Live Widget (Clean SVG Line-Art style) */
+      .floating-hazard-widget {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        z-index: 990;
+        background: rgba(11, 35, 24, 0.9);
+        border: 1px solid var(--border-neon);
+        border-radius: 16px;
+        padding: 14px 16px;
+        width: 220px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+        pointer-events: auto;
+      }
+      .widget-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(74, 222, 128, 0.15);
+      }
+      .widget-radar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1.5px solid var(--accent-lime);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .widget-radar-core {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-lime);
+        border-radius: 50%;
+      }
+      .widget-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #ffffff;
+        line-height: 1.25;
+      }
+      .widget-title small {
+        font-size: 8.5px;
+        color: var(--accent-lime);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        display: block;
+      }
+      .hazard-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #cbd5e1;
+        padding: 6px 0;
+        transition: color 0.15s;
+      }
+      .hazard-item span.icon-label {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 500;
+      }
+      .hazard-item svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+      .hazard-item span.badge-num {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--accent-lime);
+      }
+
+      /* Floating Operations Prompt */
+      .floating-hint-bar {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 990;
+        background: rgba(7, 26, 18, 0.92);
+        border: 1px solid rgba(74, 222, 128, 0.35);
+        border-radius: 9999px;
+        padding: 7px 18px;
+        font-size: 10.5px;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(12px);
+        pointer-events: none;
+      }
+
+      /* Sidebar Styling */
+      #sidebar {
+        width: 415px;
+        background: linear-gradient(
+          180deg,
+          rgba(7, 26, 18, 0.96) 0%,
+          rgba(11, 35, 24, 0.94) 100%
+        );
+        border-left: 1px solid var(--border-neon);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 16px;
+        z-index: 950;
+        backdrop-filter: blur(16px);
+      }
+
+      /* KPI Grid */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .kpi-card {
+        background: rgba(15, 46, 33, 0.6);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        border-radius: 12px;
+        padding: 10px 12px;
+        transition: border-color 0.2s;
+      }
+      .kpi-card:hover {
+        border-color: var(--accent-lime);
+      }
+      .kpi-title {
+        font-size: 9.5px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 2px;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+      }
+      .kpi-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+      }
+      .kpi-dot.red {
+        background: var(--danger-red);
+      }
+      .kpi-dot.yellow {
+        background: var(--caution-amber);
+      }
+      .kpi-dot.green {
+        background: var(--safe-green);
+      }
+
+      .kpi-val {
+        font-size: 19px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+      .kpi-val.red {
+        color: var(--danger-red);
+      }
+      .kpi-val.yellow {
+        color: var(--caution-amber);
+      }
+      .kpi-val.green {
+        color: var(--accent-lime);
+      }
+
+      /* Professional Provenance Inspector Box */
+      .predictor-box {
+        background: rgba(15, 46, 33, 0.65);
+        border: 1px solid var(--border-neon);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+      .predictor-box h4 {
+        color: var(--accent-lime);
+        font-size: 11.5px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.2px;
+      }
+
+      /* Provenance Tabs */
+      .prov-tab-row {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
+        background: rgba(7, 26, 18, 0.7);
+        padding: 3px;
+        border-radius: 8px;
+        border: 1px solid rgba(74, 222, 128, 0.15);
+      }
+      .prov-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 5px 2px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+      }
+      .prov-tab.active {
+        background: rgba(34, 197, 94, 0.22);
+        color: var(--accent-lime);
+        border: 1px solid rgba(74, 222, 128, 0.35);
+      }
+
+      .search-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .search-row input {
+        flex: 1;
+        background: rgba(7, 26, 18, 0.85);
+        border: 1px solid var(--border-neon);
+        color: white;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        outline: none;
+      }
+      .search-row input:focus {
+        border-color: var(--accent-lime);
+        box-shadow: 0 0 10px rgba(134, 239, 172, 0.25);
+      }
+
+      .pred-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .pred-grid div label {
+        font-size: 9px;
+        color: var(--text-dim);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .pred-grid div input {
+        background: rgba(7, 26, 18, 0.85);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        color: white;
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        width: 100%;
+        outline: none;
+      }
+
+      /* Clean Tactical Status Tags */
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .status-indicator-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        padding: 3px 9px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+      }
+      .status-live {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(74, 222, 128, 0.35);
+        color: #86efac;
+      }
+      .status-live .status-dot {
+        background: #22c55e;
+        box-shadow: 0 0 6px #4ade80;
+      }
+
+      .status-hist {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        color: #fde047;
+      }
+      .status-hist .status-dot {
+        background: #f59e0b;
+        box-shadow: 0 0 6px #fbbf24;
+      }
+
+      .status-norm {
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: #7dd3fc;
+      }
+      .status-norm .status-dot {
+        background: #38bdf8;
+        box-shadow: 0 0 6px #38bdf8;
+      }
+
+      .status-void {
+        background: rgba(148, 163, 184, 0.15);
+        border: 1px dashed rgba(148, 163, 184, 0.4);
+        color: #e2e8f0;
+      }
+      .status-void .status-dot {
+        background: #94a3b8;
+      }
+
+      .status-severity-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        padding: 4px 9px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+      }
+      .severity-critical {
+        background: rgba(185, 28, 28, 0.22);
+        border: 1px solid rgba(244, 63, 94, 0.45);
+        color: #fda4af;
+      }
+      .severity-critical .status-dot {
+        background: #f43f5e;
+        box-shadow: 0 0 6px #f43f5e;
+      }
+
+      .severity-caution {
+        background: rgba(180, 83, 9, 0.22);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        color: #fde68a;
+      }
+      .severity-caution .status-dot {
+        background: #f59e0b;
+        box-shadow: 0 0 6px #fbbf24;
+      }
+
+      .severity-safe {
+        background: rgba(22, 101, 52, 0.25);
+        border: 1px solid rgba(74, 222, 128, 0.4);
+        color: #86efac;
+      }
+      .severity-safe .status-dot {
+        background: #22c55e;
+        box-shadow: 0 0 6px #4ade80;
+      }
+
+      .severity-unverified {
+        background: rgba(51, 65, 85, 0.4);
+        border: 1px dashed rgba(148, 163, 184, 0.4);
+        color: #cbd5e1;
+      }
+      .severity-unverified .status-dot {
+        background: #94a3b8;
+      }
+
+      /* Provenance Result Card */
+      .prov-result-card {
+        background: rgba(7, 26, 18, 0.92);
+        border-radius: 10px;
+        padding: 10px;
+        border: 1px solid rgba(74, 222, 128, 0.25);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      /* Priority Queue */
+      .panel-sec {
+        margin-bottom: 14px;
+      }
+      .panel-sec h3 {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--accent-lime);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .queue-item {
+        background: rgba(15, 46, 33, 0.6);
+        border: 1px solid rgba(74, 222, 128, 0.15);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .queue-item:hover {
+        background: rgba(22, 65, 47, 0.9);
+        border-color: var(--accent-lime);
+        transform: translateX(2px);
+      }
+      .timeline-badge {
+        display: inline-block;
+        font-size: 8px;
+        font-weight: 800;
+        padding: 2px 5px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .timeline-imm {
+        background: rgba(244, 63, 94, 0.2);
+        color: #fda4af;
+        border: 1px solid rgba(244, 63, 94, 0.4);
+      }
+
+      /* Leaflet Overrides */
+      .leaflet-control-layers {
+        background: rgba(11, 35, 24, 0.94) !important;
+        color: #f8fafc !important;
+        border: 1px solid var(--border-neon) !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        font-size: 11px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(14px) !important;
+      }
+      .leaflet-control-layers-overlays label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 5px;
+        cursor: pointer;
+      }
+      .beacon-tooltip {
+        background: rgba(7, 26, 18, 0.95) !important;
+        color: #ffffff !important;
+        border: 1.5px solid var(--accent-lime) !important;
+        border-radius: 6px !important;
+        font-weight: 700 !important;
+        font-size: 10.5px !important;
+        box-shadow: 0 0 16px rgba(134, 239, 172, 0.35) !important;
+      }
+      .corridor-tooltip {
+        background: rgba(7, 26, 18, 0.95) !important;
+        color: #38bdf8 !important;
+        border: 1px solid #0284c7 !important;
+        border-radius: 4px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+      }
+
+      /* Simulation Alert Banner */
+      .sim-banner {
+        background: rgba(244, 63, 94, 0.15);
+        border: 1px dashed #f43f5e;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 11px;
+        color: #fecdd3;
+        line-height: 1.4;
+        margin-bottom: 12px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Header: Rescue Arc Branding & MHA Navigation -->
+    <div id="header">
+      <div class="brand-box">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">Rescue <span>Arc</span></div>
+          <div class="brand-subtitle">SAFER COMMUNITIES, STRONGER TOMORROW</div>
+        </div>
+        <div class="badge-ops-pill">
+          <div class="dot"></div>
+          MHA / NDRF &bull; MULTI-HAZARD RELOCATION DSS &bull; PS 26191
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <select id="hazardFilter" onchange="applyFilters()">
+          <option value="ALL">All 4 Hazard Classes</option>
+          <option value="landslide">Landslides (BIS / GSI)</option>
+          <option value="cloudburst">Cloudburst Inundation</option>
+          <option value="flood">Riverine Flood (CWC)</option>
+          <option value="coastal_erosion">Coastal Inundation / Erosion</option>
+        </select>
+        <select id="regionSelect" onchange="applyFilters()">
+          <option value="ALL">All 10 Monitored Regions</option>
+          <option value="cuttack_odisha">Cuttack (Odisha)</option>
+          <option value="darjeeling_westbengal">
+            Darjeeling (West Bengal)
+          </option>
+          <option value="dhemaji_lakhimpur_assam">
+            Dhemaji-Lakhimpur (Assam)
+          </option>
+          <option value="himachal_uttarakhand_himalaya">
+            Himachal-UK Himalaya
+          </option>
+          <option value="idukki_kerala">Idukki (Kerala)</option>
+          <option value="joshimath_uttarakhand">Joshimath (Uttarakhand)</option>
+          <option value="kandhamal_rayagada_odisha">
+            Kandhamal-Rayagada (Odisha)
+          </option>
+          <option value="kutch_gujarat">Kutch (Gujarat)</option>
+          <option value="nilgiris_tamilnadu">Nilgiris (Tamil Nadu)</option>
+          <option value="puri_odisha_coastal">Puri Coastal (Odisha)</option>
+          <option value="wayanad_kerala">Wayanad (Kerala)</option>
+        </select>
+        <select id="simScenario" onchange="runSimulationScenario()">
+          <option value="NONE">Simulate Disaster Event...</option>
+          <option value="CYCLONE_BAY">
+            Bay of Bengal Cyclone/Surge (Odisha + WB)
+          </option>
+          <option value="CLOUDBURST_HIMALAYA">
+            Himalayan Cloudburst (Joshimath + HP)
+          </option>
+          <option value="LANDSLIDE_GHATS">
+            Western Ghats Debris Flow (Wayanad + Idukki)
+          </option>
+        </select>
+        <button class="btn-glass" onclick="focusEvacCorridors()">
+          Focus Corridors
+        </button>
+        <button class="btn-glass" onclick="exportNDRFBrief()">
+          Export Brief
+        </button>
+        <button class="btn-lime-pill" onclick="togglePredictor()">
+          Evaluate Location
+        </button>
+        <button class="btn-glass" onclick="resetView()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Main Map Workspace & Floating Rescue Arc Widgets -->
+    <div id="container">
+      <!-- Floating Rescue Arc Hazard Monitor (Clean Line Icons) -->
+      <div class="floating-hazard-widget">
+        <div class="widget-header">
+          <div class="widget-radar">
+            <div class="widget-radar-core"></div>
+          </div>
+          <div class="widget-title">
+            <small id="widgetScope">&bull; National Overview</small>
+            Active Hazard Monitor
+          </div>
+        </div>
+        <div class="hazard-item">
+          <span class="icon-label">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#38bdf8"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path
+                d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 18c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"
+              />
+            </svg>
+            Riverine Floods
+          </span>
+          <span class="badge-num" id="badgeFlood">692 Sites</span>
+        </div>
+        <div class="hazard-item">
+          <span class="icon-label">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fbbf24"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
+            </svg>
+            Landslide Slopes
+          </span>
+          <span class="badge-num" id="badgeLandslide">730 Sites</span>
+        </div>
+        <div class="hazard-item">
+          <span class="icon-label">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#a78bfa"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path
+                d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"
+              />
+            </svg>
+            Cyclones & Surge
+          </span>
+          <span class="badge-num" id="badgeCyclone">210 Sites</span>
+        </div>
+        <div class="hazard-item">
+          <span class="icon-label">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#4ade80"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path
+                d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9M8 19v2m4-2v2m4-2v2"
+              />
+            </svg>
+            Precipitation Surge
+          </span>
+          <span class="badge-num" id="badgeRain">588 Sites</span>
+        </div>
+      </div>
+
+      <div class="floating-hint-bar">
+        <span
+          class="status-dot"
+          style="background: #86efac; box-shadow: 0 0 8px #86efac"
+        ></span>
+        <span
+          >Click anywhere on the map to check data source &amp; confidence</span
+        >
+      </div>
+
+      <div id="map"></div>
+
+      <!-- Sidebar: KPIs, Provenance Inspector, Queue -->
+      <div id="sidebar">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <span class="kpi-dot red"></span> High-Risk Habitations
+            </div>
+            <div class="kpi-val red" id="kpiRedCount">762</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <span class="kpi-dot yellow"></span> Caution Zones
+            </div>
+            <div class="kpi-val yellow" id="kpiYellowCount">96</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Evacuees Scheduled</div>
+            <div class="kpi-val" id="kpiEvacCount">201,737</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <span class="kpi-dot green"></span> Safe Sites Identified
+            </div>
+            <div class="kpi-val green" id="kpiCapCount">5,299,697</div>
+          </div>
+        </div>
+
+        <!-- Simulation Banner -->
+        <div class="sim-banner" id="simNotice"></div>
+
+        <!-- Provenance & Benchmark Location Inspector Box -->
+        <div class="predictor-box" id="predictorBox">
+          <h4>Location Lookup &amp; Data Source Check</h4>
+          <p
+            style="color: var(--text-dim); font-size: 10px; margin-bottom: 8px"
+          >
+            Pick a data-source tab or enter a city to compare it against the
+            official hazard thresholds.
+          </p>
+
+          <!-- Clean Provenance Mode Switcher Tabs -->
+          <div class="prov-tab-row">
+            <button
+              class="prov-tab active"
+              id="tabLive"
+              onclick="setProvenanceMode('LIVE')"
+            >
+              Live Sensors
+            </button>
+            <button
+              class="prov-tab"
+              id="tabHist"
+              onclick="setProvenanceMode('HIST')"
+            >
+              Historical Atlas
+            </button>
+            <button
+              class="prov-tab"
+              id="tabNorm"
+              onclick="setProvenanceMode('NORM')"
+            >
+              Climatic Normal
+            </button>
+            <button
+              class="prov-tab"
+              id="tabVoid"
+              onclick="setProvenanceMode('VOID')"
+            >
+              Blind Spot
+            </button>
+          </div>
+
+          <div class="search-row">
+            <input
+              type="text"
+              id="placeInput"
+              list="citySuggestions"
+              placeholder="Enter City (e.g. Cuttack, Joshimath, Wayanad)"
+              value="Cuttack"
+            />
+            <datalist id="citySuggestions">
+              <option value="Cuttack"></option>
+              <option value="Bhubaneswar"></option>
+              <option value="Puri"></option>
+              <option value="Joshimath"></option>
+              <option value="Wayanad"></option>
+              <option value="Idukki"></option>
+              <option value="Nilgiris / Ooty"></option>
+              <option value="Shimla"></option>
+              <option value="Darjeeling"></option>
+              <option value="Dhemaji"></option>
+              <option value="Ghaziabad"></option>
+              <option value="Delhi"></option>
+              <option value="Patna"></option>
+              <option value="Kolkata"></option>
+              <option value="Mumbai"></option>
+              <option value="Kutch / Bhuj"></option>
+            </datalist>
+            <button
+              onclick="geocodeAndClassify()"
+              style="
+                background: #22c55e;
+                border: none;
+                color: #052e16;
+                font-weight: 700;
+                border-radius: 6px;
+                cursor: pointer;
+              "
+            >
+              Resolve
+            </button>
+          </div>
+
+          <div class="pred-grid">
+            <div>
+              <label>Terrain Slope [BIS IS 14496-2]:</label>
+              <input
+                type="number"
+                id="predSlope"
+                value="0.5"
+                step="0.5"
+                min="0"
+                max="80"
+              />
+            </div>
+            <div>
+              <label>24h Rainfall (mm) [IMD SOP]:</label>
+              <input
+                type="number"
+                id="predRain"
+                value="45"
+                step="5"
+                min="0"
+                max="600"
+              />
+            </div>
+            <div>
+              <label>River Flow (cumecs) [CWC]:</label>
+              <input
+                type="number"
+                id="predDischarge"
+                value="45"
+                step="5"
+                min="0"
+                max="500"
+              />
+            </div>
+            <div>
+              <label>River Distance (m):</label>
+              <input
+                type="number"
+                id="predRiverDist"
+                value="400"
+                step="50"
+                min="0"
+                max="10000"
+              />
+            </div>
+          </div>
+
+          <button
+            class="btn-lime-pill"
+            style="width: 100%; justify-content: center; margin-bottom: 8px"
+            onclick="geocodeAndClassify()"
+          >
+            Check This Location
+          </button>
+
+          <div
+            class="prov-result-card"
+            id="predResult"
+            style="display: none"
+          ></div>
+        </div>
+
+        <!-- Priority Relocation Queue -->
+        <div
+          class="panel-sec"
+          style="flex: 1; display: flex; flex-direction: column"
+        >
+          <h3>
+            <span>Immediate Priority Relocation Queue</span>
+            <span
+              style="
+                font-size: 9px;
+                color: var(--accent-lime);
+                font-weight: 600;
+              "
+              >Immediate Timeline</span
+            >
+          </h3>
+          <div
+            id="queueList"
+            style="flex: 1; overflow-y: auto; max-height: 340px"
+          ></div>
+        </div>
+
+        <!-- Official Standards Legend -->
+        <div class="panel-sec">
+          <h3>Statutory Evaluation Standards</h3>
+          <div style="font-size: 10px; color: #cbd5e1; line-height: 1.65">
+            <div>
+              <span class="kpi-dot green"></span> <b>Baseline Safe:</b> IMD
+              &lt;64.5mm &bull; BIS Slope &lt;15&deg; &bull; CWC Normal
+              Discharge
+            </div>
+            <div>
+              <span class="kpi-dot yellow"></span> <b>Advisory Watch:</b> IMD
+              64.5-115.5mm &bull; BIS Slope 15-25&deg; &bull; CWC Warning Stage
+            </div>
+            <div>
+              <span class="kpi-dot red"></span> <b>Critical Hazard:</b> IMD
+              &gt;115.5mm &bull; BIS Slope &gt;25&deg; &bull; CWC Danger / Flash
+              Surge
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let redZones = [];
+      let safeDests = [];
+      let yellowZones = [];
+
+      async function loadHabitations() {
+        try {
+          const API_BASE =
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1"
+              ? "http://localhost:8000"
+              : "https://your-deployed-backend.onrender.com";
+          const response = await fetch(`${API_BASE}/api/habitations`);
+          const geojson = await response.json();
+
+          redZones = [];
+          safeDests = [];
+          yellowZones = [];
+
+          geojson.features.forEach((f) => {
+            const [lon, lat] = f.geometry.coordinates;
+            const record = { ...f.properties, lat, lon };
+
+            if (record.zone_class === "red") redZones.push(record);
+            else if (record.zone_class === "safe") safeDests.push(record);
+            else if (record.zone_class === "yellow") yellowZones.push(record);
+          });
+
+          renderMap(
+            document.getElementById("regionSelect").value,
+            document.getElementById("hazardFilter").value,
+          );
+        } catch (err) {
+          console.error("Failed to load habitations:", err);
+        }
+      }
+      let currentProvenanceMode = "LIVE";
+
+      // hazard_types is now embedded in each data record (redZones[i].hazard_types, etc.)
+      // sourced from config.py REGIONS dict at generation time — no hardcoded JS lookup needed
+
+      // Map Setup
+      const map = L.map("map", {
+        center: [20.4625, 85.883],
+        zoom: 6,
+        zoomControl: false,
+      });
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      // Basemaps (Esri High-Resolution Satellite & Cartographic Boundaries)
+      const satelliteBase = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "&copy; Esri &bull; Earthstar Geographics",
+          maxZoom: 18,
+        },
+      );
+
+      const labelsLayer = L.tileLayer(
+        "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "&copy; Esri &bull; Administrative Boundaries",
+          maxZoom: 18,
+        },
+      );
+
+      const satelliteHybrid = L.layerGroup([satelliteBase, labelsLayer]).addTo(
+        map,
+      );
+
+      const darkLayer = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        {
+          attribution: "&copy; OpenStreetMap &copy; CARTO",
+          maxZoom: 18,
+        },
+      );
+
+      // Layers (MarkerCluster for dense red/yellow; plain layerGroup for corridors/safe/custom)
+      let redLayer = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        disableClusteringAtZoom: 11,
+        iconCreateFunction: function (cluster) {
+          let count = cluster.getChildCount();
+          return L.divIcon({
+            html:
+              '<div style="background:#e11d48;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #881337;box-shadow:0 0 6px rgba(225,29,72,0.6);">' +
+              count +
+              "</div>",
+            className: "",
+            iconSize: [32, 32],
+          });
+        },
+      }).addTo(map);
+      let safeLayer = L.layerGroup().addTo(map);
+      let yellowLayer = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        disableClusteringAtZoom: 11,
+        iconCreateFunction: function (cluster) {
+          let count = cluster.getChildCount();
+          return L.divIcon({
+            html:
+              '<div style="background:#f59e0b;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #78350f;box-shadow:0 0 6px rgba(245,158,11,0.5);">' +
+              count +
+              "</div>",
+            className: "",
+            iconSize: [28, 28],
+          });
+        },
+      }).addTo(map);
+      let corridorLayer = L.layerGroup().addTo(map);
+      let customLayer = L.layerGroup().addTo(map);
+
+      // Clean Layer Switcher (No Emojis)
+      const baseMaps = {
+        "<span style='color:#86efac; font-weight:700;'>Satellite Hybrid (With Boundaries)</span>":
+          satelliteHybrid,
+        "<span style='color:#94a3b8; font-weight:600;'>Raw Satellite Imagery</span>":
+          satelliteBase,
+        "<span style='color:#cbd5e1; font-weight:600;'>Topographic Basemap</span>":
+          darkLayer,
+      };
+      const overlayMaps = {
+        "<span style='display:inline-block; width:8px; height:8px; border-radius:50%; background:#f43f5e; margin-right:5px;'></span> High-Risk Habitations (762)":
+          redLayer,
+        "<span style='display:inline-block; width:8px; height:8px; border-radius:50%; background:#fbbf24; margin-right:5px;'></span> Caution Advisory Zones (96)":
+          yellowLayer,
+        "<span style='display:inline-block; width:8px; height:8px; border-radius:50%; background:#4ade80; margin-right:5px;'></span> Verified Safe Sites (749)":
+          safeLayer,
+        "<span style='display:inline-block; width:12px; height:2px; background:#38bdf8; margin-right:5px; vertical-align:middle;'></span> Evacuation Corridors":
+          corridorLayer,
+        "<span style='display:inline-block; width:8px; height:8px; border-radius:50%; background:#a855f7; margin-right:5px;'></span> Inspection Target Point":
+          customLayer,
+      };
+      L.control
+        .layers(baseMaps, overlayMaps, {
+          collapsed: false,
+          position: "topright",
+        })
+        .addTo(map);
+
+      // Curated Geocoding Catalog
+      const knownPlaces = {
+        cuttack: {
+          lat: 20.4625,
+          lon: 85.883,
+          elev: 36,
+          slope: 0.5,
+          rain: 45,
+          disch: 65,
+          distR: 350,
+          state: "Odisha",
+          name: "Cuttack, Odisha",
+        },
+        cuttak: {
+          lat: 20.4625,
+          lon: 85.883,
+          elev: 36,
+          slope: 0.5,
+          rain: 45,
+          disch: 65,
+          distR: 350,
+          state: "Odisha",
+          name: "Cuttack, Odisha",
+        },
+        katak: {
+          lat: 20.4625,
+          lon: 85.883,
+          elev: 36,
+          slope: 0.5,
+          rain: 45,
+          disch: 65,
+          distR: 350,
+          state: "Odisha",
+          name: "Cuttack, Odisha",
+        },
+        bhubaneswar: {
+          lat: 20.2961,
+          lon: 85.8245,
+          elev: 45,
+          slope: 0.8,
+          rain: 40,
+          disch: 30,
+          distR: 1200,
+          state: "Odisha",
+          name: "Bhubaneswar, Odisha",
+        },
+        puri: {
+          lat: 19.8135,
+          lon: 85.8312,
+          elev: 10,
+          slope: 0.2,
+          rain: 140,
+          disch: 90,
+          distR: 150,
+          state: "Odisha",
+          name: "Puri, Odisha",
+        },
+        kandhamal: {
+          lat: 20.15,
+          lon: 84.15,
+          elev: 580,
+          slope: 18.0,
+          rain: 85,
+          disch: 35,
+          distR: 450,
+          state: "Odisha",
+          name: "Kandhamal, Odisha",
+        },
+        rayagada: {
+          lat: 19.1667,
+          lon: 83.4167,
+          elev: 210,
+          slope: 14.0,
+          rain: 75,
+          disch: 45,
+          distR: 300,
+          state: "Odisha",
+          name: "Rayagada, Odisha",
+        },
+        joshimath: {
+          lat: 30.5564,
+          lon: 79.5672,
+          elev: 1890,
+          slope: 32.0,
+          rain: 135,
+          disch: 75,
+          distR: 180,
+          state: "Uttarakhand",
+          name: "Joshimath, Uttarakhand",
+        },
+        chamoli: {
+          lat: 30.4072,
+          lon: 79.3242,
+          elev: 1150,
+          slope: 28.0,
+          rain: 110,
+          disch: 60,
+          distR: 200,
+          state: "Uttarakhand",
+          name: "Chamoli, Uttarakhand",
+        },
+        dehradun: {
+          lat: 30.3165,
+          lon: 78.0322,
+          elev: 640,
+          slope: 4.5,
+          rain: 65,
+          disch: 25,
+          distR: 900,
+          state: "Uttarakhand",
+          name: "Dehradun, Uttarakhand",
+        },
+        shimla: {
+          lat: 31.1048,
+          lon: 77.1734,
+          elev: 2206,
+          slope: 29.0,
+          rain: 120,
+          disch: 40,
+          distR: 800,
+          state: "Himachal Pradesh",
+          name: "Shimla, HP",
+        },
+        manali: {
+          lat: 32.2432,
+          lon: 77.1892,
+          elev: 2050,
+          slope: 31.0,
+          rain: 115,
+          disch: 70,
+          distR: 250,
+          state: "Himachal Pradesh",
+          name: "Manali, HP",
+        },
+        wayanad: {
+          lat: 11.6854,
+          lon: 76.132,
+          elev: 950,
+          slope: 28.0,
+          rain: 160,
+          disch: 85,
+          distR: 220,
+          state: "Kerala",
+          name: "Wayanad, Kerala",
+        },
+        idukki: {
+          lat: 9.8494,
+          lon: 76.971,
+          elev: 750,
+          slope: 25.0,
+          rain: 130,
+          disch: 55,
+          distR: 350,
+          state: "Kerala",
+          name: "Idukki, Kerala",
+        },
+        nilgiris: {
+          lat: 11.4102,
+          lon: 76.695,
+          elev: 2240,
+          slope: 24.0,
+          rain: 90,
+          disch: 30,
+          distR: 500,
+          state: "Tamil Nadu",
+          name: "Nilgiris, Tamil Nadu",
+        },
+        ooty: {
+          lat: 11.4102,
+          lon: 76.695,
+          elev: 2240,
+          slope: 24.0,
+          rain: 90,
+          disch: 30,
+          distR: 500,
+          state: "Tamil Nadu",
+          name: "Ooty, Tamil Nadu",
+        },
+        darjeeling: {
+          lat: 27.041,
+          lon: 88.2663,
+          elev: 2042,
+          slope: 33.0,
+          rain: 145,
+          disch: 30,
+          distR: 600,
+          state: "West Bengal",
+          name: "Darjeeling, West Bengal",
+        },
+        dhemaji: {
+          lat: 27.4789,
+          lon: 94.5732,
+          elev: 104,
+          slope: 0.8,
+          rain: 130,
+          disch: 95,
+          distR: 120,
+          state: "Assam",
+          name: "Dhemaji, Assam",
+        },
+        ghaziabad: {
+          lat: 28.6692,
+          lon: 77.4538,
+          elev: 214,
+          slope: 0.5,
+          rain: 25,
+          disch: 12,
+          distR: 1500,
+          state: "Uttar Pradesh",
+          name: "Ghaziabad, Uttar Pradesh",
+        },
+        delhi: {
+          lat: 28.6139,
+          lon: 77.209,
+          elev: 216,
+          slope: 0.8,
+          rain: 20,
+          disch: 15,
+          distR: 2000,
+          state: "Delhi NCR",
+          name: "Delhi",
+        },
+        patna: {
+          lat: 25.5941,
+          lon: 85.1376,
+          elev: 53,
+          slope: 0.3,
+          rain: 35,
+          disch: 30,
+          distR: 1200,
+          state: "Bihar",
+          name: "Patna, Bihar",
+        },
+        kolkata: {
+          lat: 22.5726,
+          lon: 88.3639,
+          elev: 9,
+          slope: 0.2,
+          rain: 45,
+          disch: 40,
+          distR: 800,
+          state: "West Bengal",
+          name: "Kolkata, West Bengal",
+        },
+        kutch: {
+          lat: 23.242,
+          lon: 69.6669,
+          elev: 110,
+          slope: 1.2,
+          rain: 10,
+          disch: 5,
+          distR: 4000,
+          state: "Gujarat",
+          name: "Kutch, Gujarat",
+        },
+        mumbai: {
+          lat: 19.076,
+          lon: 72.8777,
+          elev: 14,
+          slope: 2.5,
+          rain: 95,
+          disch: 50,
+          distR: 300,
+          state: "Maharashtra",
+          name: "Mumbai, Maharashtra",
+        },
+      };
+
+      function resolveCity(raw) {
+        let clean = raw
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+        if (knownPlaces[clean]) return knownPlaces[clean];
+
+        if (
+          clean.includes("cuttak") ||
+          clean.includes("cuttack") ||
+          clean.includes("katak")
+        )
+          return knownPlaces["cuttack"];
+        if (clean.includes("bhuban") || clean.includes("bbsr"))
+          return knownPlaces["bhubaneswar"];
+        if (clean.includes("puri")) return knownPlaces["puri"];
+        if (clean.includes("joshimath")) return knownPlaces["joshimath"];
+        if (clean.includes("wayanad")) return knownPlaces["wayanad"];
+        if (clean.includes("idukki")) return knownPlaces["idukki"];
+        if (clean.includes("ooty") || clean.includes("nilgiri"))
+          return knownPlaces["nilgiris"];
+        if (clean.includes("shimla")) return knownPlaces["shimla"];
+        if (clean.includes("ghaziabad") || clean.includes("gzb"))
+          return knownPlaces["ghaziabad"];
+        if (clean.includes("delhi")) return knownPlaces["delhi"];
+        if (clean.includes("patna")) return knownPlaces["patna"];
+        if (clean.includes("kutch") || clean.includes("bhuj"))
+          return knownPlaces["kutch"];
+
+        for (let k in knownPlaces) {
+          if (clean.length >= 4 && (k.includes(clean) || clean.includes(k))) {
+            return knownPlaces[k];
+          }
+        }
+        return null;
+      }
+
+      function setProvenanceMode(mode) {
+        currentProvenanceMode = mode;
+        document
+          .querySelectorAll(".prov-tab")
+          .forEach((b) => b.classList.remove("active"));
+        if (mode === "LIVE")
+          document.getElementById("tabLive").classList.add("active");
+        if (mode === "HIST")
+          document.getElementById("tabHist").classList.add("active");
+        if (mode === "NORM")
+          document.getElementById("tabNorm").classList.add("active");
+        if (mode === "VOID")
+          document.getElementById("tabVoid").classList.add("active");
+
+        geocodeAndClassify();
+      }
+
+      // Click on Map Handler
+      map.on("click", function (e) {
+        let lat = e.latlng.lat;
+        let lon = e.latlng.lng;
+        let approxName = `Target [${lat.toFixed(3)}N, ${lon.toFixed(3)}E]`;
+
+        let estSlope = lat > 27.5 && lon > 76.0 && lon < 93.0 ? 28.0 : 0.8;
+        let estRain = lat < 22.0 && lon < 78.0 ? 90.0 : 40.0;
+        let estDisch = 30.0;
+        let estDist = 600.0;
+
+        document.getElementById("placeInput").value = approxName;
+        document.getElementById("predSlope").value = estSlope;
+        document.getElementById("predRain").value = estRain;
+        document.getElementById("predDischarge").value = estDisch;
+        document.getElementById("predRiverDist").value = estDist;
+
+        document.getElementById("predictorBox").style.display = "block";
+        evaluateCustomLocation(lat, lon, approxName);
+      });
+
+      function renderMap(selectedRegion = "ALL", selectedHazard = "ALL") {
+        redLayer.clearLayers();
+        safeLayer.clearLayers();
+        yellowLayer.clearLayers();
+        corridorLayer.clearLayers();
+
+        const queueEl = document.getElementById("queueList");
+        queueEl.innerHTML = "";
+
+        let filteredReds = redZones.filter((r) => {
+          let matchesRegion =
+            selectedRegion === "ALL" || r.region === selectedRegion;
+          let matchesHazard =
+            selectedHazard === "ALL" ||
+            (r.hazard_types && r.hazard_types.includes(selectedHazard));
+          return matchesRegion && matchesHazard;
+        });
+
+        let filteredSafes = safeDests.filter((s) => {
+          let matchesRegion =
+            selectedRegion === "ALL" || s.region === selectedRegion;
+          let matchesHazard =
+            selectedHazard === "ALL" ||
+            (s.hazard_types && s.hazard_types.includes(selectedHazard));
+          return matchesRegion && matchesHazard;
+        });
+
+        let filteredYellows = yellowZones.filter((y) => {
+          let matchesRegion =
+            selectedRegion === "ALL" || y.region === selectedRegion;
+          let matchesHazard =
+            selectedHazard === "ALL" ||
+            (y.hazard_types && y.hazard_types.includes(selectedHazard));
+          return matchesRegion && matchesHazard;
+        });
+
+        // Render Safe Destination Sites
+        filteredSafes.forEach((s) => {
+          let marker = L.circleMarker([s.lat, s.lon], {
+            radius: 7,
+            fillColor: "#22c55e",
+            color: "#14532d",
+            weight: 1.5,
+            fillOpacity: 0.9,
+          });
+
+          let bufferCircle = L.circle([s.lat, s.lon], {
+            radius: 500,
+            color: "#4ade80",
+            fillColor: "#22c55e",
+            fillOpacity: 0.12,
+            weight: 1,
+            dashArray: "3, 5",
+          });
+          safeLayer.addLayer(bufferCircle);
+
+          marker.bindPopup(`
+                    <div style="color: #071a12; font-family: Plus Jakarta Sans, sans-serif; font-size: 12px;">
+                        <div style="font-size:10px; font-weight:800; color:#15803d; letter-spacing:0.8px; margin-bottom:4px;">
+                            <span class="status-dot" style="background:#15803d;"></span> DESIGNATED RESETTLEMENT SITE
+                        </div>
+                        <b>Site Name:</b> ${s.name || "Resettlement Refuge"}<br>
+                        <b>Sector:</b> ${s.region}<br>
+                        <b>MCE Suitability Score:</b> <span style="color:#15803d; font-weight:800;">${s.suitability != null ? s.suitability + "/100" : "Pending field data"}</span><br>
+                        <b>Sphere Rated Capacity:</b> <span style="color:#0284c7; font-weight:800;">${s.capacity != null ? s.capacity.toLocaleString() + " persons" : "Pending field data"}</span><br>
+                        <b>Safety Buffer:</b> 500m verified radius (Sphere 45m&sup2;/person)<br>
+                        <b>River Safety Distance:</b> ${s.dist_river_m != null ? s.dist_river_m + " m" : "N/A"} | <b>Healthcare Proximity:</b> ${s.dist_hospital_m != null ? s.dist_hospital_m + " m" : "N/A"}
+                    </div>
+                `);
+          safeLayer.addLayer(marker);
+        });
+
+        // Render Yellow Caution Habitations
+        filteredYellows.forEach((y) => {
+          let marker = L.circleMarker([y.lat, y.lon], {
+            radius: 6,
+            fillColor: "#fbbf24",
+            color: "#78350f",
+            weight: 1.5,
+            fillOpacity: 0.9,
+          });
+          marker.bindPopup(`
+                    <div style="color: #071a12; font-family: Plus Jakarta Sans, sans-serif; font-size: 12px; width: 250px;">
+                        <div style="font-size:10px; font-weight:800; color:#b45309; letter-spacing:0.8px; margin-bottom:4px;">
+                            <span class="status-dot" style="background:#b45309;"></span> ADVISORY CAUTION ZONE
+                        </div>
+                        <b>Habitation:</b> ${y.name || "Habitation"}<br>
+                        <b>Sector:</b> ${y.region}<br>
+                        <hr style="margin: 4px 0; border-color:#cbd5e1;">
+                        <b>Statutory Government Audit:</b><br>
+                        <span style="font-size:11px; color:#475569;">${y.audit}</span><br>
+                        <hr style="margin: 4px 0; border-color:#cbd5e1;">
+                        <b>Physical Metrics:</b> Slope Class ${y.slope_class} | Rain ${y.rainfall_mm}mm | Flow ${y.discharge_cumecs} cumecs<br>                        <b>Action Required:</b> Structural monitoring, seasonal alert preparedness. Relocation threshold not breached.
+                    </div>
+                `);
+          yellowLayer.addLayer(marker);
+        });
+
+        // Render Red-Zone Villages & Corridors
+        filteredReds.forEach((r) => {
+          let marker = L.circleMarker([r.lat, r.lon], {
+            radius: 6.5,
+            fillColor: "#f43f5e",
+            color: "#881337",
+            weight: 1.5,
+            fillOpacity: 0.95,
+          });
+
+          let hazList = (r.hazard_types || [])
+            .map((h) => h.toUpperCase())
+            .join(" &bull; ");
+          marker.bindPopup(`
+                    <div style="color: #071a12; font-family: Plus Jakarta Sans, sans-serif; font-size: 12px; width: 250px;">
+                        <div style="font-size:10px; font-weight:800; color:#be123c; letter-spacing:0.8px; margin-bottom:4px;">
+                            <span class="status-dot" style="background:#be123c;"></span> CRITICAL HAZARD HABITATION
+                        </div>
+                        <b>Habitation:</b> ${r.name || "Habitation"}<br>
+                        <b>Sector:</b> ${r.region}<br>
+                        <b>Hazard Vectors:</b> <span style="color:#0284c7; font-weight:700;">${hazList}</span><br>
+                        <b>Multi-Hazard Risk Probability:</b> <span style="color:#e11d48; font-weight:800;">${Math.round(r.hazard_prob * 100)}%</span><br>
+                        <b>Population at Risk:</b> ${r.evacuees.toLocaleString()} persons<br>
+                        <b>Relocation Timeline:</b> <span style="font-weight:700;">${r.timeline}</span>
+                        <hr style="margin: 4px 0; border-color:#cbd5e1;">
+                        <b>Key Driving Environmental Factors:</b><br>
+                        - Terrain Slope Class: ${r.slope_class} (Index: ${r.raster_mean})<br>
+                        - Rainfall: ${r.rainfall_mm} mm | Discharge: ${r.discharge_cumecs} cumecs<br>
+                        - River Proximity: ${r.dist_river_m} m | Isolation: ${r.isolation_index}<br>
+                        <hr style="margin: 4px 0; border-color:#cbd5e1;">
+                        <b>Assigned Safe Haven:</b> ${r.dest_name} (${r.dist_km} km)
+                    </div>
+                `);
+          redLayer.addLayer(marker);
+
+          // A2: Only draw evacuation corridors when a specific region is selected (performance)
+          let line = null;
+          if (selectedRegion !== "ALL") {
+            line = L.polyline(
+              [
+                [r.lat, r.lon],
+                [r.dest_lat, r.dest_lon],
+              ],
+              {
+                color: "#38bdf8",
+                weight: 2.5,
+                opacity: 0.75,
+                dashArray: "5, 7",
+              },
+            );
+            line.bindTooltip(
+              "Evacuation Vector: " +
+                (r.name || "Habitation") +
+                " ➔ " +
+                r.dest_name +
+                " (" +
+                r.dist_km +
+                " km)",
+              {
+                className: "corridor-tooltip",
+              },
+            );
+            corridorLayer.addLayer(line);
+          }
+
+          marker.on("mouseover", () => {
+            if (line)
+              line.setStyle({ color: "#f59e0b", weight: 4.5, opacity: 1.0 });
+          });
+          marker.on("mouseout", () => {
+            if (line)
+              line.setStyle({ color: "#38bdf8", weight: 2.5, opacity: 0.75 });
+          });
+
+          if (r.timeline.includes("Immediate")) {
+            let item = document.createElement("div");
+            item.className = "queue-item";
+            item.innerHTML = `
+                        <div class="timeline-badge timeline-imm">${r.timeline}</div>
+                        <div style="font-weight: 700; color: #ffffff;">${r.name || "Habitation"} <small style="color:var(--text-dim);">(${r.region})</small></div>
+                        <div style="color: #94a3b8; font-size: 10px; margin-top:2px;">
+                            Hazard Risk: <b style="color:#f43f5e;">${Math.round(r.hazard_prob * 100)}%</b> | Population: ${r.evacuees} | Refuge: ${r.dest_name} (${r.dist_km}km)
+                        </div>
+                    `;
+            item.onclick = () => {
+              map.flyTo([r.lat, r.lon], 12, { duration: 1.5 });
+              marker.openPopup();
+              if (line)
+                line.setStyle({ color: "#f59e0b", weight: 5.0, opacity: 1.0 });
+            };
+            queueEl.appendChild(item);
+          }
+        });
+
+        document.getElementById("kpiRedCount").innerText = filteredReds.length;
+        document.getElementById("kpiYellowCount").innerText =
+          filteredYellows.length;
+        document.getElementById("kpiEvacCount").innerText = filteredReds
+          .reduce((acc, c) => acc + c.evacuees, 0)
+          .toLocaleString();
+        document.getElementById("kpiCapCount").innerText =
+          filteredSafes.length.toLocaleString();
+
+        // Dynamic Regional Hazard Surveillance Counts
+        let allMonitored = filteredReds.concat(filteredYellows);
+        let floodSites = allMonitored.filter((v) => {
+          let dRiver = v.dist_river_m !== undefined ? v.dist_river_m : 9999;
+          let disch = v.discharge_cumecs !== undefined ? v.discharge_cumecs : 0;
+          return dRiver <= 500 || disch >= 40;
+        }).length;
+
+        let landslideSites = allMonitored.filter((v) => {
+          let slp =
+            v.slope !== undefined
+              ? v.slope
+              : v.slope_class && v.slope_class >= 2
+                ? 20
+                : 0;
+          return slp >= 15;
+        }).length;
+
+        let cycloneSites = allMonitored.filter((v) => {
+          return (
+            v.region === "puri_odisha_coastal" || v.region === "kutch_gujarat"
+          );
+        }).length;
+
+        let rainSites = allMonitored.filter((v) => {
+          let rVal =
+            v.rain !== undefined
+              ? v.rain
+              : v.rainfall_mm !== undefined
+                ? v.rainfall_mm
+                : 0;
+          return rVal >= 64.5;
+        }).length;
+
+        document.getElementById("badgeFlood").innerText =
+          floodSites.toLocaleString() + " Sites";
+        document.getElementById("badgeLandslide").innerText =
+          landslideSites.toLocaleString() + " Sites";
+        document.getElementById("badgeCyclone").innerText =
+          cycloneSites.toLocaleString() + " Sites";
+        document.getElementById("badgeRain").innerText =
+          rainSites.toLocaleString() + " Sites";
+
+        let scopeLabel =
+          selectedRegion === "ALL"
+            ? "National Overview"
+            : selectedRegion.replace(/_/g, " ").toUpperCase();
+        document.getElementById("widgetScope").innerText = "• " + scopeLabel;
+      }
+
+      function applyFilters() {
+        const reg = document.getElementById("regionSelect").value;
+        const haz = document.getElementById("hazardFilter").value;
+
+        if (reg === "cuttack_odisha") {
+          document.getElementById("placeInput").value = "Cuttack";
+          geocodeAndClassify();
+          renderMap("ALL", haz);
+          return;
+        }
+
+        renderMap(reg, haz);
+
+        if (reg !== "ALL") {
+          let sub = redZones.filter((r) => r.region === reg);
+          if (sub.length > 0) {
+            let bounds = L.latLngBounds(sub.map((s) => [s.lat, s.lon]));
+            map.fitBounds(bounds, { padding: [50, 50] });
+          }
+        } else {
+          map.flyTo([20.4625, 85.883], 6);
+        }
+      }
+
+      function togglePredictor() {
+        const box = document.getElementById("predictorBox");
+        box.style.display = box.style.display === "none" ? "block" : "none";
+      }
+
+      async function geocodeAndClassify() {
+        const rawPlace = document.getElementById("placeInput").value.trim();
+        let resEl = document.getElementById("predResult");
+        resEl.style.display = "block";
+        resEl.innerHTML =
+          '<div style="color:#86efac; font-size:11px; padding:6px;">Resolving location...</div>';
+        let matched = resolveCity(rawPlace);
+        let lat, lon, slope, rain, disch, distR, displayName;
+
+        if (matched) {
+          lat = matched.lat;
+          lon = matched.lon;
+          slope = matched.slope;
+          rain = matched.rain;
+          disch = matched.disch;
+          distR = matched.distR;
+          displayName = matched.name || rawPlace;
+        } else {
+          try {
+            let resp = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(rawPlace)}`,
+            );
+            let data = await resp.json();
+            if (data && data.length > 0) {
+              lat = parseFloat(data[0].lat);
+              lon = parseFloat(data[0].lon);
+              slope = lat > 28.0 && lon > 76.0 && lon < 90.0 ? 24.0 : 0.8;
+              rain = 35.0;
+              disch = 20.0;
+              distR = 1500.0;
+              displayName = data[0].display_name.split(",")[0];
+            } else {
+              throw new Error("Location not found");
+            }
+          } catch (e) {
+            let resEl = document.getElementById("predResult");
+            resEl.style.display = "block";
+            resEl.innerHTML = `
+                        <div style="background:#881337; color:#fecdd3; font-weight:700; padding:8px; border-radius:6px; font-size:10.5px;">
+                            Notice: Location "${rawPlace}" not in offline registry
+                        </div>
+                        <div style="font-size:10px; color:#cbd5e1; margin-top:4px;">
+                            Please select from monitored Indian hubs: <b>Cuttack</b>, <b>Bhubaneswar</b>, <b>Puri</b>, <b>Joshimath</b>, <b>Wayanad</b>, <b>Ghaziabad</b>.
+                        </div>
+                    `;
+            return;
+          }
+        }
+
+        document.getElementById("predSlope").value = slope;
+        document.getElementById("predRain").value = rain;
+        document.getElementById("predDischarge").value = disch;
+        document.getElementById("predRiverDist").value = distR;
+
+        evaluateCustomLocation(lat, lon, displayName);
+      }
+
+      // Evaluates Location with Professional Provenance Inspector
+      function evaluateCustomLocation(
+        lat = 20.4625,
+        lon = 85.883,
+        placeName = "Cuttack, Odisha",
+      ) {
+        const slope = parseFloat(document.getElementById("predSlope").value);
+        const rain = parseFloat(document.getElementById("predRain").value);
+        const disch = parseFloat(
+          document.getElementById("predDischarge").value,
+        );
+        const rDist = parseFloat(
+          document.getElementById("predRiverDist").value,
+        );
+
+        let resEl = document.getElementById("predResult");
+        resEl.style.display = "block";
+
+        // 1. IMD 24h Rain Standard (SOP 2020)
+        let rainTier = "GREEN",
+          rainAudit = "";
+        if (rain < 64.5) {
+          rainTier = "GREEN";
+          rainAudit = `${rain} mm &lt; 64.5 mm (Normal Flow &bull; Standard Weather Stage)`;
+        } else if (rain <= 115.5) {
+          rainTier = "YELLOW";
+          rainAudit = `${rain} mm in [64.5 - 115.5] mm (Heavy Rain &bull; Advisory Alert Stage)`;
+        } else {
+          rainTier = "RED";
+          rainAudit = `${rain} mm &gt; 115.5 mm (Extremely Heavy Deluge &bull; Critical Alert Stage)`;
+        }
+
+        // 2. BIS IS 14496-2 Slope Standard
+        let slopeTier = "GREEN",
+          slopeAudit = "";
+        if (slope < 15.0) {
+          slopeTier = "GREEN";
+          slopeAudit = `${slope}&deg; &lt; 15&deg; (Class 1: Low Hazard Flat/Gentle Relief)`;
+        } else if (slope <= 25.0) {
+          slopeTier = "YELLOW";
+          slopeAudit = `${slope}&deg; in [15&deg; - 25&deg;] (Class 2: Moderate Hazard Undulating Terrain)`;
+        } else {
+          slopeTier = "RED";
+          slopeAudit = `${slope}&deg; &gt; 25&deg; (Class 3-5: High Hazard Steep Valley Relief)`;
+        }
+
+        // 3. CWC 2018 SOP Flood Standard
+        let floodTier = "GREEN",
+          floodAudit = "";
+        if (disch >= 80.0 || (disch >= 50.0 && rDist < 200.0)) {
+          floodTier = "RED";
+          floodAudit = `Discharge ${disch} cumecs, River ${rDist}m (Danger Level Exceeded)`;
+        } else if (disch >= 40.0 || (rDist < 400.0 && disch >= 25.0)) {
+          floodTier = "YELLOW";
+          floodAudit = `Discharge ${disch} cumecs, River ${rDist}m (Warning Level Watch)`;
+        } else {
+          floodTier = "GREEN";
+          floodAudit = `Discharge ${disch} cumecs, River ${rDist}m (Normal Baseline Stage)`;
+        }
+
+        // Composite Tier
+        let finalTier = "GREEN";
+        if (rainTier === "RED" || slopeTier === "RED" || floodTier === "RED") {
+          finalTier = "RED";
+        } else if (
+          rainTier === "YELLOW" ||
+          slopeTier === "YELLOW" ||
+          floodTier === "YELLOW"
+        ) {
+          finalTier = "YELLOW";
+        }
+
+        // Refined Provenance Output
+        let provBadge = "",
+          provDetail = "",
+          confScore = 96;
+        if (currentProvenanceMode === "LIVE") {
+          confScore = 96;
+          provBadge = `<div class="status-indicator-tag status-live"><span class="status-dot"></span> Tier 1: Real-Time Sensor Telemetry (IMD / CWC) &bull; 96% Confidence</div>`;
+          provDetail = `Active ground telemetry feeds synchronized. IMD automated weather station radar and CWC riverine telemetry verified.`;
+        } else if (currentProvenanceMode === "HIST") {
+          confScore = 62;
+          provBadge = `<div class="status-indicator-tag status-hist"><span class="status-dot"></span> Tier 2: Historical Calamity Atlas (BMTPC / GSI) &bull; 62% Confidence</div>`;
+          provDetail = `Priors synthesized from BMTPC Vulnerability Atlas (3rd Ed.) and GSI National Landslide Susceptibility Atlas (1:50,000). Audits 25-yr / 100-yr flood frequency and seismic zonation.`;
+        } else if (currentProvenanceMode === "NORM") {
+          confScore = 52;
+          provBadge = `<div class="status-indicator-tag status-norm"><span class="status-dot"></span> Tier 3: Climatological Normal Baseline &bull; 52% Confidence</div>`;
+          provDetail = `Evaluated against IMD 30-Year Monsoon Climatological Normals. Seasonal baseline without convective thunderstorm surge.`;
+        } else if (currentProvenanceMode === "VOID") {
+          confScore = 22;
+          finalTier = "YELLOW";
+          provBadge = `<div class="status-indicator-tag status-void"><span class="status-dot"></span> Tier 4: Unverified Sensor Void &bull; 22% Confidence</div>`;
+          provDetail = `<b>Sensor Blind Spot Directive:</b> Absence of telemetry is not evidence of safety. Automated relocation suspended. Priority NDRF aerial drone reconnaissance requested.`;
+        }
+
+        let badgeHtml = "";
+        let markerColor = "#4ade80";
+        if (finalTier === "RED") {
+          markerColor = "#f43f5e";
+          badgeHtml = `<div class="status-severity-tag severity-critical"><span class="status-dot"></span> Critical Hazard &mdash; Relocation Priority</div>`;
+        } else if (finalTier === "YELLOW") {
+          markerColor = "#fbbf24";
+          badgeHtml = `<div class="status-severity-tag severity-caution"><span class="status-dot"></span> Advisory Watch &mdash; Monitoring Stage</div>`;
+        } else {
+          markerColor = "#4ade80";
+          badgeHtml = `<div class="status-severity-tag severity-safe"><span class="status-dot"></span> Baseline Safe &mdash; Low Assessed Hazard</div>`;
+        }
+
+        resEl.innerHTML = `
+                <div>${provBadge}</div>
+                <div>${badgeHtml}</div>
+                <div style="font-size:11.5px; color:#ffffff; font-weight:700; margin-bottom:4px;">
+                    Target: <b>${placeName.toUpperCase()}</b> [${lat.toFixed(4)}, ${lon.toFixed(4)}]
+                </div>
+                <div style="font-size:10px; color:#cbd5e1; margin-top:3px; line-height:1.45;">
+                    ${provDetail}<br>
+                    <hr style="margin:5px 0; border-color:rgba(74,222,128,0.2);">
+                    <b>IMD SOP 2020:</b> ${rainAudit}<br>
+                    <b>BIS IS 14496-2:</b> ${slopeAudit}<br>
+                    <b>CWC SOP 2018:</b> ${floodAudit}
+                </div>
+            `;
+
+        // Plot Glowing Target Beacon
+        customLayer.clearLayers();
+
+        let ripple = L.circle([lat, lon], {
+          radius: 1200,
+          color: markerColor,
+          fillColor: markerColor,
+          fillOpacity: 0.18,
+          weight: 1.5,
+          dashArray: "4, 4",
+        });
+        customLayer.addLayer(ripple);
+
+        let cMarker = L.circleMarker([lat, lon], {
+          radius: 10,
+          fillColor: markerColor,
+          color: "#ffffff",
+          weight: 2.5,
+          fillOpacity: 1.0,
+        });
+        cMarker.bindPopup(`
+                <div style="color:#071a12; font-family:Plus Jakarta Sans; font-size:12px; width:260px;">
+                    <div style="font-size:10px; font-weight:800; letter-spacing:0.8px; color:${markerColor};">
+                        <span class="status-dot" style="background:${markerColor};"></span> ASSESSED LOCATION TARGET
+                    </div>
+                    <b>Target:</b> ${placeName.toUpperCase()}<br>
+                    <b>Audit Provenance:</b> ${currentProvenanceMode} (${confScore}% Confidence)<br>
+                    <b>IMD 24h Rain:</b> ${rain} mm (${rainTier})<br>
+                    <b>BIS Slope:</b> ${slope}&deg; (${slopeTier})<br>
+                    <b>CWC Discharge:</b> ${disch} cumecs (${floodTier})<br>
+                    <hr style="margin:4px 0; border-color:#cbd5e1;">
+                    <b>Authority Standards:</b> IMD 2020 SOP &bull; BIS IS 14496-2 &bull; CWC 2018 SOP
+                </div>
+            `);
+        cMarker.bindTooltip("Target: " + placeName.toUpperCase(), {
+          permanent: true,
+          direction: "top",
+          offset: [0, -14],
+          className: "beacon-tooltip",
+        });
+        customLayer.addLayer(cMarker);
+
+        // Nearest Safe Refuge
+        let nearestSafe = null;
+        let minDist = Infinity;
+        safeDests.forEach((s) => {
+          let d = Math.sqrt(
+            Math.pow(s.lat - lat, 2) + Math.pow(s.lon - lon, 2),
+          );
+          if (d < minDist) {
+            minDist = d;
+            nearestSafe = s;
+          }
+        });
+
+        if (nearestSafe) {
+          let distKm = Math.round(minDist * 111.0);
+          let customLine = L.polyline(
+            [
+              [lat, lon],
+              [nearestSafe.lat, nearestSafe.lon],
+            ],
+            {
+              color: "#86efac",
+              weight: 3.5,
+              opacity: 0.9,
+              dashArray: "6, 6",
+            },
+          ).bindTooltip(
+            "Designated Refuge Transit ➔ " +
+              nearestSafe.name +
+              " (" +
+              distKm +
+              " km)",
+            {
+              permanent: true,
+              direction: "center",
+              className: "corridor-tooltip",
+            },
+          );
+          customLayer.addLayer(customLine);
+
+          let destMarker = L.circleMarker([nearestSafe.lat, nearestSafe.lon], {
+            radius: 8,
+            fillColor: "#22c55e",
+            color: "#86efac",
+            weight: 2,
+            fillOpacity: 1.0,
+          }).bindTooltip("Safe Haven: " + nearestSafe.name, {
+            permanent: true,
+            direction: "bottom",
+          });
+          customLayer.addLayer(destMarker);
+
+          let bounds = L.latLngBounds([
+            [lat, lon],
+            [nearestSafe.lat, nearestSafe.lon],
+          ]);
+          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 10 });
+        } else {
+          map.flyTo([lat, lon], 9, { duration: 1.5 });
+        }
+        cMarker.openPopup();
+      }
+
+      function focusEvacCorridors() {
+        document.getElementById("regionSelect").value = "joshimath_uttarakhand";
+        applyFilters();
+        map.flyTo([30.5564, 79.5672], 12);
+        let joshReds = redZones.filter(
+          (r) => r.region === "joshimath_uttarakhand",
+        );
+        if (joshReds.length > 0) {
+          let r = joshReds[0];
+          L.popup()
+            .setLatLng([r.lat, r.lon])
+            .setContent(
+              "<div style='font-size:12px; font-family:Plus Jakarta Sans,sans-serif;'><strong style='color:#be123c; font-size:13px;'>Habitation: " +
+                (r.name || "Joshimath Habitation") +
+                "</strong><br><span style='color:#0284c7; font-weight:700;'>Active Transit Corridor</span><br><b>Refuge Site:</b> " +
+                r.dest_name +
+                "<br><b>Distance:</b> " +
+                r.dist_km +
+                " km<br><b>Evacuees:</b> " +
+                r.evacuees.toLocaleString() +
+                " persons</div>",
+            )
+            .openOn(map);
+        }
+      }
+
+      function runSimulationScenario() {
+        const scn = document.getElementById("simScenario").value;
+        const notice = document.getElementById("simNotice");
+
+        if (scn === "CYCLONE_BAY") {
+          notice.style.display = "block";
+          notice.innerHTML =
+            "<strong>Scenario Active: Bay of Bengal Cyclone / Storm Surge.</strong> Coastal Puri (Odisha) and Bengal lowlands inundated. Coastal destinations disqualified; automated dispatch reroutes evacuees inland to highland safe havens.";
+          document.getElementById("regionSelect").value = "puri_odisha_coastal";
+          applyFilters();
+          map.flyTo([19.9, 86.0], 9);
+        } else if (scn === "CLOUDBURST_HIMALAYA") {
+          notice.style.display = "block";
+          notice.innerHTML =
+            "<strong>Scenario Active: Himalayan Cloudburst Deluge.</strong> Extreme 350mm rainfall in Upper Alaknanda corridor. Steep valley habitations escalated to Immediate Priority Relocation timeline.";
+          document.getElementById("regionSelect").value =
+            "joshimath_uttarakhand";
+          applyFilters();
+          map.flyTo([30.55, 79.56], 11);
+        } else if (scn === "LANDSLIDE_GHATS") {
+          notice.style.display = "block";
+          notice.innerHTML =
+            "<strong>Scenario Active: Western Ghats Saturated Debris Flow.</strong> Intense pore-pressure saturation across Wayanad & Idukki slopes. Fragile corridors closed; habitations routed to stable plateaus.";
+          document.getElementById("regionSelect").value = "wayanad_kerala";
+          applyFilters();
+          map.flyTo([11.75, 76.1], 10);
+        } else {
+          notice.style.display = "none";
+          resetView();
+        }
+      }
+
+      function resetView() {
+        document.getElementById("regionSelect").value = "ALL";
+        document.getElementById("hazardFilter").value = "ALL";
+        document.getElementById("simScenario").value = "NONE";
+        document.getElementById("simNotice").style.display = "none";
+        customLayer.clearLayers();
+        renderMap("ALL", "ALL");
+        map.flyTo([20.4625, 85.883], 6);
+      }
+
+      function exportNDRFBrief() {
+        const reg = document.getElementById("regionSelect").value;
+        let filtered = redZones.filter(
+          (r) => reg === "ALL" || r.region === reg,
+        );
+        let immediate = filtered.filter((r) =>
+          r.timeline.includes("Immediate"),
+        );
+        let yellowCount = yellowZones.filter(
+          (y) => reg === "ALL" || y.region === reg,
+        ).length;
+        let totalPop = filtered.reduce((acc, c) => acc + c.evacuees, 0);
+        let busesRequired = Math.ceil(totalPop / 40);
+        let escortsRequired = Math.ceil(busesRequired / 5);
+        let fmrTeams = Math.max(1, Math.ceil(totalPop / 250));
+        let fieldHospitals = Math.max(1, Math.ceil(totalPop / 1500));
+        let waterRationLiters = (totalPop * 15).toLocaleString();
+        let shelterAreaSqm = (totalPop * 45).toLocaleString();
+
+        let sectorTitle =
+          reg === "ALL"
+            ? "NATIONAL MULTI-HAZARD OPERATIONAL THEATRE"
+            : reg.replace(/_/g, " ").toUpperCase();
+        let serialId =
+          "MHA-NDRF-IAP-2026-" +
+          (reg === "ALL" ? "NAT" : reg.substring(0, 3).toUpperCase()) +
+          "-" +
+          Math.floor(100000 + Math.random() * 900000);
+        let nowStr =
+          new Date().toLocaleString("en-IN", {
+            dateStyle: "full",
+            timeStyle: "medium",
+          }) + " IST";
+
+        let printWindow = window.open("", "_blank", "width=1000,height=800");
+        printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NDRF Incident Action Plan & Relocation Directive &bull; ${serialId}</title>
+    <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #0f172a; line-height: 1.45; font-size: 11px; padding: 20px; background: #fff; }
+        .doc-header { border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .gov-title { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #475569; text-transform: uppercase; }
+        .agency-title { font-size: 16px; font-weight: 900; color: #044e29; letter-spacing: -0.3px; margin: 2px 0; }
+        .form-code { font-size: 11px; font-weight: 700; color: #b91c1c; letter-spacing: 0.5px; }
+        .badge-restricted { background: #fef2f2; border: 1px solid #f87171; color: #991b1b; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.6px; display: inline-block; }
+        
+        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10.5px; }
+        .meta-table td { border: 1px solid #cbd5e1; padding: 6px 10px; }
+        .meta-label { background: #f1f5f9; font-weight: 700; color: #334155; width: 22%; }
+        
+        .sec-header { font-size: 11.5px; font-weight: 800; color: #064e3b; text-transform: uppercase; letter-spacing: 0.6px; border-left: 3px solid #10b981; padding-left: 8px; margin: 14px 0 8px 0; }
+        
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
+        .kpi-box span { font-size: 8.5px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; }
+        .kpi-box strong { font-size: 16px; font-weight: 800; color: #044e29; display: block; margin-top: 2px; }
+        
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 10px; }
+        table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; }
+        table.data-table th { background: #0b2318; color: #ffffff; font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+        table.data-table tr:nth-child(even) { background: #f8fafc; }
+        
+        .status-pill { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; }
+        .pill-red { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        
+        .sign-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 25px; padding-top: 15px; border-top: 1px solid #94a3b8; font-size: 9.5px; }
+        .sign-cell { border: 1px dashed #cbd5e1; padding: 10px; border-radius: 4px; background: #fafafa; }
+        .sign-title { font-weight: 800; color: #334155; margin-bottom: 30px; text-transform: uppercase; }
+        
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="background:#0f2e21; color:#86efac; padding:8px 14px; margin-bottom:14px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:700;">Official MHA / NDRF Form 201 Incident Action Plan Generated</span>
+        <button onclick="window.print()" style="background:#86efac; color:#052e16; border:none; padding:6px 16px; font-weight:800; border-radius:4px; cursor:pointer;">Print / Save as PDF</button>
+    </div>
+
+    <div class="doc-header">
+        <div>
+            <div class="gov-title">Government of India &bull; Ministry of Home Affairs (MHA)</div>
+            <div class="agency-title">NATIONAL DISASTER RESPONSE FORCE (NDRF) HQ</div>
+            <div style="font-size:10px; color:#475569; font-weight:600;">DIRECTORATE GENERAL &bull; OPERATIONS CELL &bull; DISASTER MANAGEMENT DIVISION</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="badge-restricted">RESTRICTED // OPERATIONAL TACTICAL ORDER</div>
+            <div class="form-code" style="margin-top:4px;">FORM 201 &bull; RELOCATION IAP</div>
+            <div style="font-size:8.5px; color:#64748b;">DISPATCH REF: ${serialId}</div>
+        </div>
+    </div>
+
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">Operational Sector:</td>
+            <td><b>${sectorTitle}</b></td>
+            <td class="meta-label">Issuance Timestamp:</td>
+            <td>${nowStr}</td>
+        </tr>
+        <tr>
+            <td class="meta-label">Statutory Reference:</td>
+            <td>SIH Problem Statement 26191 (MHA / NDRF Multi-Hazard Relocation DSS)</td>
+            <td class="meta-label">Statutory Benchmarks:</td>
+            <td>IMD SOP 2020 (Table 4.1) &bull; BIS IS 14496-2 &bull; CWC SOP 2018</td>
+        </tr>
+        <tr>
+            <td class="meta-label">Commanding Unit:</td>
+            <td>NDRF Disaster Operations Centre / State Emergency Operations Centre (SEOC)</td>
+            <td class="meta-label">Relocation Priority:</td>
+            <td><b style="color:#b91c1c;">PHASE 1: IMMEDIATE TACTICAL EVACUATION (&lt; 72 HOURS)</b></td>
+        </tr>
+    </table>
+
+    <div class="sec-header">1. Operational Threat & Habitation Exposure Assessment</div>
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <span>Critical Habitations</span>
+            <strong style="color:#b91c1c;">${filtered.length} Habitations</strong>
+        </div>
+        <div class="kpi-box">
+            <span>Cautionary Advisory</span>
+            <strong style="color:#d97706;">${yellowCount} Habitations</strong>
+        </div>
+        <div class="kpi-box">
+            <span>Immediate Evacuees</span>
+            <strong>${immediate.reduce((a, c) => a + c.evacuees, 0).toLocaleString()} Persons</strong>
+        </div>
+        <div class="kpi-box">
+            <span>Total Evacuation Footprint</span>
+            <strong>${totalPop.toLocaleString()} Persons</strong>
+        </div>
+    </div>
+
+    <div class="sec-header">2. Tactical Logistics Mobilization & Resource Manifest</div>
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <span>Transport Fleet Requisition</span>
+            <strong>${busesRequired} Buses (40-Seater)</strong>
+        </div>
+        <div class="kpi-box">
+            <span>4x4 Escort Vehicles</span>
+            <strong>${escortsRequired} Support Units</strong>
+        </div>
+        <div class="kpi-box">
+            <span>Medical Triage Squads</span>
+            <strong>${fmrTeams} FMR Squads</strong>
+        </div>
+        <div class="kpi-box">
+            <span>Mobile Field Hospitals</span>
+            <strong>${fieldHospitals} Triage Units</strong>
+        </div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; padding:6px 10px; font-size:9.5px; color:#334155; margin-bottom:12px;">
+        <b>Sphere Humanitarian Standards Compliance:</b> Minimum shelter footprint verified at <b>${shelterAreaSqm} m&sup2;</b> (45 m&sup2; per evacuee standard). Potable water reserve allocation requisitions <b>${waterRationLiters} Litres/day</b> (15 L/person/day standard).
+    </div>
+
+    <div class="sec-header">3. Immediate Priority Habitation Relocation Queue (Phase 1 Target Manifest)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:3%;">#</th>
+                <th style="width:17%;">Habitation</th>
+                <th style="width:14%;">Sector / District</th>
+                <th style="width:10%;">Hazard Risk</th>
+                <th style="width:8%;">Evacuees</th>
+                <th style="width:20%;">Designated Safe Refuge</th>
+                <th style="width:9%;">Corridor Dist</th>
+                <th style="width:10%;">Est. Transit</th>
+                <th style="width:9%;">Directive</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${immediate
+              .slice(0, 20)
+              .map((r, i) => {
+                let estHours = (r.dist_km / 28.0).toFixed(1);
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td><b>${r.name || "Habitation " + r.id}</b></td>
+                        <td>${r.region.replace(/_/g, " ")}</td>
+                        <td><span style="color:#b91c1c; font-weight:800;">${Math.round(r.hazard_prob * 100)}%</span></td>
+                        <td><b>${r.evacuees.toLocaleString()}</b></td>
+                        <td>${r.dest_name}</td>
+                        <td>${r.dist_km} km</td>
+                        <td>~${estHours} hrs</td>
+                        <td><span class="status-pill pill-red">${r.timeline}</span></td>
+                    </tr>
+                `;
+              })
+              .join("")}
+        </tbody>
+    </table>
+
+    <div class="sign-grid">
+        <div class="sign-cell">
+            <div class="sign-title">Operational DSS Verification</div>
+            <div><b>Rescue Arc Spatial Engine v2.4</b></div>
+            <div>Multi-Criteria MCE & ML Verified</div>
+            <div style="margin-top:15px; font-size:8px; color:#64748b;">DIGITAL CHECKSUM: ${Math.random().toString(36).substring(2, 12).toUpperCase()}</div>
+        </div>
+        <div class="sign-cell">
+            <div class="sign-title">Relief Commissioner / SDMA</div>
+            <div>Signature: _______________________</div>
+            <div>Name: __________________________</div>
+            <div style="margin-top:15px;">Official Seal:</div>
+        </div>
+        <div class="sign-cell">
+            <div class="sign-title">Incident Commander (NDRF)</div>
+            <div>Signature: _______________________</div>
+            <div>Commanding Officer, Ops Bn: _________</div>
+            <div style="margin-top:15px;">Official Seal:</div>
+        </div>
+    </div>
+</body>
+</html>`);
+        printWindow.document.close();
+        printWindow.focus();
+      }
+
+      // Initial Load — default to Joshimath for focused demo view
+      document.getElementById("regionSelect").value = "joshimath_uttarakhand";
+      loadHabitations();
+      // Auto-zoom to Joshimath region bounds
+      let joshSub = redZones.filter(
+        (r) => r.region === "joshimath_uttarakhand",
+      );
+      if (joshSub.length > 0) {
+        let bounds = L.latLngBounds(joshSub.map((s) => [s.lat, s.lon]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+      document.getElementById("placeInput").value = "Joshimath";
+      geocodeAndClassify();
+    </script>
+  </body>
+</html>

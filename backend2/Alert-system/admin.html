@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rescue Arc — Alert Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f4faf7;
+    --panel: #ffffff;
+    --border: #dcebe3;
+    --text: #102b21;
+    --muted: #60766c;
+    --accent: #087f5b;
+    --accent-dark: #056b4d;
+    --ok: #18794f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #f8fcfa 0%, #eef8f3 100%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 32px 18px;
+    display: flex;
+    justify-content: center;
+  }
+  main {
+    width: 100%;
+    max-width: 560px;
+    padding: 30px;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(30, 83, 61, 0.12);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #e7f1ec;
+  }
+  .brand img { width: 42px; height: 42px; border: 1px solid #b8e3ce; border-radius: 12px; }
+  .brand-name { color: var(--text); font-size: 17px; font-weight: 800; }
+  .brand-name span { color: var(--accent); }
+  .brand-caption { margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  header { margin: 26px 0 22px; }
+  header .tag {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  h1 { color: var(--text); font-size: 27px; letter-spacing: -0.03em; margin: 6px 0 6px; }
+  header p { color: var(--muted); font-size: 14px; margin: 0; }
+  section {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 3px 12px rgba(30, 83, 61, 0.05);
+  }
+  label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  select {
+    width: 100%;
+    background: #fbfdfc;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: #29483b;
+    padding: 11px 12px;
+    font-size: 15px;
+    margin-bottom: 18px;
+  }
+  select:focus { outline: 3px solid rgba(8,127,91,.14); outline-offset: 1px; border-color: var(--accent); }
+  button {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .result {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    display: none;
+    white-space: pre-wrap;
+  }
+  .result.show { display: block; }
+  .result.ok { background: #edf9f2; border: 1px solid #bce3cb; color: var(--ok); }
+  .result.err { background: #fff2f0; border: 1px solid #f0c6bf; color: #a83f32; }
+  .config {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 20px;
+    text-align: center;
+  }
+  .config code { color: #315746; }
+  @media (max-width: 560px) {
+    body { padding: 16px 12px; }
+    main { padding: 22px 18px; border-radius: 16px; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <div class="brand">
+    <img src="/logo.jpeg" alt="Rescue Arc logo">
+    <div>
+      <div class="brand-name">Rescue <span>Arc</span></div>
+      <div class="brand-caption">Hazard Red Zone Hub</div>
+    </div>
+  </div>
+
+  <header>
+    <div class="tag">RESCUE ARC — INTERNAL</div>
+    <h1>Alert reset</h1>
+    <p>Pick a region, reset it, let the poller send the real alert.</p>
+  </header>
+
+  <section>
+    <label for="regionSelect">Region</label>
+    <select id="regionSelect"><option>Loading…</option></select>
+    <button id="resetBtn">Reset alerts for this region</button>
+    <div id="resetResult" class="result"></div>
+  </section>
+
+  <div class="config">
+    Backend: <code id="apiBaseDisplay"></code>
+  </div>
+
+</main>
+
+<script>
+  // === Point this at your deployed/local backend ===
+  const API_BASE = "/api/backend";
+  document.getElementById("apiBaseDisplay").textContent = API_BASE;
+
+  const regionSelect = document.getElementById("regionSelect");
+  const resetBtn = document.getElementById("resetBtn");
+  const resetResult = document.getElementById("resetResult");
+
+  function showResult(ok, text) {
+    resetResult.textContent = text;
+    resetResult.className = "result show " + (ok ? "ok" : "err");
+  }
+
+  async function loadRegions() {
+    regionSelect.innerHTML = `<option>Loading…</option>`;
+    try {
+      const res = await fetch(`${API_BASE}/regions`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Request failed");
+      if (!data.length) {
+        regionSelect.innerHTML = `<option value="">No regions found</option>`;
+        return;
+      }
+      // NOTE: value uses display_name, assumed to match habitations.region text.
+      // If your regions.region_id is what actually matches, change r.display_name
+      // to r.region_id on the line below.
+      regionSelect.innerHTML = data
+        .map(r => `<option value="${r.region_id}">${r.display_name}</option>`)
+        .join("");
+    } catch (err) {
+      regionSelect.innerHTML = `<option value="">Failed to load</option>`;
+      showResult(false, `Couldn't load regions: ${err.message}`);
+    }
+  }
+
+  resetBtn.addEventListener("click", async () => {
+    const region = regionSelect.value;
+    if (!region) {
+      showResult(false, "Pick a region first.");
+      return;
+    }
+    resetBtn.disabled = true;
+    resetBtn.textContent = "Resetting…";
+    try {
+      const res = await fetch(`${API_BASE}/reset-region-alerts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Request failed");
+      showResult(true, `Reset ${data.reset_count} habitation(s) in ${data.region}. Watch for the real push within 5s.`);
+    } catch (err) {
+      showResult(false, `Failed: ${err.message}`);
+    } finally {
+      resetBtn.disabled = false;
+      resetBtn.textContent = "Reset alerts for this region";
+    }
+  });
+
+  loadRegions();
+</script>
+
+</body>
+</html>

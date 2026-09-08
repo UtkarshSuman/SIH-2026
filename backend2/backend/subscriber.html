@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rescue Arc — Hazard Alerts</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        max-width: 420px;
+        margin: 60px auto;
+        text-align: center;
+        padding: 24px;
+        background: #071a12;
+        color: #e5f5ec;
+        border-radius: 12px;
+      }
+      button {
+        font-size: 16px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        background: #4ade80;
+        color: #0b2318;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #3a4a42;
+        color: #9ab0a5;
+      }
+      select {
+        font-size: 15px;
+        padding: 8px;
+        margin-bottom: 16px;
+        width: 100%;
+        background: #0f2e21;
+        color: #e5f5ec;
+        border: 1px solid #4ade80;
+        border-radius: 6px;
+      }
+      #status {
+        margin-top: 16px;
+        font-size: 14px;
+        color: #86efac;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Rescue Arc — Hazard Alerts</h2>
+    <p>
+      Subscribe to get an instant alert if your area is flagged as a hazard
+      zone.
+    </p>
+
+    <p id="status">Detecting your region…</p>
+    <button id="subscribe" disabled>Subscribe to alerts</button>
+    <button id="retryLocationBtn" style="display: none">Retry location</button>
+
+    <div
+      style="margin-top: 24px; border-top: 1px solid #1f3d2c; padding-top: 20px"
+    >
+      <p style="font-size: 13px; color: #9ab0a5">
+        Or scan to subscribe instantly:
+      </p>
+      <img
+        src="http://127.0.0.1:8000/api/qr"
+        alt="Scan to subscribe instantly"
+        width="160"
+        height="160"
+      />
+    </div>
+
+<script>
+          // === PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console > Project Settings > General) ===
+          const firebaseConfig = {
+            apiKey: "AIzaSyCmfXDnyRHm8TD-Yi8dJdCgN72SS8hC_cI",
+            authDomain: "rescue-arc.firebaseapp.com",
+            projectId: "rescue-arc",
+            storageBucket: "rescue-arc.firebasestorage.app",
+            messagingSenderId: "524996615036",
+            appId: "1:524996615036:web:e43e7ba29046444705a2f9",
+          };
+          // === PASTE YOUR VAPID KEY HERE (from Project Settings > Cloud Messaging > Web Push certificates) ===
+          const VAPID_KEY =
+            "BNoRuvQsMJEOrzlmkOlhz75NS_ms9Sk-9L5MwXY0vyHWanoz7qIe4q2kwaHEfpraVqV6Kb2Z1fUzLKZWxINGNVE";
+
+          // === SET THIS TO WHERE YOUR BACKEND IS RUNNING ===
+          const BACKEND_URL = "http://127.0.0.1:8000";
+
+          firebase.initializeApp(firebaseConfig);
+          const messaging = firebase.messaging();
+          const statusEl = document.getElementById("status");
+          const btn = document.getElementById("subscribe");
+          const retryBtn = document.getElementById("retryLocationBtn");
+          let detectedRegion = null;
+          <!-- add below the retryLocationBtn, still inside <body> -->
+          
+          function detectRegion() {
+            statusEl.innerText = "Detecting your region…";
+            retryBtn.style.display = "none";
+            btn.disabled = true;
+
+            if (!navigator.geolocation) {
+              statusEl.innerText = "Location isn't supported on this device.";
+              retryBtn.style.display = "inline-block";
+              return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                  const res = await fetch(
+                    `${BACKEND_URL}/api/region-for-location?lat=${latitude}&lon=${longitude}`,
+                  );
+                  if (!res.ok) throw new Error("no match");
+                  const data = await res.json();
+                  detectedRegion = data.region;
+                  statusEl.innerText = `Region detected: ${detectedRegion}`;
+                  btn.disabled = false;
+                  if (isAutoMode) subscribeUser();
+                } catch (e) {
+                  detectedRegion = null;
+                  statusEl.innerText =
+                    "Your area isn't in our database yet — you can still subscribe for general alerts.";
+                  btn.disabled = false;
+                  if (isAutoMode) subscribeUser();
+                }
+              },
+              () => {
+                statusEl.innerText =
+                  "Location permission denied — enable it to subscribe.";
+                retryBtn.style.display = "inline-block";
+              },
+              { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+            );
+          }
+
+          retryBtn.addEventListener("click", detectRegion);
+          window.addEventListener("load", detectRegion);
+
+          // --- AFTER (replace the whole btn.onclick block with this) ---
+          async function subscribeUser() {
+            btn.disabled = true;
+            statusEl.innerText = "Requesting permission...";
+            try {
+              const permission = await Notification.requestPermission();
+              if (permission !== "granted") {
+                statusEl.innerText =
+                  "Permission denied. Enable notifications in browser settings.";
+                btn.disabled = false;
+                return;
+              }
+              const registration = await navigator.serviceWorker.register(
+                "/firebase-messaging-sw.js",
+              );
+              const token = await messaging.getToken({
+                vapidKey: VAPID_KEY,
+                serviceWorkerRegistration: registration,
+              });
+
+              const res = await fetch(`${BACKEND_URL}/api/register-device`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  token,
+                  region: detectedRegion || "unassigned",
+                }),
+              });
+              if (res.ok) {
+                statusEl.innerText = detectedRegion
+                  ? `Subscribed to alerts for ${detectedRegion}.`
+                  : "Subscribed — your area isn't matched to a region yet, but you'll get general alerts.";
+              } else {
+                statusEl.innerText =
+                  "Server error while registering. Check backend logs.";
+              }
+            } catch (err) {
+              statusEl.innerText = "Error: " + err.message;
+            }
+            btn.disabled = false;
+          }
+
+          btn.onclick = subscribeUser;
+
+          // auto-run on QR-driven visits, once region detection has resolved either way
+          const isAutoMode =
+            new URLSearchParams(window.location.search).get("auto") === "1";
+          // Foreground message handler (tab open and focused)
+          messaging.onMessage((payload) => {
+            statusEl.style.color = "#facc15";
+            statusEl.innerText = `${payload.notification?.title || "Alert"} — ${payload.notification?.body || ""}`;
+          });
+    </script>
+  </body>
+</html>

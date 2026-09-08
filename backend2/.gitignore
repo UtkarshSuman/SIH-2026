@@ -1,0 +1,29 @@
+# Secrets - CRITICAL
+.env
+**/firebase-service-account.json
+**/serviceAccountKey.json
+*.pem
+*.key
+
+# Python
+.venv/
+gis_env/
+__pycache__/
+*.pyc
+
+# Large data/archives
+DataSet/
+*.rar
+*.zip
+*.tif
+*.tif.aux.xml
+
+# Logs/junk
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.csv 
+*.sql 
+*.dump 
