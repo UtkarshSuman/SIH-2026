@@ -23,8 +23,8 @@ export const env = createEnv({
     ML_SERVICE_API_KEY: z.string().min(1).optional(),
   },
   client: {
-    NEXT_PUBLIC_APP_URL: z.string().url(),
-    NEXT_PUBLIC_APP_NAME: z.string().min(1),
+    NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
+    NEXT_PUBLIC_APP_NAME: z.string().min(1).default("Rescue Arc"),
     NEXT_PUBLIC_ML_SERVICE_URL: z.string().url().optional(),
   },
   runtimeEnv: {
