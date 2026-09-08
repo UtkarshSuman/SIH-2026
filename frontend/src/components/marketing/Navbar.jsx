@@ -272,6 +272,30 @@ export default function Navbar() {
             Login
           </Link>
 
+          {/* Hazard alert subscription */}
+          <Link
+            href="/subscribe"
+            className="
+              hidden
+              lg:inline-flex
+              rounded-xl
+              border
+              border-amber-300
+              bg-amber-50
+              px-3.5
+              py-2
+              text-xs
+              font-bold
+              text-amber-900
+              transition-all
+              duration-300
+              hover:border-amber-400
+              hover:bg-amber-100
+            "
+          >
+            Get Alerts
+          </Link>
+
           {/* Sign Up */}
           <Link
             href="/register"
@@ -333,6 +357,13 @@ export default function Navbar() {
             >
               Call NDMA Helpline 1078
             </a>
+            <Link
+              href="/subscribe"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600"
+            >
+              Subscribe to Hazard Alerts
+            </Link>
           </div>
         </div>
       )}

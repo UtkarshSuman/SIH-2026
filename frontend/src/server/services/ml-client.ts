@@ -6,9 +6,9 @@
 import { env } from "@/lib/env";
 
 export async function predict(modelName: string, input: Record<string, unknown>) {
-  const res = await fetch(`${env.ML_SERVICE_URL}/api/v1/predict`, {
+  const res = await fetch(`${env.ML_SERVICE_URL ?? "http://localhost:8000"}/api/v1/predict`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-API-Key": env.ML_SERVICE_API_KEY },
+    headers: { "Content-Type": "application/json", "X-API-Key": env.ML_SERVICE_API_KEY ?? "" },
     body: JSON.stringify({ modelName, input }),
     cache: "no-store",
   });

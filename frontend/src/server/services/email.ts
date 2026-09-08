@@ -12,6 +12,10 @@ import { env } from "@/lib/env";
 const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
 async function sendBrevoEmail(to: string, subject: string, html: string) {
+  if (!env.BREVO_API_KEY) {
+    console.warn("BREVO_API_KEY not configured — skipping email send");
+    return;
+  }
   const res = await fetch(BREVO_ENDPOINT, {
     method: "POST",
     headers: {
@@ -20,7 +24,7 @@ async function sendBrevoEmail(to: string, subject: string, html: string) {
       "api-key": env.BREVO_API_KEY,
     },
     body: JSON.stringify({
-      sender: { name: env.BREVO_SENDER_NAME, email: env.BREVO_SENDER_EMAIL },
+      sender: { name: env.BREVO_SENDER_NAME ?? "Rescue Arc", email: env.BREVO_SENDER_EMAIL ?? "noreply@example.com" },
       to: [{ email: to }],
       subject,
       htmlContent: html,

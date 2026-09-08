@@ -16,7 +16,7 @@ export default function DashboardPage() {
   return (
     <main className="w-screen h-screen overflow-hidden">
       <iframe
-        src="/gis-dashboard.html"
+        src="/dashboard.html"
         title="Rescue Arc GIS Dashboard"
         className="w-full h-full border-0"
       />

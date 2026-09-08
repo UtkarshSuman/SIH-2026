@@ -13,6 +13,10 @@ import { env } from "@/lib/env";
 const FAST2SMS_ENDPOINT = "https://www.fast2sms.com/dev/bulkV2";
 
 export async function sendAlertSms(phoneNumber: string, message: string) {
+  if (!env.FAST2SMS_API_KEY) {
+    console.warn("FAST2SMS_API_KEY not configured — skipping SMS send");
+    return;
+  }
   const res = await fetch(FAST2SMS_ENDPOINT, {
     method: "POST",
     headers: { authorization: env.FAST2SMS_API_KEY, "Content-Type": "application/json" },

@@ -333,7 +333,7 @@ export default function HomeSection() {
             {/* ACTION BUTTONS */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Link
-                href="/register"
+                href="/dashboard"
                 className="
                   inline-flex
                   h-13
@@ -352,12 +352,12 @@ export default function HomeSection() {
                   hover:-translate-y-0.5
                 "
               >
-                Assess Your Settlement
+                Assess Your Relocations
                 <ArrowIcon />
               </Link>
 
               <a
-                href="#authorities"
+                href="/dashboard"
                 className="
                   inline-flex
                   h-13
