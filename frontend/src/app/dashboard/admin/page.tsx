@@ -7,6 +7,13 @@
 
 import { trpc } from "@/components/dashboard/trpc-provider";
 
+type AdminUserRow = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+};
+
 export default function AdminDashboard() {
   const { data: users, isLoading } = trpc.user.listAll.useQuery();
 
@@ -25,9 +32,9 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {users?.map((u) => (
+            {users?.map((u: AdminUserRow) => (
               <tr key={u.id} className="border-b border-border/50">
-                <td className="py-2">{u.name}</td>
+                <td className="py-2">{u.name ?? "—"}</td>
                 <td className="py-2">{u.email}</td>
                 <td className="py-2">{u.role}</td>
               </tr>
