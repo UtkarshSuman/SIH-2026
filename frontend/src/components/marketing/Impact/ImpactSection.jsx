@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import ImpactStat from "./Impactstat";
+import ImpactStat from "./ImpactStat";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import FeatureCard from "./Featurecard";
-import HazardPreview from "./Hazardpreview";
+import FeatureCard from "./FeatureCard";
+import HazardPreview from "./HazardPreview";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (

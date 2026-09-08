@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import ProcessStep from "./Processstep";
+import ProcessStep from "./ProcessStep";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (
