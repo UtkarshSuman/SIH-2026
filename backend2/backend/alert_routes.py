@@ -68,6 +68,7 @@ def register_device(req: RegisterDeviceRequest):
 
 @router.get("/api/regions")
 def get_regions():
+    conn = None
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -76,7 +77,8 @@ def get_regions():
     except psycopg2.OperationalError as exc:
         print(f"DB connection failed in get_regions: {exc}")
         raise HTTPException(status_code=503, detail="Database is unavailable") from exc
-        if "conn" in locals():
+    finally:
+        if conn is not None:
             conn.close()
 
 @router.get("/api/qr")
