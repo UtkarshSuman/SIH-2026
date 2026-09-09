@@ -74,8 +74,8 @@ def get_regions():
         cur.execute("SELECT region_id, display_name FROM regions ORDER BY display_name")
         return [{"region_id": row[0], "display_name": row[1]} for row in cur.fetchall()]
     except psycopg2.OperationalError as exc:
+        print(f"DB connection failed in get_regions: {exc}")
         raise HTTPException(status_code=503, detail="Database is unavailable") from exc
-    finally:
         if "conn" in locals():
             conn.close()
 
@@ -102,6 +102,7 @@ def region_for_location(lat: float, lon: float):
         """, (lon, lat))
         result = cur.fetchone()
     except psycopg2.OperationalError as exc:
+        print(f"DB connection failed in region_for_location: {exc}")
         raise HTTPException(status_code=503, detail="Database is unavailable") from exc
     finally:
         if "conn" in locals():
