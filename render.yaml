@@ -5,6 +5,7 @@ services:
     rootDir: backend2/backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.7
@@ -14,5 +15,7 @@ services:
         sync: false
       - key: DB_URL
         sync: false
+      - key: DB_SSLMODE
+        value: require
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false

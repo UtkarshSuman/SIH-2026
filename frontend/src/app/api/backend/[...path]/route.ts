@@ -10,16 +10,27 @@ async function proxy(request: Request, context: RouteContext) {
   const headers = new Headers(request.headers);
   headers.delete("host");
 
-  const response = await fetch(target, {
-    method: request.method,
-    headers,
-    body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(target, {
+      method: request.method,
+      headers,
+      body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error("Backend proxy request failed", { target: target.toString(), error });
+    return Response.json({ error: "Backend service is unavailable" }, { status: 503 });
+  }
+
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
+  responseHeaders.delete("transfer-encoding");
 
   return new Response(response.body, {
     status: response.status,
-    headers: response.headers,
+    headers: responseHeaders,
   });
 }
 
