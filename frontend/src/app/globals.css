@@ -29,11 +29,47 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-padding-top: 80px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+}
+
+.leaflet-pane {
+  z-index: 400;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 500;
+}
+
+.rescue-leaflet-map {
+  position: relative;
+  z-index: 0;
+}
+
+.rescue-leaflet-map .leaflet-pane {
+  z-index: 400;
+}
+
+.rescue-leaflet-map .leaflet-top,
+.rescue-leaflet-map .leaflet-bottom {
+  z-index: 500;
+}
+
+.rescue-leaflet-map .leaflet-control {
+  z-index: 500;
+}
+
+.rescue-leaflet-map .leaflet-container {
+  z-index: 0;
 }

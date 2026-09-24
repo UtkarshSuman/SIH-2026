@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rescue Arc — RAG Knowledge Base Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0a0e11;
+      --bg-surface: #11171c;
+      --bg-card: #161e24;
+      --bg-card-hover: #1c262e;
+      --border: #222e36;
+      --border-accent: #2e414e;
+      --text-main: #f0f4f8;
+      --text-muted: #8c9ea9;
+      --text-dim: #5a6e7a;
+      
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.2);
+      --accent-cyan: #06b6d4;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-blue: #3b82f6;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.04) 0%, transparent 45%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Top Navigation Bar */
+    header.navbar {
+      background: rgba(17, 23, 28, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-shield {
+      width: 38px;
+      height: 38px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid var(--accent-emerald);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--accent-emerald-glow);
+    }
+
+    .brand-shield svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--accent-emerald);
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-rag {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--border-accent);
+    }
+
+    /* Main Container */
+    main.container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Configuration strip */
+    .config-strip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .config-inputs {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .config-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .config-field label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .config-field input {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .config-field input:focus {
+      border-color: var(--accent-emerald);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .status-dot.online {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    /* Dashboard Grid */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2col { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-cyan);
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .card-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      padding: 0 24px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active {
+      color: var(--accent-emerald);
+      border-bottom-color: var(--accent-emerald);
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border-accent);
+      border-radius: var(--radius-md);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(22, 30, 36, 0.4);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.04);
+    }
+
+    .dropzone-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .dropzone.dragover .dropzone-icon {
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-glow);
+    }
+
+    .dropzone p.main-text {
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .dropzone p.sub-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .file-preview {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+    }
+
+    .file-preview.active { display: flex; }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .file-name {
+      font-weight: 500;
+      color: var(--text-main);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-size {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .btn-remove-file {
+      background: none;
+      border: none;
+      color: var(--accent-rose);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 6px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .form-group label {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 10px 14px;
+      font-size: 13.5px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus { border-color: var(--accent-emerald); }
+
+    textarea.form-control {
+      min-height: 140px;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+
+    /* Action Buttons */
+    .btn-primary {
+      background: var(--accent-emerald);
+      color: #032014;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px var(--accent-emerald-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 4px 16px var(--accent-emerald-glow);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Alert / Result banner */
+    .alert-banner {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-banner.show { display: flex; }
+    .alert-banner.success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+    }
+    .alert-banner.error {
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fecdd3;
+    }
+
+    /* Documents Table */
+    .table-container {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      background: var(--bg-surface);
+    }
+
+    table.doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    table.doc-table th {
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table.doc-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    table.doc-table tr:last-child td { border-bottom: none; }
+    table.doc-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .badge-pill.file { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-pill.text { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-pill.sop { background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    /* Test Sandbox Area */
+    .sandbox-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .query-input-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+
+    .query-output {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-main);
+      min-height: 90px;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .quick-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chip:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <a href="/admin" class="nav-brand">
+      <div class="brand-shield">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Rescue Arc <span class="badge-rag">Knowledge Base</span></h1>
+        <p>RAG Document Ingestion & AI Knowledge Manager</p>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <a href="/admin" class="btn-nav">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Alert Admin
+      </a>
+      <a href="/dashboard/GIS_Dashboard.html" class="btn-nav" id="gisLink">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zm7-4v16m8-12v16"/></svg>
+        GIS Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- Configuration & Status Strip -->
+    <div class="config-strip">
+      <div class="config-inputs">
+        <div class="config-field">
+          <label for="apiBase">Backend:</label>
+          <input type="text" id="apiBase" style="width: 220px;" placeholder="http://127.0.0.1:8000">
+        </div>
+        <div class="config-field">
+          <label for="apiKey">API Key (X-API-Key):</label>
+          <input type="password" id="apiKey" style="width: 180px;" placeholder="dev-key">
+        </div>
+        <button class="btn-nav" id="btnSaveConfig">Save Settings</button>
+      </div>
+
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking status…</span>
+      </div>
+    </div>
+
+    <!-- 2-Column Section: Ingest (Left) & Test Sandbox (Right) -->
+    <div class="grid-2col">
+
+      <!-- Upload / Ingestion Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Ingest Documents
+            </div>
+            <div class="card-subtitle">Feed disaster SOPs, hazard manuals & relief guides into the RAG system</div>
+          </div>
+        </div>
+
+        <!-- Ingestion Mode Tabs -->
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tabBtnFile" onclick="switchTab('file')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+            File Upload (.pdf, .txt, .md)
+          </button>
+          <button class="tab-btn" id="tabBtnText" onclick="switchTab('text')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Direct Text / SOP
+          </button>
+        </div>
+
+        <div class="card-body">
+
+          <!-- Tab 1: File Upload -->
+          <div id="panelFile">
+            <div class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept=".pdf,.txt,.md" style="display:none;">
+              <div class="dropzone-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              </div>
+              <p class="main-text">Drag & drop your document here, or <span style="color:var(--accent-emerald);text-decoration:underline;">browse</span></p>
+              <p class="sub-text">Supported formats: PDF (.pdf), Plain Text (.txt), Markdown (.md)</p>
+            </div>
+
+            <div class="file-preview" id="filePreview">
+              <div class="file-info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+                <div>
+                  <div class="file-name" id="previewFileName">document.pdf</div>
+                  <div class="file-size" id="previewFileSize">120 KB</div>
+                </div>
+              </div>
+              <button class="btn-remove-file" id="btnRemoveFile">✕ Remove</button>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn-primary" id="btnUploadFile" style="width: 100%;" disabled>
+                <span>Upload & Chunk into Vector Store</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab 2: Direct Text Paste -->
+          <div id="panelText" style="display: none;">
+            <div class="form-group">
+              <label for="textTitle">Document Title</label>
+              <input type="text" id="textTitle" class="form-control" placeholder="e.g. Joshimath Flash Flood Evacuation Protocol 2024">
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label for="textCategory">Document Category</label>
+              <select id="textCategory" class="form-control">
+                <option value="sop">SOP / Emergency Protocol</option>
+                <option value="evacuation">Evacuation & Relocation Plan</option>
+                <option value="hazard_guidelines">Hazard Risk Guidelines</option>
+                <option value="technical_report">Technical Report / AHP Manual</option>
+                <option value="general">General Disaster Relief</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label for="textContent">Content / Text</label>
+              <textarea id="textContent" class="form-control" placeholder="Paste guidelines, instructions, or village-level protocols here…"></textarea>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn-primary" id="btnIngestText" style="width: 100%;">
+                <span>Ingest Text into Vector Store</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Notification / Result Banner -->
+          <div class="alert-banner" id="ingestAlert">
+            <span id="alertIcon">✓</span>
+            <div id="alertMessage">Document ingested successfully!</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick RAG Verification Sandbox -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              Test Knowledge Retrieval
+            </div>
+            <div class="card-subtitle">Ask questions to test if your uploaded documents are being retrieved</div>
+          </div>
+        </div>
+
+        <div class="card-body sandbox-box">
+          <div class="quick-chips">
+            <span class="chip" onclick="setQuery('What are the high-risk zones in Joshimath?')">Joshimath risk</span>
+            <span class="chip" onclick="setQuery('Explain how AHP weighting is calculated')">AHP weights</span>
+            <span class="chip" onclick="setQuery('What is the standard evacuation procedure for red zones?')">Evacuation SOP</span>
+          </div>
+
+          <div class="query-input-wrapper">
+            <input type="text" id="queryInput" class="form-control" placeholder="Ask anything to test the RAG model…">
+            <button class="btn-primary" id="btnAskQuery" style="padding: 10px 16px;">
+              <span>Ask</span>
+            </button>
+          </div>
+
+          <div style="font-size: 11.5px; color: var(--text-muted); display: flex; justify-content: space-between;">
+            <span>AI Response (Gemini 1.5 Flash + Supabase/Chroma Vector Store):</span>
+            <span id="streamStatus"></span>
+          </div>
+
+          <div class="query-output" id="queryOutput">Click one of the suggested prompts above or type a question to verify that your uploaded documents are indexed.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ingested Documents Table Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15zM8 7h6M8 11h8"/></svg>
+            Ingested Knowledge Library
+          </div>
+          <div class="card-subtitle">All knowledge documents and guidelines indexed for the AI Assistant</div>
+        </div>
+        <button class="btn-nav" id="btnRefreshDocs">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="card-body" style="padding: 0;">
+        <div class="table-container">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Document Title</th>
+                <th>Type</th>
+                <th>Chunks Indexed</th>
+                <th>Ingested At</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="docsTableBody">
+              <tr>
+                <td colspan="5" style="text-align:center; color:var(--text-muted); padding: 24px;">Loading indexed documents…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ── Configuration State ────────────────────────────────────────────────────
+    const defaultOrigin = (window.location.protocol.startsWith("http")) ? window.location.origin : "http://127.0.0.1:8000";
+    let apiBase = localStorage.getItem("rescue_arc_api_base") || defaultOrigin;
+    let apiKey = localStorage.getItem("rescue_arc_api_key") || "dev-secret-key-change-in-production";
+
+    const apiBaseInput = document.getElementById("apiBase");
+    const apiKeyInput = document.getElementById("apiKey");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    apiBaseInput.value = apiBase;
+    apiKeyInput.value = apiKey;
+
+    document.getElementById("btnSaveConfig").addEventListener("click", () => {
+      apiBase = apiBaseInput.value.trim().replace(/\/+$/, "");
+      apiKey = apiKeyInput.value.trim();
+      localStorage.setItem("rescue_arc_api_base", apiBase);
+      localStorage.setItem("rescue_arc_api_key", apiKey);
+      checkHealth();
+      loadDocuments();
+    });
+
+    // ── Health Check ─────────────────────────────────────────────────────────
+    async function checkHealth() {
+      statusDot.className = "status-dot";
+      statusText.textContent = "Connecting…";
+      try {
+        const res = await fetch(`${apiBase}/health`, { signal: AbortSignal.timeout(4000) });
+        const data = await res.json();
+        if (res.ok && data.status === "ok") {
+          statusDot.className = "status-dot online";
+          statusText.textContent = `Online • DB: ${data.database || "connected"}`;
+        } else {
+          statusDot.className = "status-dot";
+          statusText.textContent = "DB Warning: " + (data.error || "unavailable");
+        }
+      } catch (err) {
+        statusDot.className = "status-dot";
+        statusText.textContent = "Offline / Connection Failed";
+      }
+    }
+
+    // ── Tab Switching ────────────────────────────────────────────────────────
+    function switchTab(mode) {
+      const isFile = mode === 'file';
+      document.getElementById('tabBtnFile').className = `tab-btn ${isFile ? 'active' : ''}`;
+      document.getElementById('tabBtnText').className = `tab-btn ${!isFile ? 'active' : ''}`;
+      document.getElementById('panelFile').style.display = isFile ? 'block' : 'none';
+      document.getElementById('panelText').style.display = !isFile ? 'block' : 'none';
+    }
+
+    // ── File Upload Handling ─────────────────────────────────────────────────
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+    const previewFileName = document.getElementById('previewFileName');
+    const previewFileSize = document.getElementById('previewFileSize');
+    const btnRemoveFile = document.getElementById('btnRemoveFile');
+    const btnUploadFile = document.getElementById('btnUploadFile');
+
+    let selectedFile = null;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFileSelect(fileInput.files[0]);
+    });
+
+    function handleFileSelect(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'txt', 'md'].includes(ext)) {
+        showAlert(false, 'Unsupported file type. Please upload a .pdf, .txt, or .md file.');
+        return;
+      }
+      selectedFile = file;
+      previewFileName.textContent = file.name;
+      previewFileSize.textContent = (file.size / 1024 < 1024) 
+        ? `${(file.size / 1024).toFixed(1)} KB` 
+        : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      filePreview.classList.add('active');
+      btnUploadFile.disabled = false;
+    }
+
+    btnRemoveFile.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      filePreview.classList.remove('active');
+      btnUploadFile.disabled = true;
+    });
+
+    btnUploadFile.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      btnUploadFile.disabled = true;
+      btnUploadFile.innerHTML = `<span class="spinner"></span> <span>Chunking & Embedding…</span>`;
+      hideAlert();
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch(`${apiBase}/api/v1/rag/ingest-file`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) {
+          throw new Error(data.error || data.detail || 'Upload failed');
+        }
+        showAlert(true, `Success: Ingested "${data.title}" into vector store (${data.chunksCreated} semantic chunks created)`);
+        btnRemoveFile.click();
+        loadDocuments();
+      } catch (err) {
+        showAlert(false, `Ingestion failed: ${err.message}`);
+      } finally {
+        btnUploadFile.disabled = selectedFile === null;
+        btnUploadFile.innerHTML = `<span>Upload & Chunk into Vector Store</span>`;
+      }
+    });
+
+    // ── Direct Text Ingestion ────────────────────────────────────────────────
+    const btnIngestText = document.getElementById('btnIngestText');
+    btnIngestText.addEventListener('click', async () => {
+      const title = document.getElementById('textTitle').value.trim();
+      const sourceType = document.getElementById('textCategory').value;
+      const content = document.getElementById('textContent').value.trim();
+
+      if (!title) { showAlert(false, 'Please provide a document title.'); return; }
+      if (!content) { showAlert(false, 'Please enter some text or guidelines to ingest.'); return; }
+
+      btnIngestText.disabled = true;
+      btnIngestText.innerHTML = `<span class="spinner"></span> <span>Embedding chunks…</span>`;
+      hideAlert();
+
+      try {
+        const res = await fetch(`${apiBase}/api/v1/rag/ingest`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
+          body: JSON.stringify({ title, sourceType, content })
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) {
+          throw new Error(data.error || data.detail || 'Text ingestion failed');
+        }
+        showAlert(true, `Success: Ingested "${data.title}" (${data.chunksCreated} chunks indexed)`);
+        document.getElementById('textTitle').value = '';
+        document.getElementById('textContent').value = '';
+        loadDocuments();
+      } catch (err) {
+        showAlert(false, `Ingest error: ${err.message}`);
+      } finally {
+        btnIngestText.disabled = false;
+        btnIngestText.innerHTML = `<span>Ingest Text into Vector Store</span>`;
+      }
+    });
+
+    function showAlert(ok, text) {
+      const el = document.getElementById('ingestAlert');
+      el.className = `alert-banner show ${ok ? 'success' : 'error'}`;
+      document.getElementById('alertIcon').textContent = ok ? '✓' : '⚠';
+      document.getElementById('alertMessage').textContent = text;
+    }
+
+    function hideAlert() {
+      document.getElementById('ingestAlert').className = 'alert-banner';
+    }
+
+    // ── Document Library ─────────────────────────────────────────────────────
+    async function loadDocuments() {
+      const tbody = document.getElementById('docsTableBody');
+      try {
+        const res = await fetch(`${apiBase}/api/v1/rag/documents`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const docs = data.documents || [];
+
+        if (docs.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">
+                No custom documents uploaded yet. Upload a PDF or paste text above!
+              </td>
+            </tr>`;
+          return;
+        }
+
+        tbody.innerHTML = docs.map(d => {
+          const dateStr = d.ingestedAt ? new Date(d.ingestedAt).toLocaleString() : '—';
+          return `
+            <tr>
+              <td><strong>${escapeHtml(d.title)}</strong></td>
+              <td><span class="badge-pill ${escapeHtml(d.sourceType)}">${escapeHtml(d.sourceType)}</span></td>
+              <td><code>${d.chunkCount}</code> chunks</td>
+              <td style="color:var(--text-muted);">${dateStr}</td>
+              <td><span style="color:var(--accent-emerald); font-weight:600;">Indexed</span></td>
+            </tr>`;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; color:var(--accent-rose); padding: 20px;">
+              Failed to load documents: ${escapeHtml(err.message)}
+            </td>
+          </tr>`;
+      }
+    }
+
+    document.getElementById('btnRefreshDocs').addEventListener('click', loadDocuments);
+
+    // ── RAG Test Query Sandbox ───────────────────────────────────────────────
+    function setQuery(text) {
+      document.getElementById('queryInput').value = text;
+      document.getElementById('btnAskQuery').click();
+    }
+
+    const btnAskQuery = document.getElementById('btnAskQuery');
+    const queryInput = document.getElementById('queryInput');
+    const queryOutput = document.getElementById('queryOutput');
+    const streamStatus = document.getElementById('streamStatus');
+
+    btnAskQuery.addEventListener('click', async () => {
+      const question = queryInput.value.trim();
+      if (!question) return;
+
+      btnAskQuery.disabled = true;
+      streamStatus.textContent = 'Retrieving context & generating…';
+      queryOutput.textContent = '';
+
+      try {
+        const res = await fetch(`${apiBase}/api/v1/rag/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
+          body: JSON.stringify({ message: question })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new Error(errData.detail || `Server error (${res.status})`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          queryOutput.textContent = fullText;
+          queryOutput.scrollTop = queryOutput.scrollHeight;
+        }
+
+        streamStatus.textContent = 'Completed';
+      } catch (err) {
+        queryOutput.textContent = `Error during query: ${err.message}\nMake sure GEMINI_API_KEY is configured in your .env file.`;
+        streamStatus.textContent = 'Failed';
+      } finally {
+        btnAskQuery.disabled = false;
+      }
+    });
+
+    queryInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnAskQuery.click();
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Initialize on load
+    checkHealth();
+    loadDocuments();
+  </script>
+</body>
+</html>

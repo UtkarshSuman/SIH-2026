@@ -1,10 +1,6 @@
 /**
  * FEATURE: Fetches the current relocation plan from the backend - every
- * RED/YELLOW zone with its population and multi-site allocation. This
- * is what makes the pages dynamic: whenever the hazard pipeline updates
- * zone statuses (scheduled every 30 min, or via manual refresh on
- * /zones), the next time this hook runs it reflects the change
- * automatically - nothing hardcoded on the frontend anymore.
+ * RED/YELLOW zone with its population and multi-site allocation.
  */
 import { useEffect, useState } from "react";
 import { env } from "@/lib/env";
@@ -12,9 +8,12 @@ import { env } from "@/lib/env";
 export interface RelocationAllocation {
   siteId: string;
   siteName: string;
+  district?: string;
   distanceKm: number;
   capacity: number;
   contribution: number;
+  timeline?: string;
+  roadRouteCoordinates?: [number, number][];
 }
 
 export interface RelocationZonePlan {
@@ -29,6 +28,8 @@ export interface RelocationZonePlan {
   totalCapacityUsed: number;
   isFullyAccommodated: boolean;
   shortfall: number;
+  timeline?: string;
+  priorityScore?: number;
 }
 
 export function useRelocationPlan() {
@@ -37,11 +38,13 @@ export function useRelocationPlan() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${env.NEXT_PUBLIC_ML_SERVICE_URL}/api/v1/relocation/plan`)
+    // Query internal resilient API route
+    fetch("/api/v1/relocation/plan")
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setPlans(data.zones);
+        if (!cancelled && data.zones) setPlans(data.zones);
       })
+      .catch((err) => console.warn("Failed fetching relocation plan:", err))
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });

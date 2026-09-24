@@ -11,6 +11,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: false,
   transpilePackages: ["@sih/database", "@sih/types"],
+  allowedDevOrigins:["https://headlock-eligible-setting.ngrok-free.dev","https://omega-exponent-worsening.ngrok-free.dev"]
 };
 
 export default nextConfig;

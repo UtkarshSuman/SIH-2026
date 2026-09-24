@@ -1,176 +1,190 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-export function Footer() {
-  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      e.preventDefault();
-      el.scrollIntoView({ behavior: "smooth" });
-      window.history.pushState(null, "", `#${id}`);
-    }
-  };
-
+export default function Footer() {
   return (
-    <footer className="border-t border-emerald-200/80 bg-slate-900 text-slate-300 px-5 sm:px-8 lg:px-12 py-16 font-sans">
+    <footer className="border-t border-emerald-200/80 bg-slate-900 px-5 py-16 font-sans text-slate-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
+
+        {/* MAIN FOOTER */}
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
-          
-          {/* BRAND COLUMN */}
-          <div className="lg:col-span-2 space-y-4">
+
+          {/* BRAND */}
+          <div className="space-y-4 lg:col-span-2">
             <div className="flex items-center gap-3">
+
               <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-950 p-1">
                 <Image
                   src="/logo.jpeg"
                   alt="Rescue Arc Logo"
                   fill
-                  className="object-cover rounded-lg"
+                  className="rounded-lg object-cover"
                 />
               </div>
+
               <div className="flex flex-col">
                 <span className="text-lg font-extrabold text-white">
                   Rescue <span className="text-emerald-400">Arc</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-widest text-emerald-400/80 font-bold">
+
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400/80">
                   Hazard Red Zone Hub
                 </span>
               </div>
+
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              Geospatial hazard intelligence platform for intelligent red zone identification, carrying capacity assessment, and vulnerable habitation relocation — built for SIH Problem 26191.
+            <p className="max-w-sm text-xs leading-relaxed text-slate-400">
+              Geospatial hazard intelligence platform for intelligent red
+              zone identification, carrying capacity assessment, and
+              vulnerable habitation relocation.
             </p>
 
-            <div className="pt-2 text-xs text-amber-400 font-bold flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            <div className="flex items-center gap-2 pt-2 text-xs font-bold text-amber-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
               <span>National Disaster Helpline: 1078</span>
             </div>
           </div>
 
-          {/* QUICK LINKS */}
+          {/* PLATFORM */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">
               Platform
             </h4>
+
             <ul className="space-y-2.5 text-xs text-slate-400">
+
               <li>
-                <a
-                  href="#home"
-                  onClick={(e) => handleScroll(e, "home")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/"
+                  className="transition-colors hover:text-emerald-400"
                 >
-                  Home Overview
-                </a>
+                  Home
+                </Link>
               </li>
+
               <li>
-                <a
-                  href="#authorities"
-                  onClick={(e) => handleScroll(e, "authorities")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/features"
+                  className="transition-colors hover:text-emerald-400"
                 >
-                  NDMA Authorities
-                </a>
+                  Features
+                </Link>
               </li>
+
               <li>
-                <a
-                  href="#features"
-                  onClick={(e) => handleScroll(e, "features")}
-                  className="hover:text-emerald-400 transition-colors"
-                >
-                  Red Zone Intelligence
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#how-it-works"
-                  onClick={(e) => handleScroll(e, "how-it-works")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/how-it-works"
+                  className="transition-colors hover:text-emerald-400"
                 >
                   How It Works
-                </a>
+                </Link>
               </li>
+
+              <li>
+                <Link
+                  href="/relocation"
+                  className="transition-colors hover:text-emerald-400"
+                >
+                  Relocation
+                </Link>
+              </li>
+
             </ul>
           </div>
 
-          {/* AGENCY & COMMUNITY */}
+          {/* ORGANIZATION */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">
               Organization
             </h4>
+
             <ul className="space-y-2.5 text-xs text-slate-400">
+
               <li>
-                <a
-                  href="#about"
-                  onClick={(e) => handleScroll(e, "about")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/zones"
+                  className="transition-colors hover:text-emerald-400"
                 >
-                  About Platform
-                </a>
+                  Red Zone Map
+                </Link>
               </li>
+
               <li>
-                <a
-                  href="#impact"
-                  onClick={(e) => handleScroll(e, "impact")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/how-it-works"
+                  className="transition-colors hover:text-emerald-400"
                 >
-                  Operational Impact
-                </a>
+                  Operational Process
+                </Link>
               </li>
+
               <li>
-                <a
-                  href="#contact"
-                  onClick={(e) => handleScroll(e, "contact")}
-                  className="hover:text-emerald-400 transition-colors"
+                <Link
+                  href="/contact"
+                  className="transition-colors hover:text-emerald-400"
                 >
-                  Command Hotline
-                </a>
+                  Contact
+                </Link>
               </li>
+
               <li>
                 <Link
                   href="/dashboard"
-                  className="hover:text-emerald-400 transition-colors text-emerald-400 font-semibold"
+                  className="font-semibold text-emerald-400 transition-colors hover:text-emerald-300"
                 >
-                  Responder Dashboard &rarr;
+                  Responder Dashboard →
                 </Link>
               </li>
+
             </ul>
           </div>
 
-          {/* AUTH & ACTIONS */}
+          {/* ACCESS */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">
               Access
             </h4>
+
             <div className="space-y-3">
+
               <Link
                 href="/login"
-                className="block w-full text-center rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 px-4 py-2.5 text-xs font-semibold text-white transition-all"
+                className="block w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-center text-xs font-semibold text-white transition-all hover:bg-slate-700"
               >
                 Official Login
               </Link>
+
               <Link
                 href="/register"
-                className="block w-full text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-sm"
+                className="block w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-center text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
               >
                 Register Agency
               </Link>
+
             </div>
           </div>
 
         </div>
 
-        {/* BOTTOM COPYRIGHT */}
-        <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-          <p>© {new Date().getFullYear()} Rescue Arc • SIH Problem 26191 • Smart India Hackathon. All rights reserved.</p>
-          <div className="flex gap-6">
-             <span>Red Zone Classification</span>
-            <span>Carrying Capacity AI</span>
-            <span>Relocation Priority Engine</span>
+        {/* BOTTOM */}
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-6 text-[11px] text-slate-500 sm:flex-row">
+
+          <p>
+            © {new Date().getFullYear()} Rescue Arc • SIH Problem 26191 •
+            Smart India Hackathon. All rights reserved.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-6">
+            <span>Red Zone Classification</span>
+            <span>Carrying Capacity</span>
+            <span>Relocation Priority</span>
           </div>
+
         </div>
+
       </div>
     </footer>
   );

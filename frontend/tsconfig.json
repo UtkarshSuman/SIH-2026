@@ -28,7 +28,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "src/app/(marketing)/page.jsx", "src/components/marketing/Navbar.jsx"  ],
+    "**/*.mts",
+    "src/app/(marketing)/page.jsx",
+    "src/components/marketing/navbar.jsx"
+, "src/components/marketing/footer.jsx"  ],
   "exclude": ["node_modules"]
 }

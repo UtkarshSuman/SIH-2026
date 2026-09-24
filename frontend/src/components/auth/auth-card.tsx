@@ -12,7 +12,7 @@ import type { AuthMode } from "@sih/types";
 export function AuthCard({ initialMode }: { initialMode: AuthMode }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
-
+// 
   function switchMode(next: AuthMode) {
     setMode(next);
     const url = next === "register" ? "/login?mode=register" : "/login";

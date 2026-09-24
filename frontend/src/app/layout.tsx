@@ -1,11 +1,27 @@
-import type { Metadata } from "next";
+/**
+ * FEATURE: Root layout - wraps every page in the Providers client
+ * component (see providers.tsx) so `useSession()` works in any client
+ * component (e.g. a future header showing "Logged in as X").
+ * INSTALLATION: none.
+ *
+ * FUTURE RECOMMENDATION (Phase 4): this is also where the global RAG
+ * chat widget will be mounted once it's built.
+ */
+
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Rescue Arc — Hazard Red Zone Identification & Relocation Intelligence",
+  title:
+    "Rescue Arc — Hazard Red Zone Identification & Relocation Intelligence",
   description:
     "Intelligent identification of hazard-based red zones, carrying capacity assessment, and immediate relocation needs for vulnerable habitations. SIH Problem 26191.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -16,12 +32,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <script
-          src={`${process.env.NEXT_PUBLIC_CHATBOT_API_BASE}/widget.js`}
-          data-chatbot-id={process.env.NEXT_PUBLIC_CHATBOT_ID}
-          data-api-key={process.env.NEXT_PUBLIC_CHATBOT_API_KEY}
-          data-api-base={process.env.NEXT_PUBLIC_CHATBOT_API_BASE}
-        />
         <Providers>{children}</Providers>
       </body>
     </html>

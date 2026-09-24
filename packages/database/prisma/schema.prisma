@@ -1,15 +1,6 @@
 // ==========================================================
-// FEATURE: Phase 1 database schema - Auth, email verification,
-// and password reset.
-// INSTALLATION: none extra - Prisma CLI is already a devDependency
-// of @sih/database. After ANY change to this file, run:
-//   pnpm db:generate   (regenerates the typed Prisma client)
-//   pnpm db:push       (applies the change to your local Postgres)
-//
-// New in this update vs the original Phase 1:
-//   - User.emailVerified is now actively used (set on verify-email)
-//   - EmailVerificationToken: one-time link sent after signup
-//   - PasswordResetToken: one-time link sent from "forgot password"
+// RESCUE ARC DATABASE SCHEMA (PRISMA ORM)
+// Multi-Hazard Red Zone Prediction & Relocation DSS (SIH 26191)
 // ==========================================================
 
 generator client {
@@ -17,10 +8,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+// ==========================================================
+// USER & AUTHENTICATION MODELS (NextAuth.js & Role Management)
+// ==========================================================
 
 enum UserRole {
   CITIZEN
@@ -39,9 +34,9 @@ model User {
   role          UserRole  @default(CITIZEN)
   mobileNumber  String?
   location      String?
-  
-  accounts               Account[]
-  sessions               Session[]
+
+  accounts                Account[]
+  sessions                Session[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
 
@@ -51,8 +46,6 @@ model User {
   @@index([role])
 }
 
-// Required by the Auth.js Prisma adapter shape if/when OAuth providers
-// (Google/GitHub) are added later - unused by Credentials-only auth today.
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -80,12 +73,11 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ---- Email verification (sent via Resend right after signup) ----
 model EmailVerificationToken {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  expiresAt DateTime // 24h from creation - see lib/tokens.ts
+  expiresAt DateTime
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -93,16 +85,229 @@ model EmailVerificationToken {
   @@index([userId])
 }
 
-// ---- Password reset (sent via Resend from the "forgot password" form) ----
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  expiresAt DateTime // 1h from creation - shorter-lived than email verification
+  expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ==========================================================
+// DISASTER HAZARD & ML PREDICTION MODELS
+// ==========================================================
+
+enum HazardType {
+  FLOOD
+  LANDSLIDE
+  EROSION
+  CLOUDBURST
+}
+
+enum ZoneColor {
+  RED       // Critical Risk: Worst Hazard >= 0.70
+  YELLOW    // Moderate Risk: 0.40 <= Worst Hazard < 0.70
+  GREEN     // Safe: Worst Hazard < 0.40
+}
+
+enum PriorityTier {
+  IMMEDIATE    // Relocate within 24-48 Hours
+  SHORT_TERM   // Relocate within 7-14 Days
+  MEDIUM_TERM  // Planned relocation 30-60 Days
+  NONE         // Safe - No relocation required
+}
+
+enum DataQuality {
+  RAW       // Live telemetry directly from provider
+  IMPUTED   // Missing telemetry filled via ZoneHistory / baselines
+  STALE     // Reading exceeds 3-hour STALE_AFTER window
+}
+
+enum RelocationSiteStatus {
+  ACTIVE
+  PLANNED
+  FULL
+  MAINTENANCE
+}
+
+enum RouteStatus {
+  CLEAR
+  CONGESTED
+  BLOCKED
+  HAZARDOUS
+}
+
+/// A geographical zone or habitation monitored for multi-hazard risks.
+/// Stores pre-computed ML predictions for zero-latency website loading.
+model Zone {
+  id              String       @id @default(cuid())
+  zoneId          String       @unique // e.g. "Z-BIHAR-PATNA-01" or "Z-DYNAMIC-25.59-85.14"
+  name            String       // e.g. "Patna Central Corridor, Bihar"
+  state           String       // e.g. "Bihar"
+  district        String       // e.g. "Patna"
+  lat             Float
+  lng             Float
+  minLon          Float?
+  minLat          Float?
+  maxLon          Float?
+  maxLat          Float?
+  population      Int          @default(0)
+  householdCount  Int?
+  elevationM      Float?
+  slopeClass      String?      // e.g. "Gentle (0-5 deg)", "Steep (30+ deg)"
+  isRedZone       Boolean      @default(false)
+
+  // Pre-computed ML outputs for fast instant UI response without blocking
+  zoneColor       ZoneColor    @default(GREEN)
+  worstHazard     HazardType?
+  worstScore      Float        @default(0.0)
+  priority        PriorityTier @default(NONE)
+  priorityScore   Float        @default(0.0)
+
+  // Individual hazard scores (0.000 to 1.000)
+  floodScore      Float        @default(0.0)
+  landslideScore  Float        @default(0.0)
+  erosionScore    Float        @default(0.0)
+  cloudburstScore Float        @default(0.0)
+
+  lastAssessedAt  DateTime?    @default(now())
+  isStale         Boolean      @default(false)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  readings        HazardReading[]
+  history         HazardHistory[]
+  relocationPlans RelocationPlan[]
+
+  @@index([zoneColor])
+  @@index([priority])
+  @@index([district])
+  @@index([lastAssessedAt])
+}
+
+/// Raw & normalized telemetry readings captured per hazard for a zone.
+model HazardReading {
+  id             String      @id @default(cuid())
+  zoneId         String
+  hazardType     HazardType
+  source         String      // e.g. "weather+elevation+river_discharge"
+  recordedAt     DateTime    @default(now())
+  dataQuality    DataQuality @default(RAW)
+  
+  // Normalized physical parameters (rainfall, river level, slope, soil moisture, etc.)
+  parameters     Json
+  imputedFields  String[]    @default([])
+  droppedFields  String[]    @default([])
+
+  zone           Zone        @relation(fields: [zoneId], references: [zoneId], onDelete: Cascade)
+
+  @@index([zoneId, hazardType])
+  @@index([recordedAt])
+}
+
+/// Historical risk time-series for Advanced Analytics and trend forecasting.
+model HazardHistory {
+  id                String    @id @default(cuid())
+  zoneId            String
+  recordedAt        DateTime  @default(now())
+  
+  floodScore        Float
+  landslideScore    Float
+  erosionScore      Float
+  cloudburstScore   Float
+  worstScore        Float
+  zoneColor         ZoneColor
+
+  // Meteorological correlation snapshots
+  rainfallMm        Float?
+  riverLevelM       Float?
+  temperatureC      Float?
+  soilSaturationPct Float?
+
+  zone              Zone      @relation(fields: [zoneId], references: [zoneId], onDelete: Cascade)
+
+  @@index([zoneId, recordedAt])
+}
+
+// ==========================================================
+// RELOCATION & CARRYING CAPACITY MODELS (SPHERE STANDARD)
+// ==========================================================
+
+/// A verified safe relocation destination evaluated against Sphere Standards.
+/// Sphere Project Minimum Standard: 45 sqm total area per person in emergency settlements.
+model RelocationSite {
+  id                          String               @id @default(cuid())
+  siteCode                    String               @unique // e.g. "SITE-PATNA-SAFE-01"
+  name                        String               // e.g. "Danapur Elevated Relief Township"
+  district                    String
+  state                       String
+  lat                         Float
+  lng                         Float
+  
+  totalAreaSqm                Float                // Total land area in square meters
+  usableAreaSqm               Float                // Habitable buildable area
+  sphereStandardSqmPerPerson  Float                @default(45.0) // 45 m²/person
+  sphereCapacity              Int                  // Usable Area / 45
+  currentOccupancy            Int                  @default(0)
+  remainingCapacity           Int                  // sphereCapacity - currentOccupancy
+  
+  // Critical Infrastructure & Readiness
+  waterSourceType             String?              // e.g. "Borewell + Deep Filtration Plant"
+  roadConnectivityRating      Int                  @default(4) // 1 to 5 rating
+  hospitalDistanceKm          Float?
+  powerGridStatus             Boolean              @default(true)
+  status                      RelocationSiteStatus @default(ACTIVE)
+
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  allocations                 RelocationAllocation[]
+
+  @@index([district])
+  @@index([status])
+}
+
+/// An evacuation & resettlement action plan matching a red/yellow zone to safe sites.
+model RelocationPlan {
+  id                  String       @id @default(cuid())
+  zoneId              String
+  totalEvacuees       Int
+  timeline            String       // e.g. "24h - Immediate" or "Phase 1 - 48 Hours"
+  shortfall           Int          @default(0) // Unaccommodated population if any
+  isFullyAccommodated Boolean      @default(true)
+  priorityRank        Int          @default(1)
+  notes               String?
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  zone                Zone         @relation(fields: [zoneId], references: [zoneId], onDelete: Cascade)
+  allocations         RelocationAllocation[]
+
+  @@index([zoneId])
+}
+
+/// Individual allocation link connecting a red zone habitation to a relocation site
+/// including verified road route coordinates.
+model RelocationAllocation {
+  id                  String       @id @default(cuid())
+  planId              String
+  siteId              String
+  allocatedPopulation Int
+  distanceKm          Float
+  roadRouteCoordinates Json?       // Array of [lat, lng] road points from OSRM
+  routeStatus         RouteStatus  @default(CLEAR)
+  estimatedTransitHours Float?
+
+  plan                RelocationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  site                RelocationSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@index([siteId])
 }
