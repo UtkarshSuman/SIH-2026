@@ -21,6 +21,7 @@
     "@trpc/server": "^11.0.0-rc.688",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "firebase": "^12.19.0",
     "joblib": "^10.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.542.0",

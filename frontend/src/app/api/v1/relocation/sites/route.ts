@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getRecentRelocationSites } from "@/lib/data-service";
 
 export async function GET() {
-  const sites = await getRecentRelocationSites();
-  return NextResponse.json({ sites });
+  try {
+    return NextResponse.json({ sites: await getRecentRelocationSites() });
+  } catch (error) {
+    console.error("Failed to load relocation sites", error);
+    return NextResponse.json({ error: "Unable to load relocation sites from the database", sites: [] }, { status: 500 });
+  }
 }

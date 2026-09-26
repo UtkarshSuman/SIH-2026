@@ -66,31 +66,53 @@ export default function MapSection() {
   const [searchMessage, setSearchMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch dynamic zones from API/database
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/zones")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data) && data.length > 0) {
-          setZones(data);
-          // Default to highest risk zone
-          const highestRisk = [...data].sort((a, b) => b.worstScore - a.worstScore)[0];
-          setSelectedZone(highestRisk || data[0]);
-          setMapPosition([highestRisk.lat, highestRisk.lng]);
-        }
-      })
-      .catch((err) => {
-        console.warn("Failed to load dynamic zones:", err);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+  const [lastVersion, setLastVersion] = useState(0);
 
-    return () => {
-      cancelled = true;
-    };
+  // Fetch dynamic zones from API/database
+  const loadZones = async () => {
+    try {
+      const res = await fetch("/api/zones");
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setZones(data);
+        // If no selected zone or updating existing selected zone
+        setSelectedZone((prev) => {
+          if (!prev) {
+            const highestRisk = [...data].sort((a, b) => b.worstScore - a.worstScore)[0];
+            return highestRisk || data[0];
+          }
+          const updated = data.find((z) => z.zoneId === prev.zoneId);
+          return updated || prev;
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to load dynamic zones:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadZones();
   }, []);
+
+  // Real-time Auto-Update: Polls /api/version every 4s to detect new ML predictions
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/version");
+        const ver = await res.json();
+        if (ver?.version && ver.version !== lastVersion) {
+          setLastVersion(ver.version);
+          await loadZones();
+        }
+      } catch {
+        // quiet ignore
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [lastVersion]);
 
   const handleSearch = (event) => {
     event.preventDefault();

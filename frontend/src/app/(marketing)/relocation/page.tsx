@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import type { RelocationZonePlan } from "@/hooks/use-relocation-plan";
@@ -11,7 +11,7 @@ const RelocationRouteMap = dynamic(
   { ssr: false, loading: () => <div className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">Initializing GIS Map Layers...</div> }
 );
 
-export default function RelocationPage() {
+function RelocationContent() {
   const searchParams = useSearchParams();
   const initialZoneId = searchParams.get("zoneId") || "";
 
@@ -19,43 +19,66 @@ export default function RelocationPage() {
   const [sites, setSites] = useState<RelocationSiteData[]>([]);
   const [activeZoneId, setActiveZoneId] = useState<string>(initialZoneId);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [selectedSiteFilter, setSelectedSiteFilter] = useState<string>("ALL");
+  const [lastVersion, setLastVersion] = useState(0);
+
+  const loadData = async () => {
+    try {
+      const [plansRes, sitesRes] = await Promise.all([
+        fetch("/api/v1/relocation/plan"),
+        fetch("/api/v1/relocation/sites"),
+      ]);
+      const [plansData, sitesData] = await Promise.all([
+        plansRes.json().catch(() => null),
+        sitesRes.json().catch(() => null),
+      ]);
+
+      if (!plansRes.ok || !sitesRes.ok) {
+        throw new Error(plansData?.error || sitesData?.error || "Unable to load relocation data from the database");
+      }
+
+      if (plansData?.zones) {
+        setPlans(plansData.zones);
+        setActiveZoneId((prev) => {
+          if (prev) return prev;
+          if (initialZoneId) return initialZoneId;
+          return plansData.zones[0]?.zoneId || "";
+        });
+      }
+      if (sitesData?.sites) {
+        setSites(sitesData.sites);
+      }
+      setLoadError("");
+    } catch (err) {
+      console.warn("Failed loading relocation data:", err);
+      setLoadError(err instanceof Error ? err.message : "Unable to load relocation data from the database");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      try {
-        const [plansRes, sitesRes] = await Promise.all([
-          fetch("/api/v1/relocation/plan"),
-          fetch("/api/v1/relocation/sites"),
-        ]);
-        const plansData = await plansRes.json();
-        const sitesData = await sitesRes.json();
-
-        if (!cancelled) {
-          if (plansData?.zones) {
-            setPlans(plansData.zones);
-            if (!initialZoneId && plansData.zones.length > 0) {
-              setActiveZoneId(plansData.zones[0].zoneId);
-            }
-          }
-          if (sitesData?.sites) {
-            setSites(sitesData.sites);
-          }
-        }
-      } catch (err) {
-        console.warn("Failed loading relocation data:", err);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
     loadData();
-    return () => {
-      cancelled = true;
-    };
   }, [initialZoneId]);
+
+  // Real-time auto-update: poll /api/version every 4s
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/version");
+        const ver = await res.json();
+        if (ver?.version && ver.version !== lastVersion) {
+          setLastVersion(ver.version);
+          await loadData();
+        }
+      } catch {
+        // quiet ignore
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [lastVersion]);
 
   // Aggregate Metrics
   const metrics = useMemo(() => {
@@ -130,6 +153,10 @@ export default function RelocationPage() {
               ))}
             </div>
           </div>
+
+          {loadError && (
+            <p className="mt-4 text-sm font-medium text-red-700">{loadError}</p>
+          )}
 
           {/* Metric KPI Badges */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
@@ -459,5 +486,19 @@ export default function RelocationPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function RelocationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#fbfdfb] flex items-center justify-center text-slate-500 font-sans">
+          Loading Evacuation Corridors & Capacity...
+        </div>
+      }
+    >
+      <RelocationContent />
+    </Suspense>
   );
 }

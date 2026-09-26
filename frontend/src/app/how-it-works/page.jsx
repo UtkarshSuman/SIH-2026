@@ -1,6 +1,6 @@
-import Navbar from "@/components/marketing/Navbar";
+import Navbar from "@/components/marketing/navbar";
 import Footer from "@/components/marketing/footer";
-import HowItWorksSection from "../../components/marketing/HowItWorks/HowItWorkSection";
+import HowItWorksSection from "@/components/marketing/how-it-works/how-it-work-section";
 
 export default function HowItWorksPage() {
   return (

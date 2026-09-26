@@ -31,3 +31,38 @@ pypdf>=5.0.0
 # ── Vector Stores (ChromaDB local + Supabase pgvector) ────────────────────────
 langchain-chroma>=0.1.4
 chromadb>=0.5.0
+
+# RAG System — Python Dependencies (all free, no paid services)
+# Install with:
+#   pip install -r requirements_rag.txt
+
+# ── Google Gemini LLM (free tier: 15 req/min, 1M tokens/day) ─────────────────
+langchain-google-genai>=2.0.0
+google-generativeai>=0.8.0
+
+# ── Local ChromaDB vector store (SQLite-backed, no cloud needed) ─────────────
+langchain-chroma>=0.1.0
+chromadb>=0.5.0
+
+# ── Local HuggingFace embeddings (all-MiniLM-L6-v2, ~22MB, no API key) ───────
+langchain-huggingface>=0.1.0
+sentence-transformers>=3.3.0
+
+# ── LangChain core packages ───────────────────────────────────────────────────
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# ── PDF document ingestion ────────────────────────────────────────────────────
+pypdf>=4.0.0
+
+# ── Pydantic v2 settings (for app/core/config.py) ────────────────────────────
+pydantic-settings>=2.0.0
+
+# ── Database & server ────────────────────────────────────────────────────────
+psycopg2-binary>=2.9.0
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0

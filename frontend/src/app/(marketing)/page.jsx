@@ -1,5 +1,5 @@
-import Navbar from "@/components/marketing/Navbar";
-import HomeSection from "@/components/marketing/home/HomeSection";
+import Navbar from "@/components/marketing/navbar";
+import HomeSection from "@/components/marketing/home/home-section";
 import Footer from "@/components/marketing/footer";
 
 export default function MarketingPage() {

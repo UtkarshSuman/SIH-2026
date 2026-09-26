@@ -183,12 +183,28 @@ model Zone {
 
   readings        HazardReading[]
   history         HazardHistory[]
+  staticFields    StaticZoneField[]
   relocationPlans RelocationPlan[]
 
   @@index([zoneColor])
   @@index([priority])
   @@index([district])
   @@index([lastAssessedAt])
+}
+
+/// Slow-changing GIS attributes imported from source datasets.
+model StaticZoneField {
+  id         String   @id @default(cuid())
+  zoneId     String
+  fieldName  String
+  value      Float?
+  source     String
+  ingestedAt DateTime @default(now())
+
+  zone       Zone     @relation(fields: [zoneId], references: [zoneId], onDelete: Cascade)
+
+  @@unique([zoneId, fieldName])
+  @@index([zoneId])
 }
 
 /// Raw & normalized telemetry readings captured per hazard for a zone.
@@ -291,6 +307,7 @@ model RelocationPlan {
   allocations         RelocationAllocation[]
 
   @@index([zoneId])
+  @@unique([zoneId])
 }
 
 /// Individual allocation link connecting a red zone habitation to a relocation site

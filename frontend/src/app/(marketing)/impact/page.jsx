@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Navbar from "@/components/marketing/Navbar";
-import { Footer } from "@/components/marketing/footer";
+import Navbar from "@/components/marketing/navbar";
+import Footer from "@/components/marketing/footer";
 
 function ShieldCheckIcon({ size = 20 }) {
   return (

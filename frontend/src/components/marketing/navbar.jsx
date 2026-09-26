@@ -13,6 +13,7 @@ const navItems = [
   { label: "Features", href: "/features" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "Red Zone", href: "/redzone" },
+  { label: "🔔 Alerts", href: "/alerts" },
   { label: "About", href: "/about" },
 ];
 

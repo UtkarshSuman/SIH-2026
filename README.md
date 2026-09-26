@@ -1,5 +1,29 @@
 # SIH Project — Rescue Arc Setup & Architecture Guide
 
+> 📖 **Comprehensive Guides & Documentation**:
+> - 🚀 **[End-to-End Testing & Deployment Guide](./END_TO_END_DEPLOYMENT_AND_TESTING_GUIDE.md)**: Complete step-by-step procedure to run and test Frontend, Backend, ML pipeline, and deploy to Vercel, Render, and Supabase.
+> - 🔬 **[ML & Data Pipeline Insights Report](./INSIGHTS_README.md)**: Verification of live API fetching, Random Forest ML models, output schemas, and database architecture.
+
+## Live Data System
+
+Rescue Arc uses Supabase as the single operational database. The live worker
+fetches GIS provider data, normalizes and validates it, runs the hazard ML
+models, and publishes both the raw telemetry and the resulting zone/relocation
+view models to Supabase. The Next.js maps read only from those persisted
+records, so the Zones and Relocation pages show the same assessed state.
+
+```
+GIS providers -> gis_fetcher -> normalize/clean -> ML inference
+     -> Supabase (Zone, HazardReading, HazardHistory, Relocation*)
+     -> Next.js API routes -> zones map and relocation map
+```
+
+The former GIS SQLite databases are migration inputs only. Use the GIS
+worker's `migrate-sqlite` command once to import their retained readings into
+Supabase, then schedule `run-live` to refresh the registered zones. See
+`backend-main/backend/GIS-Scripts-FETCH-API-layer/hazard_platform/README.md`
+for required environment variables and commands.
+
 ## 🚀 Latest Updates: Single-Page Auto-Scroll Home Architecture & Light Green Design
 
 The home page (`/`) now integrates **all marketing sections on a single scrollable page** with working navbar auto-scroll links:

@@ -74,6 +74,47 @@ async def stream_rag_answer(question: str) -> AsyncIterator[str]:
         HumanMessage(content=question),
     ]
 
+    # Check if Gemini key is valid
+    has_valid_gemini = bool(
+        settings.gemini_api_key
+        and settings.gemini_api_key != "your-gemini-api-key-here"
+        and not settings.gemini_api_key.startswith("AIzaSyFake")
+    )
+
+    if not has_valid_gemini:
+        # Fallback without calling Google API: execute tools directly & stream answer
+        yield f"⚠️ *Note: GEMINI_API_KEY is not configured in backend .env. Operating in autonomous local RAG & DB Tool mode.*\n\n"
+        # Check if question asks about zones or habitations
+        tool_results = []
+        for t in AVAILABLE_TOOLS:
+            try:
+                # If specific tool matches question keywords
+                if t.name == "get_high_risk_habitations" and any(k in question.lower() for k in ["red", "high risk", "evacuate", "danger"]):
+                    tool_results.append(t.invoke({}))
+                elif t.name == "get_all_active_regions" and any(k in question.lower() for k in ["region", "cover", "monitored", "where"]):
+                    tool_results.append(t.invoke({}))
+                elif t.name == "get_zone_status":
+                    # Check for place names
+                    for place in ["joshimath", "wayanad", "darjeeling", "kalpetta", "chooralmala", "patna"]:
+                        if place in question.lower():
+                            tool_results.append(t.invoke({"zone_name": place}))
+            except Exception as e:
+                tool_results.append(f"Tool error: {e}")
+
+        if tool_results:
+            yield "### 📊 Live Database Query Results:\n"
+            for r in tool_results:
+                yield f"{r}\n\n"
+
+        if docs:
+            yield "### 📚 Retrieved Document Context:\n"
+            for d in docs[:2]:
+                yield f"• {d.page_content[:300]}...\n\n"
+
+        if not tool_results and not docs:
+            yield f"Rescue Arc RAG Assistant: I received your question: '{question}'. Please configure a valid GEMINI_API_KEY in .env for full conversational reasoning."
+        return
+
     # ── Step 3: Non-streaming call with tools — LLM decides if DB needed ──
     tool_llm = _get_llm(streaming=False).bind_tools(AVAILABLE_TOOLS)
     first_response: AIMessage = await tool_llm.ainvoke(messages)

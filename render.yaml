@@ -2,7 +2,7 @@ services:
   - type: web
     name: rescue-arc-backend
     runtime: python
-    rootDir: backend2/backend
+    rootDir: backend-main/backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health

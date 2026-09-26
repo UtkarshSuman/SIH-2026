@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 interface HistoryPoint {
@@ -16,7 +16,7 @@ interface HistoryPoint {
   soilSaturationPct: number;
 }
 
-export default function AnalyticsPage() {
+function AnalyticsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedZoneIdParam = searchParams.get("zoneId") || "Z-UTTARAKHAND-JOSHIMATH-01";
@@ -26,26 +26,42 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeHazardView, setActiveHazardView] = useState<"ALL" | "FLOOD" | "LANDSLIDE" | "EROSION" | "CLOUDBURST">("ALL");
 
+  const [lastVersion, setLastVersion] = useState(0);
+
+  const loadAnalytics = async () => {
+    try {
+      const res = await fetch(`/api/analytics?zoneId=${encodeURIComponent(currentZoneId)}`);
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.warn("Failed to load analytics:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
     setIsLoading(true);
-
-    fetch(`/api/analytics?zoneId=${encodeURIComponent(currentZoneId)}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (!cancelled) {
-          setData(json);
-        }
-      })
-      .catch((err) => console.warn("Failed to load analytics:", err))
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    loadAnalytics();
   }, [currentZoneId]);
+
+  // Real-time Auto-Update: Polls /api/version every 4s
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/version");
+        const ver = await res.json();
+        if (ver?.version && ver.version !== lastVersion) {
+          setLastVersion(ver.version);
+          await loadAnalytics();
+        }
+      } catch {
+        // quiet ignore
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [lastVersion, currentZoneId]);
 
   const zone = data?.zone;
   const history: HistoryPoint[] = data?.history || [];
@@ -436,5 +452,19 @@ export default function AnalyticsPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#fbfdfb] flex items-center justify-center text-slate-500 font-sans">
+          Loading Analytics Hub...
+        </div>
+      }
+    >
+      <AnalyticsContent />
+    </Suspense>
   );
 }
