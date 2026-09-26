@@ -161,15 +161,15 @@ export async function GET(request: Request) {
 
 <script>
           const firebaseConfig = {
-            apiKey: "AIzaSyCmfXDnyRHm8TD-Yi8dJdCgN72SS8hC_cI",
-            authDomain: "rescue-arc.firebaseapp.com",
-            projectId: "rescue-arc",
-            storageBucket: "rescue-arc.firebasestorage.app",
-            messagingSenderId: "524996615036",
-            appId: "1:524996615036:web:e43e7ba29046444705a2f9",
+            apiKey: "AIzaSyCj5i1D_G6wg4g149CUhVf899IX5mifJ00",
+            authDomain: "rescue-arc-9b293.firebaseapp.com",
+            projectId: "rescue-arc-9b293",
+            storageBucket: "rescue-arc-9b293.firebasestorage.app",
+            messagingSenderId: "420144730893",
+            appId: "1:420144730893:web:d972e7ddc4f45827141644",
           };
           const VAPID_KEY =
-            "BNoRuvQsMJEOrzlmkOlhz75NS_ms9Sk-9L5MwXY0vyHWanoz7qIe4q2kwaHEfpraVqV6Kb2Z1fUzLKZWxINGNVE";
+            "BClYIBxo0Bja4sxNdjJffH4aMaaW7P_ajlDaZco7gu1ocIg5MCWGZvs44D3D2LMCewVOw9XoGeDD1K-4j1GU-tQ";
 
           const BACKEND_URL = "/api/backend";
 

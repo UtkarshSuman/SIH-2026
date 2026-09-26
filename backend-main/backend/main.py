@@ -1,74 +1,27 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import psycopg2
-
-from routers.habitations import router as habitations_router
-from database import get_connection
-from app.api.routes import rag
-from alert_routes import router as alert_router
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # tighten to your actual frontend origin before production
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(habitations_router)
-app.include_router(alert_router)
-app.include_router(rag.router, prefix="/api/v1", tags=["rag"])
-
+import importlib.util
+import sys
 from pathlib import Path
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from app.rag.models import ensure_table
 
-_backend_dir = Path(__file__).resolve().parent
-_admin_html = _backend_dir / "admin.html"
-_rag_admin_html = _backend_dir / "rag_admin.html"
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
 
-@app.on_event("startup")
-def on_startup():
-    """Ensure database tables exist on startup (idempotent)."""
-    try:
-        ensure_table()
-    except Exception as exc:
-        # Non-fatal: in local dev without DB or during initial setup
-        print(f"[startup] Warning initializing DB tables: {exc}")
+for p in [
+    ROOT_DIR,
+    BASE_DIR,
+    BASE_DIR / "GIS-Scripts-FETCH-API-layer" / "rescue_arc_alert",
+    BASE_DIR / "GIS-Scripts-FETCH-API-layer" / "hazard_platform",
+]:
+    p_str = str(p)
+    if p_str not in sys.path:
+        sys.path.insert(0, p_str)
 
-@app.get("/admin", include_in_schema=False)
-def serve_admin():
-    if _admin_html.exists():
-        return FileResponse(_admin_html)
-    return JSONResponse(status_code=404, content={"detail": "admin.html not found"})
+root_main_file = ROOT_DIR / "main.py"
+spec = importlib.util.spec_from_file_location("root_main", root_main_file)
+root_main = importlib.util.module_from_spec(spec)
+sys.modules["root_main"] = root_main
+spec.loader.exec_module(root_main)
 
-@app.get("/admin/documents", include_in_schema=False)
-@app.get("/admin/rag", include_in_schema=False)
-def serve_rag_admin():
-    if _rag_admin_html.exists():
-        return FileResponse(_rag_admin_html)
-    return JSONResponse(status_code=404, content={"detail": "rag_admin.html not found"})
-
-@app.get("/health")
-def health_check():
-    conn = None
-    try:
-        conn = get_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")
-        return {"status": "ok", "database": "ok"}
-    except (psycopg2.Error, RuntimeError) as exc:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "unavailable", "database": "unavailable", "error": str(exc)},
-        )
-    finally:
-        if conn is not None:
-            conn.close()
-
+app = root_main.app
 
 if __name__ == "__main__":
     import uvicorn

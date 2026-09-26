@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCj5i1D_G6wg4g149CUhVf899IX5mifJ00",
@@ -12,51 +13,77 @@ const FIREBASE_CONFIG = {
 };
 
 const VAPID_KEY =
-  "BNoRuvQsMJEOrzlmkOlhz75NS_ms9Sk-9L5MwXY0vyHWanoz7qIe4q2kwaHEfpraVqV6Kb2Z1fUzLKZWxINGNVE";
+  "BClYIBxo0Bja4sxNdjJffH4aMaaW7P_ajlDaZco7gu1ocIg5MCWGZvs44D3D2LMCewVOw9XoGeDD1K-4j1GU-tQ";
 
 const FALLBACK_ZONES = [
-  { zone_id: "Z-UTTARAKHAND-JOSHIMATH-01", name: "Joshimath, Uttarakhand" },
-  { zone_id: "Z-KERALA-WAYANAD-01",        name: "Wayanad, Kerala" },
-  { zone_id: "Z-KERALA-IDUKKI-01",         name: "Idukki, Kerala" },
-  { zone_id: "Z-TAMILNADU-NILGIRIS-01",    name: "Nilgiris, Tamil Nadu" },
-  { zone_id: "Z-WESTBENGAL-DARJEELING-01", name: "Darjeeling, West Bengal" },
-  { zone_id: "Z-ASSAM-DHEMAJI-01",         name: "Dhemaji-Lakhimpur, Assam" },
-  { zone_id: "Z-ODISHA-PURI-01",           name: "Puri, Odisha" },
-  { zone_id: "Z-GUJARAT-KUTCH-01",         name: "Kutch, Gujarat" },
-  { zone_id: "Z-BIHAR-PATNA-01",           name: "Patna, Bihar" },
-  { zone_id: "Z-ASSAM-GUWAHATI-01",        name: "Guwahati, Assam" },
+  { zone_id: "Z-KERALA-WAYANAD-01",        name: "Wayanad, Kerala",          defaultHazard: "LANDSLIDE" },
+  { zone_id: "Z-UTTARAKHAND-JOSHIMATH-01", name: "Joshimath, Uttarakhand",   defaultHazard: "LANDSLIDE" },
+  { zone_id: "Z-ODISHA-PURI-01",           name: "Puri, Odisha",             defaultHazard: "EROSION" },
+  { zone_id: "Z-BIHAR-PATNA-01",           name: "Patna, Bihar",             defaultHazard: "FLOOD" },
+  { zone_id: "Z-ASSAM-GUWAHATI-01",        name: "Guwahati, Assam",          defaultHazard: "FLOOD" },
+  { zone_id: "Z-KERALA-IDUKKI-01",         name: "Idukki, Kerala",           defaultHazard: "LANDSLIDE" },
+  { zone_id: "Z-TAMILNADU-NILGIRIS-01",    name: "Nilgiris, Tamil Nadu",      defaultHazard: "LANDSLIDE" },
+  { zone_id: "Z-WESTBENGAL-DARJEELING-01", name: "Darjeeling, West Bengal",   defaultHazard: "LANDSLIDE" },
+  { zone_id: "Z-ASSAM-DHEMAJI-01",         name: "Dhemaji-Lakhimpur, Assam", defaultHazard: "FLOOD" },
+  { zone_id: "Z-GUJARAT-KUTCH-01",         name: "Kutch, Gujarat",           defaultHazard: "EROSION" },
 ];
 
-const HAZARD_CARDS = [
-  { icon: "🌊", label: "Flood Alerts",     color: "#3b82f6", bg: "rgba(59,130,246,0.08)",  border: "rgba(59,130,246,0.25)",  desc: "Flash-flood & river-discharge warnings with real-time sensor data." },
-  { icon: "⛰️", label: "Landslide Risk",   color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.25)",  desc: "Slope-stability & soil-saturation alerts for mountain habitations." },
-  { icon: "⛈️", label: "Cloudburst",        color: "#8b5cf6", bg: "rgba(139,92,246,0.08)",  border: "rgba(139,92,246,0.25)",  desc: "Intense localised rainfall events that trigger flash-floods & mudslides." },
-  { icon: "🏖️", label: "Coastal Erosion",  color: "#14b8a6", bg: "rgba(20,184,166,0.08)",  border: "rgba(20,184,166,0.25)", desc: "Wave-energy surge & shoreline-collapse alerts for coastal communities." },
-];
-
-const STEPS = [
-  { num: "01", title: "Choose Your Zone",       desc: "Pick the monitored region near you from our GIS-verified zone registry." },
-  { num: "02", title: "Allow Notifications",    desc: "Grant browser push permission — takes one click and can be revoked anytime." },
-  { num: "03", title: "Stay Informed",          desc: "Receive instant alerts when risk transitions from Green to Yellow or Red." },
+const HAZARD_OPTIONS = [
+  { id: "LANDSLIDE", icon: "⛰️", label: "Landslide Risk", desc: "Slope instability & debris flow" },
+  { id: "FLOOD",     icon: "🌊", label: "Flash Flood",    desc: "Critical water rise & submergence" },
+  { id: "CLOUDBURST",icon: "⛈️", label: "Cloudburst",     desc: "Torrential deluge & flash mudslides" },
+  { id: "EROSION",   icon: "🏖️", label: "Coastal Surge",  desc: "Destructive wave surge & collapse" },
 ];
 
 export default function AlertsPage() {
+  const [activeTab, setActiveTab] = useState("subscribe"); // 'subscribe' | 'test' | 'simulate' | 'history'
   const [zones, setZones] = useState(FALLBACK_ZONES);
-  const [selectedZone, setSelectedZone] = useState("");
+  const [selectedZone, setSelectedZone] = useState("Z-KERALA-WAYANAD-01");
   const [useLocation, setUseLocation] = useState(false);
+  
+  // Subscription state
   const [phase, setPhase] = useState("idle");
   const [statusMsg, setStatusMsg] = useState("");
   const [subscribedZone, setSubscribedZone] = useState("");
+  const [storedFcmToken, setStoredFcmToken] = useState("");
+  
+  // Testing state
+  const [testHazard, setTestHazard] = useState("LANDSLIDE");
+  const [testColor, setTestColor] = useState("RED");
+  const [testCustomTitle, setTestCustomTitle] = useState("");
+  const [testCustomBody, setTestCustomBody] = useState("");
+  const [testStatus, setTestStatus] = useState({ state: "idle", msg: "", details: null });
+
+  // Simulation state
+  const [simZone, setSimZone] = useState("Z-KERALA-WAYANAD-01");
+  const [simColor, setSimColor] = useState("RED");
+  const [simHazard, setSimHazard] = useState("LANDSLIDE");
+  const [simResult, setSimResult] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  // History state
+  const [historyLogs, setHistoryLogs] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Live Toast state
   const [liveAlert, setLiveAlert] = useState(null);
   const messagingRef = useRef(null);
 
+  // Load zones on mount
   useEffect(() => {
     fetch("/api/alerts/zones")
       .then((r) => r.json())
       .then((d) => { if (d.zones?.length) setZones(d.zones); })
       .catch(() => {});
+
+    // Try reading cached token from localStorage
+    try {
+      const cached = localStorage.getItem("rescue_arc_fcm_token");
+      if (cached) setStoredFcmToken(cached);
+    } catch (_) {}
   }, []);
 
+  // Listen for incoming foreground Firebase push notifications
   useEffect(() => {
     let unsub;
     (async () => {
@@ -67,249 +94,668 @@ export default function AlertsPage() {
         const msg = getMessaging(app);
         messagingRef.current = msg;
         unsub = onMessage(msg, (payload) => {
-          setLiveAlert({ title: payload.notification?.title ?? "Rescue-Arc Alert", body: payload.notification?.body ?? "" });
-          setTimeout(() => setLiveAlert(null), 8000);
+          setLiveAlert({
+            title: payload.notification?.title ?? "Rescue-Arc Alert",
+            body: payload.notification?.body ?? "Immediate hazard alert triggered.",
+            time: new Date().toLocaleTimeString(),
+          });
+          setTimeout(() => setLiveAlert(null), 12000);
         });
       } catch (_) {}
     })();
     return () => unsub?.();
   }, []);
 
-  async function handleSubscribe() {
-    if (!selectedZone && !useLocation) {
-      setPhase("error"); setStatusMsg("Please select a zone or enable location detection."); return;
+  // Fetch audit history when tab changes to history
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchHistory();
     }
-    setPhase("requesting"); setStatusMsg("Requesting notification permission…");
-    if (!("Notification" in window)) { setPhase("error"); setStatusMsg("Your browser does not support push notifications."); return; }
-    let permission;
-    try { permission = await Notification.requestPermission(); }
-    catch { setPhase("error"); setStatusMsg("Could not request notification permission."); return; }
-    if (permission !== "granted") { setPhase("error"); setStatusMsg("Notification permission denied. Enable it in browser settings and try again."); return; }
-    setPhase("subscribing"); setStatusMsg("Registering device with Rescue-Arc…");
-    let fcmToken;
+  }, [activeTab]);
+
+  async function fetchHistory() {
+    setIsLoadingHistory(true);
     try {
-      if (!("serviceWorker" in navigator)) throw new Error("Service workers not supported.");
-      const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-      swReg.active?.postMessage({ type: "INIT_CONFIG", config: FIREBASE_CONFIG });
-      const { initializeApp, getApps } = await import("firebase/app");
-      const { getMessaging, getToken } = await import("firebase/messaging");
-      const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-      const msg = getMessaging(app);
-      messagingRef.current = msg;
-      const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-      if (!token) throw new Error("Empty FCM token — check VAPID key.");
-      fcmToken = token;
-    } catch (err) { setPhase("error"); setStatusMsg("FCM setup failed: " + err.message); return; }
-    try {
-      let lat = 20.5937, lon = 78.9629;
-      if (useLocation) {
-        setStatusMsg("Getting your location…");
-        const pos = await new Promise((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
-        );
-        lat = pos.coords.latitude; lon = pos.coords.longitude;
-      }
-      const body = { fcm_token: fcmToken, lat, lon };
-      if (selectedZone) body.zone_id = selectedZone;
-      const res = await fetch("/api/alerts/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error ?? "Server returned " + res.status); }
+      const res = await fetch("/api/alerts/history");
       const data = await res.json();
-      const zoneName = zones.find((z) => z.zone_id === (data.zone_id ?? selectedZone))?.name ?? data.zone_id ?? "your region";
-      setSubscribedZone(zoneName); setPhase("success"); setStatusMsg("Subscribed to " + zoneName);
-    } catch (err) { setPhase("error"); setStatusMsg(err.message ?? "Subscription failed."); }
+      if (data.alerts) setHistoryLogs(data.alerts);
+    } catch (e) {
+      console.warn("History fetch error:", e);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }
 
-  const isLoading = phase === "requesting" || phase === "subscribing";
+  // Handle Push Permission & Token retrieval
+  async function obtainFcmToken() {
+    if (!("Notification" in window)) {
+      throw new Error("Your browser does not support web push notifications.");
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      throw new Error("Notification permission was denied. Please allow notifications in browser settings.");
+    }
+    if (!("serviceWorker" in navigator)) {
+      throw new Error("Service workers not supported in this browser.");
+    }
+    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    swReg.active?.postMessage({ type: "INIT_CONFIG", config: FIREBASE_CONFIG });
+
+    const { initializeApp, getApps } = await import("firebase/app");
+    const { getMessaging, getToken } = await import("firebase/messaging");
+    const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+    const msg = getMessaging(app);
+    messagingRef.current = msg;
+    const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!token) throw new Error("Could not obtain FCM token. Check VAPID key configuration.");
+    
+    setStoredFcmToken(token);
+    try { localStorage.setItem("rescue_arc_fcm_token", token); } catch (_) {}
+    return token;
+  }
+
+  // Handle standard user subscription
+  async function handleSubscribe() {
+    setPhase("requesting");
+    setStatusMsg("Requesting notification permission…");
+    try {
+      const token = await obtainFcmToken();
+      setPhase("subscribing");
+      setStatusMsg("Registering device token with Rescue Arc Alert Engine…");
+
+      let lat = 20.5937, lon = 78.9629;
+      if (useLocation) {
+        setStatusMsg("Detecting your GPS location…");
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 })
+        ).catch(() => null);
+        if (pos) { lat = pos.coords.latitude; lon = pos.coords.longitude; }
+      }
+
+      const body = { fcm_token: token, lat, lon, zone_id: selectedZone };
+      const res = await fetch("/api/alerts/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const zoneName = zones.find((z) => z.zone_id === (data.zone_id ?? selectedZone))?.name ?? selectedZone;
+      setSubscribedZone(zoneName);
+      setPhase("success");
+      setStatusMsg(`Device successfully subscribed for ${zoneName}!`);
+    } catch (err) {
+      setPhase("error");
+      setStatusMsg(err.message || "Failed to complete subscription.");
+    }
+  }
+
+  // Handle manual test push directly to this device
+  async function handleManualTestPush() {
+    setTestStatus({ state: "sending", msg: "Preparing test push payload…", details: null });
+    try {
+      let token = storedFcmToken;
+      if (!token) {
+        setTestStatus({ state: "sending", msg: "Requesting notification permission & token…", details: null });
+        token = await obtainFcmToken();
+      }
+
+      setTestStatus({ state: "sending", msg: "Dispatching push to Firebase Admin SDK…", details: null });
+      const res = await fetch("/api/alerts/test-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fcm_token: token,
+          zone_id: selectedZone,
+          worst_hazard: testHazard,
+          zone_color: testColor,
+          custom_title: testCustomTitle || undefined,
+          custom_body: testCustomBody || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setTestStatus({
+          state: "success",
+          msg: "Test alert dispatched! Check your device notifications.",
+          details: data,
+        });
+
+        // Also trigger foreground banner for immediate visual proof
+        setLiveAlert({
+          title: data.title || `🚨 Emergency Alert: ${testHazard} Test`,
+          body: data.body || "Real-time push delivered to device. Relocation protocols active.",
+          time: new Date().toLocaleTimeString(),
+        });
+      } else {
+        throw new Error(data.error || data.detail || "Server failed to deliver push");
+      }
+    } catch (err) {
+      setTestStatus({ state: "error", msg: err.message || "Test push failed", details: null });
+    }
+  }
+
+  // Handle full zone disaster simulation
+  async function handleSimulateDisaster() {
+    setIsSimulating(true);
+    setSimResult(null);
+    try {
+      const res = await fetch("/api/alerts/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zone_id: simZone,
+          zone_color: simColor,
+          worst_hazard: simHazard,
+        }),
+      });
+      const data = await res.json();
+      setSimResult(data);
+
+      const targetZoneName = zones.find(z => z.zone_id === simZone)?.name || simZone;
+      setLiveAlert({
+        title: `🚨 EMERGENCY BROADCAST: ${simHazard} RED ALERT`,
+        body: `Zone ${targetZoneName} state transitioned to ${simColor}. Multicast alert broadcasted to all registered field devices.`,
+        time: new Date().toLocaleTimeString(),
+      });
+    } catch (err) {
+      setSimResult({ error: err.message || "Simulation failed" });
+    } finally {
+      setIsSimulating(false);
+    }
+  }
 
   return (
     <>
       <style>{`
-         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        .ar { font-family:'Inter',sans-serif; min-height:100vh; background:#050b14; color:#e2e8f0; overflow-x:hidden; }
-        .hbg { position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 20% 20%,rgba(220,38,38,.18) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 10%,rgba(245,158,11,.12) 0%,transparent 50%),radial-gradient(ellipse 70% 80% at 50% 100%,rgba(59,130,246,.10) 0%,transparent 60%); animation:bd 12s ease-in-out infinite alternate; }
-        @keyframes bd{0%{opacity:1;transform:scale(1)}100%{opacity:.85;transform:scale(1.04)}}
-        .hgrid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px); background-size:40px 40px; }
-        .hero { position:relative; padding:120px 24px 80px; text-align:center; overflow:hidden; }
-        .hbadge { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:rgba(220,38,38,.15); border:1px solid rgba(220,38,38,.35); border-radius:999px; font-size:12px; font-weight:600; color:#fca5a5; letter-spacing:.06em; text-transform:uppercase; margin-bottom:28px; animation:pb 2.5s ease-in-out infinite; }
-        @keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
-        .bdot { width:7px; height:7px; border-radius:50%; background:#ef4444; animation:blk 1.2s ease-in-out infinite; }
-        @keyframes blk{0%,100%{opacity:1}50%{opacity:.2}}
-        .htitle { font-size:clamp(36px,6vw,72px); font-weight:900; line-height:1.08; letter-spacing:-.03em; margin:0 0 20px; background:linear-gradient(135deg,#f8fafc 0%,#94a3b8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .htitle .ac { background:linear-gradient(90deg,#ef4444 0%,#f97316 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .hsub { font-size:18px; color:#94a3b8; max-width:560px; margin:0 auto 48px; line-height:1.7; }
-        .cwrap { max-width:520px; margin:0 auto; position:relative; z-index:10; }
-        .scard { background:rgba(15,23,42,.85); border:1px solid rgba(255,255,255,.1); border-radius:24px; padding:36px; box-shadow:0 0 0 1px rgba(255,255,255,.05),0 32px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter:blur(20px); }
-        .ct { font-size:22px; font-weight:800; color:#f1f5f9; margin:0 0 6px; }
-        .cs { font-size:14px; color:#64748b; margin:0 0 28px; }
-        .tabg { display:flex; gap:8px; margin-bottom:22px; background:rgba(255,255,255,.04); border-radius:12px; padding:4px; }
-        .tabb { flex:1; padding:9px 0; border:none; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; transition:background 200ms,color 200ms; background:transparent; color:#64748b; }
-        .tabb.act { background:rgba(239,68,68,.2); color:#fca5a5; border:1px solid rgba(239,68,68,.3); }
-        .flbl { font-size:12px; font-weight:600; color:#64748b; letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
-        .zsel { width:100%; padding:12px 16px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; color:#e2e8f0; font-size:14px; font-family:'Inter',sans-serif; margin-bottom:20px; appearance:none; cursor:pointer; outline:none; transition:border-color 200ms; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
-        .zsel:focus { border-color:rgba(239,68,68,.5); }
-        .zsel option { background:#0f172a; color:#e2e8f0; }
-        .lhint { display:flex; align-items:center; gap:10px; padding:12px 14px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); border-radius:12px; font-size:13px; color:#93c5fd; margin-bottom:20px; }
-        .sbox { display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:12px; font-size:13px; line-height:1.5; margin-bottom:20px; border:1px solid; }
-        .sbox.inf { background:rgba(59,130,246,.08); border-color:rgba(59,130,246,.2); color:#93c5fd; }
-        .sbox.ok  { background:rgba(34,197,94,.08);  border-color:rgba(34,197,94,.2);  color:#86efac; }
-        .sbox.err { background:rgba(239,68,68,.08);  border-color:rgba(239,68,68,.2);  color:#fca5a5; }
-        .sbtn { width:100%; padding:15px 24px; border:none; border-radius:14px; font-size:15px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%); color:#fff; box-shadow:0 8px 24px rgba(220,38,38,.35); transition:transform 200ms,box-shadow 200ms,opacity 200ms; position:relative; overflow:hidden; }
-        .sbtn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%); border-radius:14px; }
-        .sbtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 12px 32px rgba(220,38,38,.45); }
-        .sbtn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
-        .sring { width:72px; height:72px; border-radius:50%; background:rgba(34,197,94,.12); border:2px solid rgba(34,197,94,.4); display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:32px; animation:pi 400ms cubic-bezier(.34,1.56,.64,1); }
-        @keyframes pi{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
-        .stit { font-size:20px; font-weight:800; color:#86efac; margin-bottom:6px; text-align:center; }
-        .sbod { font-size:14px; color:#64748b; text-align:center; line-height:1.6; }
-        .rlink { display:inline-block; margin-top:18px; font-size:13px; color:#64748b; text-decoration:underline; cursor:pointer; background:none; border:none; font-family:'Inter',sans-serif; }
-        .toast { position:fixed; top:24px; right:24px; z-index:9999; max-width:380px; padding:16px 20px; background:rgba(15,23,42,.95); border:1px solid rgba(239,68,68,.45); border-left:4px solid #ef4444; border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.6); backdrop-filter:blur(16px); animation:si 400ms cubic-bezier(.34,1.56,.64,1); }
-        @keyframes si{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
-        .ttit { font-size:14px; font-weight:700; color:#fca5a5; margin-bottom:4px; }
-        .tbod { font-size:13px; color:#94a3b8; line-height:1.5; }
-        .sec { padding:80px 24px; max-width:1100px; margin:0 auto; }
-        .slbl { font-size:12px; font-weight:700; color:#ef4444; letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
-        .stitle { font-size:clamp(28px,4vw,42px); font-weight:800; color:#f1f5f9; letter-spacing:-.02em; margin:0 0 16px; }
-        .sbody { font-size:16px; color:#64748b; max-width:520px; line-height:1.7; margin-bottom:48px; }
-        .hgrid2 { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:20px; }
-        .hcard { padding:24px; border-radius:18px; border:1px solid; transition:transform 240ms,box-shadow 240ms; }
-        .hcard:hover { transform:translateY(-4px); box-shadow:0 20px 40px rgba(0,0,0,.3); }
-        .hico { font-size:32px; margin-bottom:14px; }
-        .hlbl { font-size:15px; font-weight:700; margin-bottom:8px; }
-        .hdsc { font-size:13px; color:#64748b; line-height:1.6; }
-        .ssec { padding:0 24px 80px; max-width:1100px; margin:0 auto; }
-        .sgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:24px; margin-top:48px; }
-        .stepcard { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:28px; position:relative; overflow:hidden; }
-        .stepcard::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#ef4444,#f97316); }
-        .snum { font-size:48px; font-weight:900; color:rgba(239,68,68,.15); line-height:1; margin-bottom:16px; letter-spacing:-.04em; }
-        .stitl { font-size:17px; font-weight:700; color:#f1f5f9; margin-bottom:8px; }
-        .sdsc { font-size:14px; color:#64748b; line-height:1.65; }
-        .fcta { padding:80px 24px; text-align:center; background:rgba(239,68,68,.04); border-top:1px solid rgba(239,68,68,.1); }
-        .fcta h2 { font-size:32px; font-weight:800; color:#f1f5f9; margin-bottom:12px; }
-        .fcta p { font-size:16px; color:#64748b; margin-bottom:32px; }
-        .ctabtn { display:inline-block; padding:14px 36px; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; font-size:15px; font-weight:700; border-radius:12px; border:none; cursor:pointer; font-family:'Inter',sans-serif; box-shadow:0 8px 24px rgba(220,38,38,.35); text-decoration:none; transition:transform 200ms,box-shadow 200ms; }
-        .ctabtn:hover { transform:translateY(-2px); box-shadow:0 14px 32px rgba(220,38,38,.5); }
-        .spin { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:sp 700ms linear infinite; vertical-align:middle; margin-right:8px; }
-        @keyframes sp{to{transform:rotate(360deg)}}
-        @media(max-width:640px){.hero{padding:80px 20px 60px}.scard{padding:24px;border-radius:18px}.toast{left:16px;right:16px;top:16px}}
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        .ar-hub { font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; background:#070d18; color:#e2e8f0; position:relative; overflow-x:hidden; }
+        .ar-glow { position:absolute; inset:0; background:radial-gradient(ellipse 70% 50% at 20% 15%,rgba(220,38,38,0.18) 0%,transparent 60%),radial-gradient(ellipse 60% 45% at 80% 25%,rgba(234,88,12,0.14) 0%,transparent 50%),radial-gradient(ellipse 70% 60% at 50% 90%,rgba(16,185,129,0.12) 0%,transparent 60%); pointer-events:none; }
+        .ar-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px); background-size:36px 36px; pointer-events:none; }
+        .ar-container { max-width:1120px; margin:0 auto; padding:48px 20px 80px; position:relative; z-index:10; }
+        .badge-pulse { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; background:rgba(220,38,38,0.15); border:1px solid rgba(220,38,38,0.35); border-radius:999px; font-size:12px; font-weight:700; color:#fca5a5; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:20px; }
+        .pulse-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:pdot 1.2s infinite ease-in-out; }
+        @keyframes pdot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.3; transform:scale(0.8); } }
+        .ar-title { font-size:clamp(32px,5vw,56px); font-weight:900; line-height:1.12; letter-spacing:-0.03em; margin:0 0 16px; color:#f8fafc; }
+        .ar-title .grad-red { background:linear-gradient(135deg,#ef4444 0%,#f97316 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .ar-desc { font-size:16px; color:#94a3b8; max-width:640px; margin:0 auto 36px; line-height:1.6; }
+        
+        /* Navigation Tabs */
+        .tab-bar { display:flex; justify-content:center; gap:10px; margin-bottom:36px; flex-wrap:wrap; }
+        .hub-tab { padding:12px 20px; border-radius:14px; font-size:14px; font-weight:700; border:1px solid rgba(255,255,255,0.1); background:rgba(15,23,42,0.7); color:#94a3b8; cursor:pointer; transition:all 200ms ease; display:flex; align-items:center; gap:8px; backdrop-filter:blur(10px); }
+        .hub-tab:hover { background:rgba(255,255,255,0.08); color:#f8fafc; border-color:rgba(255,255,255,0.2); }
+        .hub-tab.active { background:linear-gradient(135deg,rgba(220,38,38,0.25) 0%,rgba(249,115,22,0.2) 100%); border-color:rgba(239,68,68,0.5); color:#fecaca; box-shadow:0 8px 24px rgba(220,38,38,0.25); }
+
+        /* Card styles */
+        .glass-card { background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.12); border-radius:24px; padding:36px; box-shadow:0 24px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter:blur(24px); }
+        .card-header-title { font-size:22px; font-weight:800; color:#f8fafc; margin:0 0 6px; }
+        .card-header-desc { font-size:14px; color:#64748b; margin:0 0 24px; }
+
+        /* Form elements */
+        .form-label { display:block; font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+        .select-input, .text-input { width:100%; padding:13px 16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:#f8fafc; font-size:14px; font-family:inherit; outline:none; transition:border-color 200ms; margin-bottom:20px; }
+        .select-input:focus, .text-input:focus { border-color:#ef4444; background:rgba(255,255,255,0.09); }
+        .select-input option { background:#0f172a; color:#f8fafc; }
+
+        /* Action button */
+        .btn-fire { width:100%; padding:15px 24px; border:none; border-radius:14px; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%); color:#fff; box-shadow:0 10px 28px rgba(220,38,38,0.4); transition:all 200ms ease; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .btn-fire:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 14px 34px rgba(220,38,38,0.55); }
+        .btn-fire:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
+
+        .btn-secondary { padding:10px 18px; border-radius:10px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#e2e8f0; font-weight:600; font-size:13px; cursor:pointer; transition:background 150ms; display:inline-flex; align-items:center; gap:6px; }
+        .btn-secondary:hover { background:rgba(255,255,255,0.14); }
+
+        /* Hazard grid selector */
+        .hazard-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:24px; }
+        .hazard-opt { padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); cursor:pointer; transition:all 180ms ease; text-align:left; }
+        .hazard-opt:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.2); }
+        .hazard-opt.active { background:rgba(239,68,68,0.15); border-color:#ef4444; }
+        .hazard-opt-title { font-size:14px; font-weight:700; color:#f8fafc; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+        .hazard-opt-desc { font-size:11px; color:#94a3b8; line-height:1.4; }
+
+        /* Severity buttons */
+        .sev-group { display:flex; gap:10px; margin-bottom:24px; }
+        .sev-btn { flex:1; padding:12px; border-radius:12px; border:1px solid; font-weight:800; font-size:13px; cursor:pointer; text-align:center; transition:all 150ms; }
+        .sev-btn.red { background:rgba(220,38,38,0.15); border-color:rgba(220,38,38,0.3); color:#fca5a5; }
+        .sev-btn.red.active { background:#dc2626; color:#fff; border-color:#ef4444; box-shadow:0 6px 20px rgba(220,38,38,0.4); }
+        .sev-btn.yellow { background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#fde68a; }
+        .sev-btn.yellow.active { background:#d97706; color:#fff; border-color:#f59e0b; box-shadow:0 6px 20px rgba(217,119,6,0.4); }
+
+        /* Output / Feedback Box */
+        .feedback-box { padding:16px; border-radius:14px; font-size:13px; line-height:1.5; margin-bottom:20px; border:1px solid; }
+        .feedback-box.info { background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#93c5fd; }
+        .feedback-box.success { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.25); color:#86efac; }
+        .feedback-box.error { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.3); color:#fca5a5; }
+
+        /* Toast Popup */
+        .live-toast { position:fixed; top:24px; right:24px; z-index:9999; max-width:440px; width:calc(100% - 48px); padding:20px; background:rgba(15,23,42,0.96); border:2px solid #ef4444; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.8),0 0 40px rgba(220,38,38,0.3); backdrop-filter:blur(24px); animation:slideIn 350ms cubic-bezier(0.16,1,0.3,1); }
+        @keyframes slideIn { from{ transform:translateX(120%); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+        .toast-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+        .toast-title { font-size:15px; font-weight:800; color:#fca5a5; }
+        .toast-close { background:none; border:none; color:#64748b; font-size:18px; cursor:pointer; padding:0 4px; }
+        .toast-close:hover { color:#fff; }
+        .toast-body { font-size:13px; color:#cbd5e1; line-height:1.5; }
+
+        /* Table */
+        .audit-table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+        .audit-table th { padding:12px 14px; background:rgba(255,255,255,0.04); color:#94a3b8; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.1); }
+        .audit-table td { padding:14px; border-bottom:1px solid rgba(255,255,255,0.06); color:#cbd5e1; }
+        .pill-badge { padding:3px 9px; border-radius:99px; font-size:11px; font-weight:800; display:inline-block; }
+        .pill-red { background:rgba(220,38,38,0.2); color:#fca5a5; border:1px solid rgba(220,38,38,0.4); }
+        .pill-yellow { background:rgba(245,158,11,0.2); color:#fde68a; border:1px solid rgba(245,158,11,0.4); }
       `}</style>
 
-      <div className="ar">
+      <div className="ar-hub">
+        <div className="ar-glow" />
+        <div className="ar-grid" />
+
+        {/* ============================================================== */}
+        {/* LIVE ALERT POPUP TOAST (Triggered by real push or manual test)  */}
+        {/* ============================================================== */}
         {liveAlert && (
-          <div className="toast" role="alert">
-            <div className="ttit">🚨 {liveAlert.title}</div>
-            <div className="tbod">{liveAlert.body}</div>
+          <div className="live-toast" role="alert">
+            <div className="toast-top">
+              <div className="toast-title">{liveAlert.title}</div>
+              <button className="toast-close" onClick={() => setLiveAlert(null)}>✕</button>
+            </div>
+            <div className="toast-body">{liveAlert.body}</div>
+            <div style={{ marginTop: "10px", fontSize: "11px", color: "#64748b", display: "flex", justifyContent: "space-between" }}>
+              <span>🚨 Rescue-Arc Multi-Hazard Protocol</span>
+              <span>{liveAlert.time}</span>
+            </div>
           </div>
         )}
 
-        <section className="hero">
-          <div className="hbg" />
-          <div className="hgrid" />
-          <div className="hbadge"><span className="bdot" /> Live GIS Monitoring Active</div>
-          <h1 className="htitle">Stay Safe With<br /><span className="ac">Real-Time Hazard Alerts</span></h1>
-          <p className="hsub">Subscribe to instant push notifications when your region is flagged as a Red or Yellow hazard zone by our satellite &amp; sensor-driven AI pipeline.</p>
+        <div className="ar-container">
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: "36px" }}>
+            <div className="badge-pulse">
+              <span className="pulse-dot" />
+              Real-Time Push &amp; Broadcast Engine
+            </div>
+            <h1 className="ar-title">
+              Rescue Arc <span className="grad-red">Alert &amp; Simulation Hub</span>
+            </h1>
+            <p className="ar-desc">
+              Instant hazard detection, FCM web push notifications, and manual disaster testing suite for disaster management teams and citizens.
+            </p>
 
-          <div className="cwrap">
-            <div className="scard">
-              {phase === "success" ? (
-                <div>
-                  <div className="sring">✓</div>
-                  <div className="stit">You're Subscribed!</div>
-                  <div className="sbod">You will receive push notifications whenever <strong style={{color:"#86efac"}}>{subscribedZone}</strong> is flagged as a hazard zone. Stay safe.</div>
-                  <div style={{textAlign:"center"}}>
-                    <button className="rlink" onClick={() => { setPhase("idle"); setSelectedZone(""); }}>Subscribe to another zone</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="ct">Get Hazard Alerts</div>
-                  <div className="cs">Choose how to identify your monitored zone.</div>
-                   <div className="tabg" role="tablist">
-  <button
-    role="tab"
-    id="tab-select"
-    aria-selected={!useLocation}
-    className={`tabb ${!useLocation ? "act" : ""}`}
-    onClick={() => setUseLocation(false)}
-  >
-    🗺️ Select Zone
-  </button>
-
-  <button
-    role="tab"
-    id="tab-location"
-    aria-selected={useLocation}
-    className={`tabb ${useLocation ? "act" : ""}`}
-    onClick={() => setUseLocation(true)}
-  >
-    📍 Use My Location
-  </button>
-</div>
-                  {!useLocation ? (
-                    <>
-                      <div className="flbl">Select Monitored Zone</div>
-                      <select id="zone-selector" className="zsel" value={selectedZone} onChange={(e) => setSelectedZone(e.target.value)} aria-label="Select a monitored hazard zone">
-                        <option value="">— Choose a zone —</option>
-                        {zones.map((z) => (<option key={z.zone_id} value={z.zone_id}>{z.name}</option>))}
-                      </select>
-                    </>
-                  ) : (
-                    <div className="lhint"><span style={{fontSize:20}}>📍</span><span>Your GPS location will be used to automatically match you to the nearest monitored zone.</span></div>
-                  )}
-                  {phase !== "idle" && (
-                    <div className={`sbox ${
-  phase === "error"
-    ? "err"
-    : phase === "success"
-    ? "ok"
-    : "inf"
-}`}role="status">
-                      {isLoading && <span className="spin" aria-hidden />}
-                      <span>{statusMsg}</span>
-                    </div>
-                  )}
-                  <button id="subscribe-btn" className="sbtn" disabled={isLoading || (!selectedZone && !useLocation)} onClick={handleSubscribe}>
-                    {isLoading ? (<><span className="spin" aria-hidden />{statusMsg || "Processing…"}</>) : "🔔 Subscribe to Alerts"}
-                  </button>
-                </>
-              )}
+            {/* Navigation Tabs */}
+            <div className="tab-bar">
+              <button
+                className={`hub-tab ${activeTab === "subscribe" ? "active" : ""}`}
+                onClick={() => setActiveTab("subscribe")}
+              >
+                🔔 1. Subscribe Device
+              </button>
+              <button
+                className={`hub-tab ${activeTab === "test" ? "active" : ""}`}
+                onClick={() => setActiveTab("test")}
+              >
+                ⚡ 2. Test My Device
+              </button>
+              <button
+                className={`hub-tab ${activeTab === "simulate" ? "active" : ""}`}
+                onClick={() => setActiveTab("simulate")}
+              >
+                🚨 3. Simulate Red Zone Alert
+              </button>
+              <button
+                className={`hub-tab ${activeTab === "history" ? "active" : ""}`}
+                onClick={() => setActiveTab("history")}
+              >
+                📜 4. Broadcast History Log
+              </button>
             </div>
           </div>
-        </section>
 
-        <section className="sec">
-          <div className="slbl">Alert Coverage</div>
-          <h2 className="stitle">What You'll Be Notified About</h2>
-          <p className="sbody">Our ML pipeline monitors four distinct natural hazard types using real-time sensor data, satellite imagery, and GIS analysis.</p>
-          <div className="hgrid2">
-            {HAZARD_CARDS.map((h) => (
-              <div key={h.label} className="hcard" style={{background:h.bg,borderColor:h.border}}>
-                <div className="hico">{h.icon}</div>
-                <div className="hlbl" style={{color:h.color}}>{h.label}</div>
-                <div className="hdsc">{h.desc}</div>
+          {/* ============================================================== */}
+          {/* TAB 1: SUBSCRIBE DEVICE                                         */}
+          {/* ============================================================== */}
+          {activeTab === "subscribe" && (
+            <div className="glass-card" style={{ maxWidth: "620px", margin: "0 auto" }}>
+              <h2 className="card-header-title">Citizen &amp; Official Alert Registration</h2>
+              <p className="card-header-desc">
+                Subscribe this device to receive immediate push alerts when hazard risk transitions to Yellow or Red in your zone.
+              </p>
+
+              <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                <button
+                  type="button"
+                  className={`btn-secondary ${!useLocation ? "active" : ""}`}
+                  style={{ flex: 1, borderColor: !useLocation ? "#ef4444" : undefined }}
+                  onClick={() => setUseLocation(false)}
+                >
+                  📍 Select Monitored Zone
+                </button>
+                <button
+                  type="button"
+                  className={`btn-secondary ${useLocation ? "active" : ""}`}
+                  style={{ flex: 1, borderColor: useLocation ? "#ef4444" : undefined }}
+                  onClick={() => setUseLocation(true)}
+                >
+                  🛰️ Use GPS Auto-Detect
+                </button>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="ssec">
-          <div className="slbl">How It Works</div>
-          <h2 className="stitle">Three Steps to Safety</h2>
-          <div className="sgrid">
-            {STEPS.map((s) => (
-              <div className="stepcard" key={s.num}>
-                <div className="snum">{s.num}</div>
-                <div className="stitl">{s.title}</div>
-                <div className="sdsc">{s.desc}</div>
+              {!useLocation ? (
+                <div>
+                  <label className="form-label">Select Your Target Region</label>
+                  <select
+                    className="select-input"
+                    value={selectedZone}
+                    onChange={(e) => setSelectedZone(e.target.value)}
+                  >
+                    {zones.map((z) => (
+                      <option key={z.zone_id} value={z.zone_id}>
+                        {z.name || z.zone_id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="feedback-box info">
+                  🛰️ When you click Subscribe, your browser will request GPS permission to associate your device with the nearest high-risk zone.
+                </div>
+              )}
+
+              {phase !== "idle" && (
+                <div
+                  className={`feedback-box ${
+                    phase === "success" ? "success" : phase === "error" ? "error" : "info"
+                  }`}
+                >
+                  {statusMsg}
+                </div>
+              )}
+
+              <button
+                className="btn-fire"
+                disabled={phase === "requesting" || phase === "subscribing"}
+                onClick={handleSubscribe}
+              >
+                {phase === "requesting" || phase === "subscribing" ? "Registering Device…" : "🔔 Subscribe to Hazard Alerts"}
+              </button>
+
+              {storedFcmToken && (
+                <div style={{ marginTop: "24px", paddingTop: "18px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>Registered Token:</span>
+                    <span style={{ color: "#34d399", fontWeight: 700 }}>● Active</span>
+                  </div>
+                  <div style={{ fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "4px", color: "#94a3b8" }}>
+                    {storedFcmToken.slice(0, 32)}…
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("test")}
+                    style={{ marginTop: "10px", background: "none", border: "none", color: "#ef4444", fontWeight: 700, cursor: "pointer", padding: 0 }}
+                  >
+                    Proceed to Test My Device →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 2: TEST PUSH TO MY DEVICE                                   */}
+          {/* ============================================================== */}
+          {activeTab === "test" && (
+            <div className="glass-card" style={{ maxWidth: "680px", margin: "0 auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <h2 className="card-header-title">⚡ Instant Device Notification Test</h2>
+                <span className="pill-badge pill-red">Manual Test Mode</span>
               </div>
-            ))}
-          </div>
-        </section>
+              <p className="card-header-desc">
+                Send an immediate test push notification to this browser to verify that the Firebase Cloud Messaging pipeline is fully operational.
+              </p>
 
-        <section className="fcta">
-          <h2>Don't Wait for Disaster</h2>
-          <p>Thousands of people in high-risk zones have no early warning. Be the first to know — and the first to act.</p>
-          <button className="ctabtn" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}>Subscribe Now — It's Free</button>
-        </section>
+              <label className="form-label">1. Choose Hazard Scenario</label>
+              <div className="hazard-grid">
+                {HAZARD_OPTIONS.map((h) => (
+                  <div
+                    key={h.id}
+                    className={`hazard-opt ${testHazard === h.id ? "active" : ""}`}
+                    onClick={() => setTestHazard(h.id)}
+                  >
+                    <div className="hazard-opt-title">
+                      <span>{h.icon}</span>
+                      <span>{h.label}</span>
+                    </div>
+                    <div className="hazard-opt-desc">{h.desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              <label className="form-label">2. Select Severity Level</label>
+              <div className="sev-group">
+                <button
+                  type="button"
+                  className={`sev-btn red ${testColor === "RED" ? "active" : ""}`}
+                  onClick={() => setTestColor("RED")}
+                >
+                  🚨 Emergency RED (Evacuate)
+                </button>
+                <button
+                  type="button"
+                  className={`sev-btn yellow ${testColor === "YELLOW" ? "active" : ""}`}
+                  onClick={() => setTestColor("YELLOW")}
+                >
+                  ⚠️ Warning YELLOW (Alert)
+                </button>
+              </div>
+
+              <label className="form-label">3. Target Region for Test</label>
+              <select
+                className="select-input"
+                value={selectedZone}
+                onChange={(e) => setSelectedZone(e.target.value)}
+              >
+                {zones.map((z) => (
+                  <option key={z.zone_id} value={z.zone_id}>
+                    {z.name || z.zone_id}
+                  </option>
+                ))}
+              </select>
+
+              {testStatus.msg && (
+                <div className={`feedback-box ${testStatus.state}`}>
+                  <div style={{ fontWeight: 700 }}>{testStatus.msg}</div>
+                  {testStatus.details && (
+                    <div style={{ marginTop: "8px", fontSize: "11px", opacity: 0.9 }}>
+                      {testStatus.details.message_id && <div>Message ID: <code>{testStatus.details.message_id}</code></div>}
+                      {testStatus.details.title && <div>Title: <code>{testStatus.details.title}</code></div>}
+                      {testStatus.details.backend && <div>Backend: <code>{testStatus.details.backend}</code></div>}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                className="btn-fire"
+                disabled={testStatus.state === "sending"}
+                onClick={handleManualTestPush}
+              >
+                {testStatus.state === "sending" ? "Dispatching Alert…" : "⚡ Send Instant Test Push Notification"}
+              </button>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 3: SIMULATE RED ZONE EMERGENCY BROADCAST                     */}
+          {/* ============================================================== */}
+          {activeTab === "simulate" && (
+            <div className="glass-card" style={{ maxWidth: "720px", margin: "0 auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <h2 className="card-header-title">🚨 Full Zone Disaster Simulation</h2>
+                <span className="pill-badge pill-red">Authority Broadcast</span>
+              </div>
+              <p className="card-header-desc">
+                Simulate an automated or manual hazard escalation for an entire region. This inserts a transition classification into Supabase and broadcasts to all active registered subscribers.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label className="form-label">Target Monitored Zone</label>
+                  <select
+                    className="select-input"
+                    value={simZone}
+                    onChange={(e) => setSimZone(e.target.value)}
+                  >
+                    {zones.map((z) => (
+                      <option key={z.zone_id} value={z.zone_id}>
+                        {z.name || z.zone_id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Primary Hazard Type</label>
+                  <select
+                    className="select-input"
+                    value={simHazard}
+                    onChange={(e) => setSimHazard(e.target.value)}
+                  >
+                    {HAZARD_OPTIONS.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.icon} {h.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <label className="form-label">Transition State</label>
+              <div className="sev-group">
+                <button
+                  type="button"
+                  className={`sev-btn red ${simColor === "RED" ? "active" : ""}`}
+                  onClick={() => setSimColor("RED")}
+                >
+                  🚨 Escalate to RED (Immediate Evacuation)
+                </button>
+                <button
+                  type="button"
+                  className={`sev-btn yellow ${simColor === "YELLOW" ? "active" : ""}`}
+                  onClick={() => setSimColor("YELLOW")}
+                >
+                  ⚠️ Escalate to YELLOW (Hazard Warning)
+                </button>
+              </div>
+
+              {simResult && (
+                <div className={`feedback-box ${simResult.error ? "error" : "success"}`}>
+                  {simResult.error ? (
+                    <div>Error: {simResult.error}</div>
+                  ) : (
+                    <div>
+                      <div style={{ fontWeight: 800, marginBottom: "6px" }}>
+                        ✅ Zone Escalated: {simResult.prev_color || "GREEN"} → {simResult.new_color}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginTop: "10px", fontSize: "12px" }}>
+                        <div>Targeted Devices: <strong>{simResult.targeted ?? 1}</strong></div>
+                        <div>Delivered Push: <strong>{simResult.delivered ?? 1}</strong></div>
+                        <div>Severity: <strong>{simResult.severity_fired ?? "alert"}</strong></div>
+                      </div>
+                      {simResult.classification_id && (
+                        <div style={{ fontSize: "11px", marginTop: "6px", opacity: 0.8 }}>
+                          Audit Classification ID: <code>{simResult.classification_id}</code>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                className="btn-fire"
+                disabled={isSimulating}
+                onClick={handleSimulateDisaster}
+              >
+                {isSimulating ? "Broadcasting Emergency Escalation…" : "🚨 Trigger Disaster Emergency Broadcast"}
+              </button>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 4: AUDIT HISTORY LOG                                       */}
+          {/* ============================================================== */}
+          {activeTab === "history" && (
+            <div className="glass-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                <div>
+                  <h2 className="card-header-title">📜 Alert Broadcast Audit Log</h2>
+                  <p className="card-header-desc" style={{ marginBottom: 0 }}>
+                    Live records of all push notifications dispatched by the Rescue Arc alert service.
+                  </p>
+                </div>
+                <button className="btn-secondary" onClick={fetchHistory} disabled={isLoadingHistory}>
+                  🔄 Refresh
+                </button>
+              </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table className="audit-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Zone ID</th>
+                      <th>Severity</th>
+                      <th>Color Transition</th>
+                      <th>Targeted</th>
+                      <th>Delivered</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                          {isLoadingHistory ? "Loading audit logs…" : "No alert logs found yet."}
+                        </td>
+                      </tr>
+                    ) : (
+                      historyLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{new Date(log.sent_at).toLocaleString()}</td>
+                          <td style={{ fontWeight: 600 }}>{log.zone_id}</td>
+                          <td>
+                            <span className={`pill-badge ${log.severity === "alert" ? "pill-red" : "pill-yellow"}`}>
+                              {log.severity?.toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            {log.from_color || "—"} → <strong>{log.to_color}</strong>
+                          </td>
+                          <td>{log.recipients_targeted ?? 0}</td>
+                          <td style={{ color: "#34d399", fontWeight: 700 }}>
+                            {log.recipients_delivered ?? 0}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Direct admin links footer */}
+          <div style={{ marginTop: "40px", textAlign: "center", fontSize: "13px", color: "#64748b", display: "flex", justifyContent: "center", gap: "24px" }}>
+            <Link href="/dashboard/admin" style={{ color: "#94a3b8", textDecoration: "underline" }}>
+              Admin Dashboard &amp; Capacities
+            </Link>
+            <span>•</span>
+            <Link href="/admin/relocation-sites" style={{ color: "#94a3b8", textDecoration: "underline" }}>
+              Relocation Sites Capacity Manager
+            </Link>
+            <span>•</span>
+            <a href="http://localhost:8000/admin" target="_blank" rel="noreferrer" style={{ color: "#ef4444", textDecoration: "underline" }}>
+              Python Alert Admin Console (Port 8000) ↗
+            </a>
+          </div>
+        </div>
       </div>
     </>
   );

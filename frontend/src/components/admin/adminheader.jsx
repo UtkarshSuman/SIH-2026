@@ -60,6 +60,14 @@ export default function Adminheader() {
           <CircleCheck size={17} fill="currentColor" />
           All Systems Operational
         </div>
+
+        {/* Quick Alert Hub Link */}
+        <a
+          href="/alerts"
+          className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700"
+        >
+          🚨 Alert Testing &amp; Broadcast
+        </a>
       </div>
     </div>
   );

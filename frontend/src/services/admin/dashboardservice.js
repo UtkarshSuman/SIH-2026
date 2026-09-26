@@ -1,5 +1,5 @@
-import { mocklocations } from "@/data/admin/mocklocations";
-import { mockdashboardstats } from "@/data/admin/mockdashboard";
+import { mocklocations } from "@/data/mocklocations";
+import { mockdashboardstats } from "@/data/mockdashboard";
 
 export async function getAffectedLocations(filters = {}) {
   let data = [...mocklocations];

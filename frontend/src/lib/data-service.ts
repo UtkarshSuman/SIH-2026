@@ -107,9 +107,14 @@ export async function getHistoricalHazardTrends(zoneId: string): Promise<HazardH
 }
 
 export async function getDatabaseVersion(): Promise<{ version: number; lastUpdated: string }> {
-  const latest = await prisma.zone.findFirst({ orderBy: { updatedAt: "desc" }, select: { updatedAt: true } });
-  const lastUpdated = latest?.updatedAt ?? new Date(0);
-  return { version: lastUpdated.getTime(), lastUpdated: lastUpdated.toISOString() };
+  try {
+    const latest = await prisma.zone.findFirst({ orderBy: { updatedAt: "desc" }, select: { updatedAt: true } });
+    const lastUpdated = latest?.updatedAt ?? new Date(0);
+    return { version: lastUpdated.getTime(), lastUpdated: lastUpdated.toISOString() };
+  } catch {
+    const fallbackTime = new Date(0);
+    return { version: fallbackTime.getTime(), lastUpdated: fallbackTime.toISOString() };
+  }
 }
 
 export async function updateRelocationSiteCapacity(siteId: string, updates: Partial<RelocationSiteData>) {

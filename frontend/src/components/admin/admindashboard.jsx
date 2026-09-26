@@ -18,8 +18,8 @@ import {
   getDashboardStats,
 } from "@/services/admin/dashboardservice";
 
-import { mockzones } from "@/data/admin/mockzones";
-import { mockrelocationsites } from "@/data/admin/mockrelocationsites";
+import { mockzones } from "@/data/mockzones";
+import { mockrelocationsites } from "@/data/mockrelocationsites";
 
 export default function Admindashboard() {
   const [filters, setFilters] = useState({

@@ -28,12 +28,21 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <Link
-          href="/admin/relocation-sites"
-          className="rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        >
-          Manage Relocation Sites &amp; Capacities →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/alerts"
+            className="rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700"
+          >
+            🚨 Alert Testing &amp; Simulation Lab →
+          </Link>
+
+          <Link
+            href="/admin/relocation-sites"
+            className="rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            Manage Relocation Sites &amp; Capacities →
+          </Link>
+        </div>
       </div>
 
       {/* Relocation Capacity Card */}
