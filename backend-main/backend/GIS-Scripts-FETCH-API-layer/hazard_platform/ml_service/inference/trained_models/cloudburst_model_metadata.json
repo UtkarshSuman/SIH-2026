@@ -1,0 +1,75 @@
+{
+  "hazard": "CLOUDBURST",
+  "field_order": [
+    "rainfall_intensity_mm_per_hr",
+    "humidity_pct",
+    "temperature_c",
+    "elevation_m",
+    "wind_speed_kmph",
+    "historical_cloudburst_count"
+  ],
+  "categorical_fields": [],
+  "numeric_fields": [
+    "rainfall_intensity_mm_per_hr",
+    "humidity_pct",
+    "temperature_c",
+    "elevation_m",
+    "wind_speed_kmph",
+    "historical_cloudburst_count"
+  ],
+  "impute_medians": {
+    "rainfall_intensity_mm_per_hr": 35.25,
+    "humidity_pct": 69.6,
+    "temperature_c": 26.9,
+    "elevation_m": 493.55,
+    "wind_speed_kmph": 14.2,
+    "historical_cloudburst_count": 2.0
+  },
+  "impute_modes": {},
+  "n_train_rows": 800,
+  "n_test_rows": 200,
+  "regressor_metrics": {
+    "r2": 0.9879,
+    "mae": 0.0172,
+    "zone_color_accuracy": 0.92,
+    "zone_color_confusion_matrix": [
+      [
+        110,
+        6,
+        0
+      ],
+      [
+        3,
+        49,
+        2
+      ],
+      [
+        0,
+        5,
+        25
+      ]
+    ]
+  },
+  "classifier_metrics": {
+    "accuracy": 0.92,
+    "roc_auc": 0.905,
+    "confusion_matrix": [
+      [
+        122,
+        1
+      ],
+      [
+        15,
+        62
+      ]
+    ]
+  },
+  "feature_importances": {
+    "rainfall_intensity_mm_per_hr": 0.9203921381780348,
+    "wind_speed_kmph": 0.03868241973776482,
+    "elevation_m": 0.021668894463325348,
+    "historical_cloudburst_count": 0.009205602988715061,
+    "humidity_pct": 0.008063920597730674,
+    "temperature_c": 0.0019870240344293582
+  }
+}

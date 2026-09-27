@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "hazard": "flood",
+    "method": "AHP pairwise comparison, Saaty 1-9 scale",
+    "elicited_by": "PLACEHOLDER \u2014 replace with names/roles of the people who actually made these judgments",
+    "elicited_on": "PLACEHOLDER \u2014 replace with the real elicitation date",
+    "cr_threshold": 0.1,
+    "note": "This file is the one manual, one-time human input the AHP weighting system needs \u2014 the pairwise comparisons themselves, not the weights. Everything downstream (matrix construction, weight derivation, Consistency Ratio check, injection into predictor.py) is fully automated by ahp.py and weight_resolver.py and re-runs on every import with zero manual steps. This mirrors the project convention already used for shoreline_change_rate_m_per_yr and mangrove_cover_pct: a one-time human-sourced input, ingested once, consumed automatically forever after. The comparisons below were seeded by Claude from this project's already-documented literature-backed weights (see WEIGHT_JUSTIFICATION.md) so the pipeline has a working, internally-consistent default on day one \u2014 replace them with a real elicitation (2-3 team members, run independently, see judgments/README.md) before treating the resulting CR as evidence of anything beyond internal arithmetic consistency."
+  },
+  "factors": [
+    "rainfall_mm_24h",
+    "rainfall_mm_72h",
+    "river_level_m",
+    "river_level_change_rate_m_per_hr",
+    "soil_saturation_pct",
+    "elevation_m",
+    "distance_to_river_m",
+    "historical_flood_count"
+  ],
+  "comparisons": {
+    "rainfall_mm_24h|rainfall_mm_72h": 1,
+    "rainfall_mm_24h|river_level_m": 1.0,
+    "rainfall_mm_24h|river_level_change_rate_m_per_hr": 2,
+    "rainfall_mm_24h|soil_saturation_pct": 1,
+    "rainfall_mm_24h|elevation_m": 2,
+    "rainfall_mm_24h|distance_to_river_m": 2,
+    "rainfall_mm_24h|historical_flood_count": 3,
+    "rainfall_mm_72h|river_level_m": 1.0,
+    "rainfall_mm_72h|river_level_change_rate_m_per_hr": 2,
+    "rainfall_mm_72h|soil_saturation_pct": 1,
+    "rainfall_mm_72h|elevation_m": 2,
+    "rainfall_mm_72h|distance_to_river_m": 2,
+    "rainfall_mm_72h|historical_flood_count": 3,
+    "river_level_m|river_level_change_rate_m_per_hr": 2,
+    "river_level_m|soil_saturation_pct": 1,
+    "river_level_m|elevation_m": 2,
+    "river_level_m|distance_to_river_m": 2,
+    "river_level_m|historical_flood_count": 4,
+    "river_level_change_rate_m_per_hr|soil_saturation_pct": 1.0,
+    "river_level_change_rate_m_per_hr|elevation_m": 1,
+    "river_level_change_rate_m_per_hr|distance_to_river_m": 1,
+    "river_level_change_rate_m_per_hr|historical_flood_count": 2,
+    "soil_saturation_pct|elevation_m": 2,
+    "soil_saturation_pct|distance_to_river_m": 2,
+    "soil_saturation_pct|historical_flood_count": 3,
+    "elevation_m|distance_to_river_m": 1,
+    "elevation_m|historical_flood_count": 2,
+    "distance_to_river_m|historical_flood_count": 2
+  }
+}

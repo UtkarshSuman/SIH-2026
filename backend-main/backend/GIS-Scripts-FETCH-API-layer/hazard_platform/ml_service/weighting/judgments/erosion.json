@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "hazard": "erosion",
+    "method": "AHP pairwise comparison, Saaty 1-9 scale",
+    "elicited_by": "PLACEHOLDER \u2014 replace with names/roles of the people who actually made these judgments",
+    "elicited_on": "PLACEHOLDER \u2014 replace with the real elicitation date",
+    "cr_threshold": 0.1,
+    "note": "This file is the one manual, one-time human input the AHP weighting system needs \u2014 the pairwise comparisons themselves, not the weights. Everything downstream (matrix construction, weight derivation, Consistency Ratio check, injection into predictor.py) is fully automated by ahp.py and weight_resolver.py and re-runs on every import with zero manual steps. This mirrors the project convention already used for shoreline_change_rate_m_per_yr and mangrove_cover_pct: a one-time human-sourced input, ingested once, consumed automatically forever after. The comparisons below were seeded by Claude from this project's already-documented literature-backed weights (see WEIGHT_JUSTIFICATION.md) so the pipeline has a working, internally-consistent default on day one \u2014 replace them with a real elicitation (2-3 team members, run independently, see judgments/README.md) before treating the resulting CR as evidence of anything beyond internal arithmetic consistency."
+  },
+  "factors": [
+    "shoreline_change_rate_m_per_yr",
+    "wave_energy_index",
+    "distance_to_coast_m",
+    "historical_erosion_events",
+    "sediment_type_code"
+  ],
+  "comparisons": {
+    "shoreline_change_rate_m_per_yr|wave_energy_index": 1,
+    "shoreline_change_rate_m_per_yr|distance_to_coast_m": 2,
+    "shoreline_change_rate_m_per_yr|historical_erosion_events": 2,
+    "shoreline_change_rate_m_per_yr|sediment_type_code": 2,
+    "wave_energy_index|distance_to_coast_m": 1,
+    "wave_energy_index|historical_erosion_events": 1,
+    "wave_energy_index|sediment_type_code": 1,
+    "distance_to_coast_m|historical_erosion_events": 1,
+    "distance_to_coast_m|sediment_type_code": 1,
+    "historical_erosion_events|sediment_type_code": 1
+  }
+}

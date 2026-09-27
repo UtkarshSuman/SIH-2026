@@ -1,0 +1,77 @@
+{
+  "hazard": "LANDSLIDE",
+  "field_order": [
+    "slope_deg",
+    "rainfall_mm_72h",
+    "soil_moisture_pct",
+    "soil_type_code",
+    "vegetation_index",
+    "historical_landslide_count"
+  ],
+  "categorical_fields": [
+    "soil_type_code"
+  ],
+  "numeric_fields": [
+    "slope_deg",
+    "rainfall_mm_72h",
+    "soil_moisture_pct",
+    "vegetation_index",
+    "historical_landslide_count"
+  ],
+  "impute_medians": {
+    "slope_deg": 30.75,
+    "rainfall_mm_72h": 101.6,
+    "soil_moisture_pct": 52.900000000000006,
+    "vegetation_index": 0.4805,
+    "historical_landslide_count": 3.0
+  },
+  "impute_modes": {
+    "soil_type_code": 5
+  },
+  "n_train_rows": 800,
+  "n_test_rows": 200,
+  "regressor_metrics": {
+    "r2": 0.901,
+    "mae": 0.0301,
+    "zone_color_accuracy": 0.885,
+    "zone_color_confusion_matrix": [
+      [
+        24,
+        10,
+        0
+      ],
+      [
+        4,
+        148,
+        2
+      ],
+      [
+        0,
+        7,
+        5
+      ]
+    ]
+  },
+  "classifier_metrics": {
+    "accuracy": 0.81,
+    "roc_auc": 0.8799,
+    "confusion_matrix": [
+      [
+        73,
+        22
+      ],
+      [
+        16,
+        89
+      ]
+    ]
+  },
+  "feature_importances": {
+    "slope_deg": 0.47267013949254333,
+    "rainfall_mm_72h": 0.2245347589646279,
+    "soil_moisture_pct": 0.1683156180568972,
+    "vegetation_index": 0.07298772420665074,
+    "historical_landslide_count": 0.03077229368910843,
+    "soil_type_code": 0.03071946559017244
+  }
+}

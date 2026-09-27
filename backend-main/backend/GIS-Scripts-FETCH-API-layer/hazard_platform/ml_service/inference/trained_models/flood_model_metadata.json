@@ -1,0 +1,83 @@
+{
+  "hazard": "FLOOD",
+  "field_order": [
+    "rainfall_mm_24h",
+    "rainfall_mm_72h",
+    "river_level_m",
+    "river_level_change_rate_m_per_hr",
+    "soil_saturation_pct",
+    "elevation_m",
+    "distance_to_river_m",
+    "historical_flood_count"
+  ],
+  "categorical_fields": [],
+  "numeric_fields": [
+    "rainfall_mm_24h",
+    "rainfall_mm_72h",
+    "river_level_m",
+    "river_level_change_rate_m_per_hr",
+    "soil_saturation_pct",
+    "elevation_m",
+    "distance_to_river_m",
+    "historical_flood_count"
+  ],
+  "impute_medians": {
+    "rainfall_mm_24h": 41.95,
+    "rainfall_mm_72h": 102.30000000000001,
+    "river_level_m": 1.81,
+    "river_level_change_rate_m_per_hr": 0.0147,
+    "soil_saturation_pct": 51.849999999999994,
+    "elevation_m": 120.7,
+    "distance_to_river_m": 488.1,
+    "historical_flood_count": 2.0
+  },
+  "impute_modes": {},
+  "n_train_rows": 800,
+  "n_test_rows": 200,
+  "regressor_metrics": {
+    "r2": 0.9578,
+    "mae": 0.0228,
+    "zone_color_accuracy": 0.965,
+    "zone_color_confusion_matrix": [
+      [
+        133,
+        1,
+        0
+      ],
+      [
+        4,
+        56,
+        0
+      ],
+      [
+        0,
+        2,
+        4
+      ]
+    ]
+  },
+  "classifier_metrics": {
+    "accuracy": 0.885,
+    "roc_auc": 0.8803,
+    "confusion_matrix": [
+      [
+        153,
+        5
+      ],
+      [
+        18,
+        24
+      ]
+    ]
+  },
+  "feature_importances": {
+    "rainfall_mm_72h": 0.7239950972778612,
+    "rainfall_mm_24h": 0.08621958614318029,
+    "soil_saturation_pct": 0.0756887991584382,
+    "river_level_m": 0.04085668604321432,
+    "distance_to_river_m": 0.03801431349643207,
+    "elevation_m": 0.018708190157983605,
+    "river_level_change_rate_m_per_hr": 0.009983591464269845,
+    "historical_flood_count": 0.006533736258620564
+  }
+}

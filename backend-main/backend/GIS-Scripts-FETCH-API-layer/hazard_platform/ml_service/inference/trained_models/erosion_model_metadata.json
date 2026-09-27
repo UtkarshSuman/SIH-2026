@@ -1,0 +1,77 @@
+{
+  "hazard": "EROSION",
+  "field_order": [
+    "shoreline_change_rate_m_per_yr",
+    "wave_energy_index",
+    "distance_to_coast_m",
+    "sediment_type_code",
+    "mangrove_cover_pct",
+    "historical_erosion_events"
+  ],
+  "categorical_fields": [
+    "sediment_type_code"
+  ],
+  "numeric_fields": [
+    "shoreline_change_rate_m_per_yr",
+    "wave_energy_index",
+    "distance_to_coast_m",
+    "mangrove_cover_pct",
+    "historical_erosion_events"
+  ],
+  "impute_medians": {
+    "shoreline_change_rate_m_per_yr": -1.145,
+    "wave_energy_index": 9.34,
+    "distance_to_coast_m": 399.45,
+    "mangrove_cover_pct": 14.4,
+    "historical_erosion_events": 2.0
+  },
+  "impute_modes": {
+    "sediment_type_code": 12
+  },
+  "n_train_rows": 800,
+  "n_test_rows": 200,
+  "regressor_metrics": {
+    "r2": 0.971,
+    "mae": 0.0281,
+    "zone_color_accuracy": 0.94,
+    "zone_color_confusion_matrix": [
+      [
+        117,
+        5,
+        0
+      ],
+      [
+        4,
+        44,
+        2
+      ],
+      [
+        0,
+        1,
+        27
+      ]
+    ]
+  },
+  "classifier_metrics": {
+    "accuracy": 0.915,
+    "roc_auc": 0.9325,
+    "confusion_matrix": [
+      [
+        123,
+        2
+      ],
+      [
+        15,
+        60
+      ]
+    ]
+  },
+  "feature_importances": {
+    "shoreline_change_rate_m_per_yr": 0.6940461076694778,
+    "wave_energy_index": 0.2050959347016299,
+    "distance_to_coast_m": 0.060229969794625145,
+    "mangrove_cover_pct": 0.016817816247868444,
+    "historical_erosion_events": 0.013062795715241198,
+    "sediment_type_code": 0.010747375871157504
+  }
+}

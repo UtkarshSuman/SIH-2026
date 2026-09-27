@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "hazard": "cloudburst",
+    "method": "AHP pairwise comparison, Saaty 1-9 scale",
+    "elicited_by": "PLACEHOLDER \u2014 replace with names/roles of the people who actually made these judgments",
+    "elicited_on": "PLACEHOLDER \u2014 replace with the real elicitation date",
+    "cr_threshold": 0.1,
+    "note": "This file is the one manual, one-time human input the AHP weighting system needs \u2014 the pairwise comparisons themselves, not the weights. Everything downstream (matrix construction, weight derivation, Consistency Ratio check, injection into predictor.py) is fully automated by ahp.py and weight_resolver.py and re-runs on every import with zero manual steps. This mirrors the project convention already used for shoreline_change_rate_m_per_yr and mangrove_cover_pct: a one-time human-sourced input, ingested once, consumed automatically forever after. The comparisons below were seeded by Claude from this project's already-documented literature-backed weights (see WEIGHT_JUSTIFICATION.md) so the pipeline has a working, internally-consistent default on day one \u2014 replace them with a real elicitation (2-3 team members, run independently, see judgments/README.md) before treating the resulting CR as evidence of anything beyond internal arithmetic consistency."
+  },
+  "factors": [
+    "rainfall_intensity_mm_per_hr",
+    "humidity_pct",
+    "elevation_m",
+    "wind_speed_kmph",
+    "historical_cloudburst_count"
+  ],
+  "comparisons": {
+    "rainfall_intensity_mm_per_hr|humidity_pct": 3,
+    "rainfall_intensity_mm_per_hr|elevation_m": 3,
+    "rainfall_intensity_mm_per_hr|wind_speed_kmph": 4,
+    "rainfall_intensity_mm_per_hr|historical_cloudburst_count": 3,
+    "humidity_pct|elevation_m": 1,
+    "humidity_pct|wind_speed_kmph": 1,
+    "humidity_pct|historical_cloudburst_count": 1,
+    "elevation_m|wind_speed_kmph": 1,
+    "elevation_m|historical_cloudburst_count": 1,
+    "wind_speed_kmph|historical_cloudburst_count": 1.0
+  }
+}

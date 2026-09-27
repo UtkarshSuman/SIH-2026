@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rescue-Arc · Notification Center & Subscriber Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-base:        #070a10;
+      --bg-card:        #0f1726;
+      --bg-card-hover:  #152035;
+      --bg-surface:     #121b2b;
+      --border:         rgba(99, 130, 190, 0.16);
+
+      --text-main:      #f0f4fc;
+      --text-muted:     #8ca0c0;
+      --text-dim:       #506482;
+
+      --accent:         #3d8bff;
+      --accent-glow:    rgba(61, 139, 255, 0.25);
+      --red:            #ff4757;
+      --red-glow:       rgba(255, 71, 87, 0.35);
+      --yellow:         #ffa502;
+      --yellow-glow:    rgba(255, 165, 2, 0.30);
+      --green:          #2ed573;
+      --green-glow:     rgba(46, 213, 115, 0.30);
+
+      --radius:         10px;
+      --radius-lg:      16px;
+      --radius-full:    9999px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      position: relative;
+    }
+
+    /* Ambient background grid */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(61, 139, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61, 139, 255, 0.035) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 580px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    .top-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 0 4px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;
+    }
+    .nav-link {
+      font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .nav-link:hover { text-decoration: underline; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .card-title-group { display: flex; flex-direction: column; gap: 3px; }
+    h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; }
+    .sub { color: var(--text-muted); font-size: 0.85rem; }
+
+    .step-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+    select, input {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      flex: 1; min-width: 130px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:disabled { opacity: 0.45; cursor: default; }
+
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 10px var(--accent-glow); }
+    .btn-primary:hover:not(:disabled) { background: #5da0ff; }
+    .btn-danger  { background: var(--red); color: #fff; box-shadow: 0 2px 10px var(--red-glow); }
+    .btn-danger:hover:not(:disabled)  { background: #ff5e6c; }
+    .btn-warn    { background: var(--yellow); color: #000; box-shadow: 0 2px 10px var(--yellow-glow); }
+    .btn-warn:hover:not(:disabled)    { background: #ffbe33; }
+    .btn-success { background: var(--green); color: #000; box-shadow: 0 2px 10px var(--green-glow); }
+    .btn-success:hover:not(:disabled) { background: #45e085; }
+    .btn-ghost   { background: rgba(255, 255, 255, 0.06); color: var(--text-main); border-color: var(--border); }
+    .btn-ghost:hover:not(:disabled)   { background: rgba(255, 255, 255, 0.12); }
+
+    /* Live Preview Box */
+    .preview-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(99, 130, 190, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .preview-header { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; }
+    .preview-title  { font-weight: 700; font-size: 13px; color: #fff; }
+    .preview-body   { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+
+    .token-box {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      word-break: break-all;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    #log {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      max-height: 160px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .log-ok  { color: #45e085; }
+    .log-err { color: #ff6b81; }
+    .log-inf { color: #5da0ff; }
+
+    /* ================================================================
+       FLOATING PILL TOAST NOTIFICATION (Option 3 with Visual Color Indicators)
+    ================================================================ */
+    #floating-pill-container {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      z-index: 999999; width: 92%; max-width: 520px; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    .pill-toast {
+      pointer-events: all; width: 100%;
+      background: rgba(12, 17, 26, 0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden; margin-bottom: 10px;
+      transform: translateY(-24px) scale(0.96); opacity: 0;
+      animation: pill-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: all 0.25s ease;
+    }
+    @keyframes pill-slide-in {
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .pill-toast.dismissing {
+      transform: translateY(-20px) scale(0.95); opacity: 0;
+      transition: all 0.25s ease;
+    }
+
+    /* Color state styling */
+    .pill-toast.RED {
+      border-color: rgba(255, 71, 87, 0.6);
+      box-shadow: 0 12px 40px rgba(255, 71, 87, 0.3), 0 0 0 1px rgba(255, 71, 87, 0.5);
+    }
+    .pill-toast.YELLOW {
+      border-color: rgba(255, 165, 2, 0.6);
+      box-shadow: 0 12px 40px rgba(255, 165, 2, 0.25), 0 0 0 1px rgba(255, 165, 2, 0.5);
+    }
+    .pill-toast.GREEN {
+      border-color: rgba(46, 213, 115, 0.6);
+      box-shadow: 0 12px 40px rgba(46, 213, 115, 0.2), 0 0 0 1px rgba(46, 213, 115, 0.4);
+    }
+
+    /* Primary Bar */
+    .pill-main-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; cursor: pointer;
+    }
+    .pill-visual-beacon {
+      position: relative; width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 16px;
+    }
+    .pill-toast.RED .pill-visual-beacon {
+      background: radial-gradient(circle, #ff4757 30%, rgba(255, 71, 87, 0.2) 70%);
+      box-shadow: 0 0 16px var(--red-glow);
+    }
+    .pill-toast.YELLOW .pill-visual-beacon {
+      background: radial-gradient(circle, #ffa502 30%, rgba(255, 165, 2, 0.2) 70%);
+      box-shadow: 0 0 16px var(--yellow-glow);
+    }
+    .pill-toast.GREEN .pill-visual-beacon {
+      background: radial-gradient(circle, #2ed573 30%, rgba(46, 213, 115, 0.2) 70%);
+      box-shadow: 0 0 16px var(--green-glow);
+    }
+
+    .beacon-pulse-ring {
+      position: absolute; inset: -4px; border-radius: 50%;
+      border: 2px solid currentColor; opacity: 0.6;
+      animation: beacon-wave 1.8s infinite cubic-bezier(0, 0.2, 0.8, 1);
+    }
+    @keyframes beacon-wave {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .pill-content-body { flex: 1; min-width: 0; }
+    .pill-header-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .pill-zone-badge {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      padding: 2px 7px; border-radius: var(--radius-full); letter-spacing: 0.05em;
+    }
+    .pill-toast.RED .pill-zone-badge { background: var(--red); color: #fff; }
+    .pill-toast.YELLOW .pill-zone-badge { background: var(--yellow); color: #000; }
+    .pill-toast.GREEN .pill-zone-badge { background: var(--green); color: #070a10; }
+
+    .pill-zone-name { font-size: 12px; font-weight: 700; color: var(--text-main); }
+    .pill-headline {
+      font-size: 11.5px; color: var(--text-muted); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .pill-actions { display: flex; align-items: center; gap: 6px; }
+    .pill-expand-btn {
+      background: rgba(255, 255, 255, 0.08); border: none; border-radius: 6px;
+      color: var(--text-muted); font-size: 10.5px; font-weight: 600; padding: 4px 8px;
+      cursor: pointer;
+    }
+    .pill-expand-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .pill-close-btn {
+      background: none; border: none; color: var(--text-dim); font-size: 16px;
+      cursor: pointer; padding: 4px 8px; line-height: 1;
+    }
+    .pill-close-btn:hover { color: #fff; }
+
+    .pill-drawer {
+      max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-top: 1px solid rgba(255, 255, 255, 0.06); background: rgba(0, 0, 0, 0.2);
+    }
+    .pill-toast.expanded .pill-drawer { max-height: 180px; }
+    .pill-drawer-content { padding: 12px 16px; font-size: 11.5px; color: var(--text-muted); display: flex; flex-direction: column; gap: 8px; }
+    .pill-advice { line-height: 1.45; color: #d0daf0; }
+    .pill-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; }
+
+    .pill-countdown-track { width: 100%; height: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+    .pill-countdown-fill {
+      height: 100%; width: 100%; background: currentColor;
+      transform-origin: left; animation: countdown-deplete 8s linear forwards;
+    }
+    @keyframes countdown-deplete {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 600px) {
+      body {
+        padding: 12px 10px;
+      }
+      .card {
+        padding: 16px 14px;
+        border-radius: 12px;
+      }
+      .btn-group {
+        flex-direction: column;
+      }
+      .btn-group button {
+        min-width: 100%;
+        min-height: 38px;
+      }
+      #floating-pill-container {
+        top: 8px;
+        width: 96%;
+      }
+      .pill-main-bar {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .pill-visual-beacon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+      .pill-zone-name {
+        font-size: 11.5px;
+      }
+      .pill-headline {
+        font-size: 10.5px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Nav Bar -->
+  <div class="top-nav">
+    <div class="nav-brand">
+      <span style="color:var(--red);">⚡</span> Rescue-Arc Subscriber & Push Tester
+    </div>
+    <a href="/admin" class="nav-link">Open Admin Dashboard →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-title-group">
+      <h1>🔔 Disaster Notification Center</h1>
+      <p class="sub">Register your browser for live zone warnings and test the emergency alert HUD.</p>
+    </div>
+
+    <!-- Quick Visual Toast Preview Buttons -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Quick Visual Test:</span>
+      <button class="btn-danger" style="flex:1; padding:4px 8px; font-size:11px;" onclick="testVisualToast('RED')">🔴 Test RED</button>
+      <button class="btn-warn"   style="flex:1; padding:4px 8px; font-size:11px;" onclick="testVisualToast('YELLOW')">🟡 Test YELLOW</button>
+      <button class="btn-success" style="flex:1; padding:4px 8px; font-size:11px;" onclick="testVisualToast('GREEN')">🟢 Test GREEN</button>
+    </div>
+
+    <!-- STEP 1 — Subscribe -->
+    <div class="step-section">
+      <div class="section-title">
+        <span>Step 1 — Subscribe Browser to a Monitored Zone</span>
+        <span style="font-size:10px; color:var(--accent);">Browser Push</span>
+      </div>
+
+      <label for="zone-select">Select Region to Receive Alerts For</label>
+      <select id="zone-select">
+        <option value="">— Loading database zones… —</option>
+      </select>
+
+      <button class="btn-primary" id="btn-subscribe">🔔 Allow Notifications & Subscribe</button>
+      <button class="btn-ghost" id="btn-test-local" style="font-size:11.5px;">🧪 Verify Windows OS Desktop Banners (Local Test)</button>
+
+      <div class="token-box" id="token-box">—</div>
+    </div>
+
+    <!-- STEP 2 — Test Push -->
+    <div class="step-section">
+      <div class="section-title">
+        <span>Step 2 — Firebase Push Health Check</span>
+      </div>
+      <div class="btn-group">
+        <button class="btn-ghost" id="btn-test-push" disabled>📨 Send Test Push Instantly</button>
+        <button class="btn-ghost" id="btn-test-push-delayed" disabled>⏱️ Push in 4s (Minimize Tab!)</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 — Trigger Disaster Alert -->
+    <div class="step-section">
+      <div class="section-title">
+        <span>Step 3 — Trigger Live Disaster Broadcast</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div>
+          <label for="override-zone">Target Region</label>
+          <select id="override-zone">
+            <option value="">— Loading zones… —</option>
+          </select>
+        </div>
+        <div>
+          <label for="override-color">Alert Urgency Level</label>
+          <select id="override-color">
+            <option value="RED">🔴 RED — Emergency Evacuation</option>
+            <option value="YELLOW">🟡 YELLOW — Hazard Warning Advisory</option>
+            <option value="GREEN">🟢 GREEN — All Clear</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="override-disaster">Disaster Category</label>
+        <select id="override-disaster">
+          <option value="EROSION" selected>🏖️ Coastal Surge & Erosion</option>
+          <option value="FLOOD">🌊 Flash Flood / Inundation</option>
+          <option value="LANDSLIDE">⛰️ Landslide / Slope Instability</option>
+          <option value="CLOUDBURST">⛈️ Severe Cloudburst Deluge</option>
+        </select>
+      </div>
+
+      <!-- Live Content Preview Box -->
+      <div class="preview-box">
+        <div class="preview-header">Notification Content Preview</div>
+        <div id="preview-title" class="preview-title">🚨 EMERGENCY: 🏖️ Coastal Surge & Erosion in Puri, Odisha</div>
+        <div id="preview-body" class="preview-body">Puri, Odisha: Destructive wave surge and shoreline collapse (Risk: 88%) [IMMEDIATE Priority]. Severe wave surge and coastal embankment collapse. Evacuate beachside structures immediately.</div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-danger" id="btn-override" disabled>🚨 Alert Now</button>
+        <button class="btn-danger" id="btn-override-delayed" disabled>⏱️ Alert in 4s (Minimize Tab!)</button>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div id="log"></div>
+  </div>
+</div>
+
+<!-- ==================== FLOATING PILL TOAST CONTAINER ==================== -->
+<div id="floating-pill-container" aria-live="assertive"></div>
+
+<script>
+  const API = '';
+  let myToken = localStorage.getItem('rescue_fcm_token') || null;
+  let _zonesCache = [];
+
+  /* ------------------------------------------------------------------
+     SYNTHESIZED AUDIO CHIME (Web Audio API)
+  ------------------------------------------------------------------ */
+  let _audioCtx = null;
+  function playNotificationChime(color) {
+    try {
+      if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (_audioCtx.state === 'suspended') {
+        _audioCtx.resume();
+      }
+      const now = _audioCtx.currentTime;
+      const osc = _audioCtx.createOscillator();
+      const gain = _audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(_audioCtx.destination);
+
+      if (color === 'RED') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1174, now + 0.12);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else if (color === 'YELLOW') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587, now);
+        osc.frequency.setValueAtTime(784, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, now);
+        osc.frequency.setValueAtTime(659, now + 0.12);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+    } catch (e) {
+      console.warn('Audio chime note:', e);
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     FLOATING PILL TOAST COMPONENT (Option 3 with Rich Visual Cues)
+  ------------------------------------------------------------------ */
+  function showFloatingPill({ color, zoneId, zoneName, title, body, hazard, riskScore, advice }) {
+    playNotificationChime(color);
+
+    const container = document.getElementById('floating-pill-container');
+    const pill = document.createElement('div');
+    pill.className = `pill-toast ${color}`;
+
+    const iconMap = { RED: '🚨', YELLOW: '⚠️', GREEN: '🛡️' };
+    const badgeMap = { RED: 'RED ALERT', YELLOW: 'WARNING', GREEN: 'ALL CLEAR' };
+    const icon = iconMap[color] || '🔔';
+    const badgeText = badgeMap[color] || color;
+
+    pill.innerHTML = `
+      <div class="pill-main-bar" onclick="this.closest('.pill-toast').classList.toggle('expanded')">
+        <div class="pill-visual-beacon" style="color:var(--${color.toLowerCase()})">
+          <div class="beacon-pulse-ring"></div>
+          <span>${icon}</span>
+        </div>
+        <div class="pill-content-body">
+          <div class="pill-header-line">
+            <span class="pill-zone-badge">${badgeText}</span>
+            <span class="pill-zone-name">${zoneName || zoneId}</span>
+          </div>
+          <div class="pill-headline">${title || `${badgeText} dispatched`}</div>
+        </div>
+        <div class="pill-actions" onclick="event.stopPropagation()">
+          <button class="pill-expand-btn" onclick="this.closest('.pill-toast').classList.toggle('expanded')">Details ▾</button>
+          <button class="pill-close-btn" onclick="dismissPill(this.closest('.pill-toast'))">✕</button>
+        </div>
+      </div>
+
+      <div class="pill-drawer">
+        <div class="pill-drawer-content">
+          <div class="pill-advice">${advice || body || 'Follow state disaster authority safety procedures.'}</div>
+          <div class="pill-meta-row">
+            <span>Hazard: <strong>${hazard || 'GENERAL'}</strong> · Risk Level: <strong>${riskScore || '88%'}</strong></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px;">${new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pill-countdown-track">
+        <div class="pill-countdown-fill" style="background:var(--${color.toLowerCase()});"></div>
+      </div>
+    `;
+
+    container.prepend(pill);
+
+    setTimeout(() => { dismissPill(pill); }, 8000);
+
+    pill.addEventListener('mouseenter', () => {
+      const fill = pill.querySelector('.pill-countdown-fill');
+      if (fill) fill.style.animationPlayState = 'paused';
+    });
+    pill.addEventListener('mouseleave', () => {
+      const fill = pill.querySelector('.pill-countdown-fill');
+      if (fill) fill.style.animationPlayState = 'running';
+    });
+  }
+
+  function dismissPill(pill) {
+    if (!pill || pill.classList.contains('dismissing')) return;
+    pill.classList.add('dismissing');
+    setTimeout(() => pill.remove(), 260);
+  }
+
+  function testVisualToast(color) {
+    if (color === 'RED') {
+      showFloatingPill({
+        color: 'RED',
+        zoneId: 'Z-ODISHA-PURI-01',
+        zoneName: 'Puri, Odisha',
+        title: '🚨 EMERGENCY EVACUATION: Destructive Coastal Surge',
+        hazard: 'COASTAL SURGE',
+        riskScore: '89%',
+        advice: 'Destructive wave surge and coastal embankment collapse. Evacuate beachside structures immediately to inland shelters.',
+      });
+    } else if (color === 'YELLOW') {
+      showFloatingPill({
+        color: 'YELLOW',
+        zoneId: 'Z-BIHAR-PATNA-01',
+        zoneName: 'Patna, Bihar',
+        title: '⚠️ HAZARD WARNING: Riverine Inundation Advisory',
+        hazard: 'FLOOD',
+        riskScore: '65%',
+        advice: 'Heavy water runoff detected. Monitor local water levels, secure emergency supplies, and avoid low-lying zones.',
+      });
+    } else {
+      showFloatingPill({
+        color: 'GREEN',
+        zoneId: 'Z-KERALA-WAYANAD-01',
+        zoneName: 'Wayanad, Kerala',
+        title: '🛡️ ALL CLEAR: Slope Conditions Stabilized',
+        hazard: 'STABLE',
+        riskScore: '8%',
+        advice: 'Hazard advisory terminated. Safe to resume normal civilian activities.',
+      });
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     DYNAMIC ZONE POPULATION FROM DATABASE
+  ------------------------------------------------------------------ */
+  async function loadDatabaseZones() {
+    try {
+      const res = await fetch(`${API}/admin/zone-status`);
+      if (res.ok) {
+        _zonesCache = await res.json();
+        const sel1 = document.getElementById('zone-select');
+        const sel2 = document.getElementById('override-zone');
+
+        const optionsHtml = _zonesCache.map(z => {
+          const name = z.name || z.zone_id;
+          return `<option value="${z.zone_id}">${name} (${z.zone_color || 'GREEN'})</option>`;
+        }).join('');
+
+        sel1.innerHTML = optionsHtml;
+        sel2.innerHTML = optionsHtml;
+
+        // Default to Puri
+        if (_zonesCache.some(z => z.zone_id === 'Z-ODISHA-PURI-01')) {
+          sel1.value = 'Z-ODISHA-PURI-01';
+          sel2.value = 'Z-ODISHA-PURI-01';
+        }
+        updateLivePreview();
+      }
+    } catch (e) {
+      console.warn('Failed to load database zones:', e);
+    }
+  }
+  loadDatabaseZones();
+
+  function log(msg, type = 'inf') {
+    const el = document.getElementById('log');
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // --------------- SUBSCRIBE ---------------
+  document.getElementById('btn-subscribe').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-subscribe');
+    btn.disabled = true;
+    btn.textContent = 'Requesting permission…';
+
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        log('Notification permission denied. Enable it in browser settings.', 'err');
+        btn.disabled = false;
+        btn.textContent = '🔔 Allow Notifications & Subscribe';
+        return;
+      }
+      log('Permission granted ✓', 'ok');
+      btn.textContent = 'Registering service worker…';
+
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+      const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js');
+
+      const cfgRes = await fetch(`${API}/admin/firebase-config`).catch(() => null);
+      let firebaseConfig;
+      let vapidKey = 'BClYIBxo0Bja4sxNdjJffH4aMaaW7P_ajlDaZco7gu1ocIg5MCWGZvs44D3D2LMCewVOw9XoGeDD1K-4j1GU-tQ';
+      if (cfgRes && cfgRes.ok) {
+        firebaseConfig = await cfgRes.json();
+        if (firebaseConfig.vapidKey) vapidKey = firebaseConfig.vapidKey;
+      } else {
+        firebaseConfig = {
+          apiKey:            "AIzaSyCj5i1D_G6wg4g149CUhVf899IX5mifJ00",
+          authDomain:        "rescue-arc-9b293.firebaseapp.com",
+          projectId:         "rescue-arc-9b293",
+          storageBucket:     "rescue-arc-9b293.firebasestorage.app",
+          messagingSenderId: "420144730893",
+          appId:             "1:420144730893:web:d972e7ddc4f45827141644",
+          measurementId:     "G-B3K9K5XJ92",
+        };
+      }
+
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) {
+        if (r.scope.includes(':8001')) {
+          await r.update().catch(() => {});
+        }
+      }
+
+      const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      await swReg.update().catch(() => {});
+      log('Service worker registered & active ✓', 'ok');
+
+      let app;
+      try { app = initializeApp(firebaseConfig); }
+      catch (e) { app = initializeApp(firebaseConfig, 'tester'); }
+
+      const messaging = getMessaging(app);
+
+      // Listen for pushes while tab is in foreground
+      onMessage(messaging, (payload) => {
+        const title = payload.notification?.title || payload.data?.title || 'Rescue-Arc Alert';
+        const body = payload.notification?.body || payload.data?.body || 'Zone hazard update received.';
+        const zColor = payload.data?.zone_color || (title.includes('EMERGENCY') ? 'RED' : 'YELLOW');
+        const zId = payload.data?.zone_id || 'DISASTER-ALERT';
+
+        log(`🔔 Push received: ${title} — ${body}`, 'ok');
+
+        // Display the new Floating Pill Toast
+        showFloatingPill({
+          color: zColor,
+          zoneId: zId,
+          zoneName: zId,
+          title: title,
+          body: body,
+          advice: body,
+        });
+
+        try {
+          const notifIcon = payload.notification?.icon || payload.data?.icon || '/icons/icon-alert.png';
+          new Notification(title, { body, icon: notifIcon });
+        } catch (e) {
+          console.warn('Foreground notification error:', e);
+        }
+      });
+
+      btn.textContent = 'Getting FCM token…';
+      const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
+
+      if (!token) {
+        log('getToken() returned empty — check VAPID key in Firebase console.', 'err');
+        btn.disabled = false;
+        btn.textContent = '🔔 Allow Notifications & Subscribe';
+        return;
+      }
+
+      myToken = token;
+      localStorage.setItem('rescue_fcm_token', token);
+      log(`FCM token obtained: ${token.slice(0, 20)}…`, 'ok');
+
+      const tokenBox = document.getElementById('token-box');
+      tokenBox.textContent = token;
+      tokenBox.style.display = 'block';
+
+      // Unlock test buttons
+      document.getElementById('btn-test-push').disabled = false;
+      document.getElementById('btn-test-push-delayed').disabled = false;
+      document.getElementById('btn-override').disabled = false;
+      document.getElementById('btn-override-delayed').disabled = false;
+
+      const zoneId = document.getElementById('zone-select').value;
+      btn.textContent = 'Subscribing to backend…';
+
+      try {
+        const subRes = await fetch(`${API}/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fcm_token: token, lat: 19.8115, lon: 85.8314, zone_id: zoneId }),
+          signal: AbortSignal.timeout(6000),
+        });
+
+        if (!subRes.ok) {
+          const err = await subRes.text();
+          log(`Backend note: ${err}`, 'err');
+          btn.textContent = `✓ Token Ready — ${zoneId}`;
+        } else {
+          const data = await subRes.json();
+          log(`Subscribed to zone ${data.zone_id} ✓`, 'ok');
+          btn.textContent = `✓ Subscribed — ${data.zone_id}`;
+        }
+      } catch (err) {
+        log(`Backend registration completed or timed out, push buttons are READY.`, 'ok');
+        btn.textContent = `✓ Ready — ${zoneId}`;
+      } finally {
+        btn.disabled = false;
+      }
+    } catch (err) {
+      log(`Error: ${err.message}`, 'err');
+      btn.disabled = false;
+      btn.textContent = '🔔 Allow Notifications & Subscribe';
+    }
+  });
+
+  if (myToken) {
+    const tokenBox = document.getElementById('token-box');
+    tokenBox.textContent = myToken;
+    tokenBox.style.display = 'block';
+    document.getElementById('btn-test-push').disabled = false;
+    document.getElementById('btn-test-push-delayed').disabled = false;
+    document.getElementById('btn-override').disabled = false;
+    document.getElementById('btn-override-delayed').disabled = false;
+    document.getElementById('btn-subscribe').textContent = '✓ Subscribed (Click to Refresh)';
+    document.getElementById('btn-subscribe').disabled = false;
+    log('Restored active FCM token from session ✓', 'ok');
+  }
+
+  // Local popup
+  document.getElementById('btn-test-local').addEventListener('click', async () => {
+    if (Notification.permission !== 'granted') {
+      const p = await Notification.requestPermission();
+      if (p !== 'granted') {
+        log('Notification permission not granted by browser.', 'err');
+        return;
+      }
+    }
+    log('Firing direct browser notification test…', 'inf');
+    try {
+      const n = new Notification('🧪 Windows Notification Test', {
+        body: 'If you see this banner popup, Windows & browser notifications are fully WORKING!',
+        icon: '/icons/icon-192.png',
+        requireInteraction: true,
+      });
+      n.onclick = () => { log('Notification clicked!', 'ok'); window.focus(); };
+      log('Local notification dispatched ✓ (Check bottom-right of your Windows screen)', 'ok');
+    } catch (err) {
+      log(`Local notification error: ${err.message}`, 'err');
+    }
+  });
+
+  // Preview logic
+  const HAZARD_TEXTS = {
+    "EROSION": { label: "🏖️ Coastal Surge & Erosion", desc: "destructive wave surge and shoreline collapse", red: "Severe wave surge and coastal embankment collapse. Evacuate beachside structures immediately to inland shelters.", yellow: "Elevated coastal erosion and sea swells. Stay clear of seawalls, beaches, and vulnerable coastal roads." },
+    "FLOOD": { label: "🌊 Flash Flood", desc: "critical water rise and submergence danger", red: "Evacuate low-lying areas immediately. Move to designated high ground or cyclone/flood shelters. Avoid wading in floodwaters.", yellow: "Heavy water runoff detected. Monitor local water levels, secure emergency supplies, and avoid low-lying zones." },
+    "LANDSLIDE": { label: "⛰️ Landslide Risk", desc: "severe slope instability and debris flow", red: "Critical slope failure imminent. Evacuate mountainside settlements immediately. Stay clear of downhill runout paths.", yellow: "Heightened slope stress & soil saturation. Watch for ground cracks or falling rocks. Avoid steep terrain." },
+    "CLOUDBURST": { label: "⛈️ Severe Cloudburst", desc: "intense localized cloudburst and torrential deluge", red: "Extreme torrential rainfall deluge. Rapid flash floods and mudslides expected. Seek reinforced overhead shelter immediately.", yellow: "Intense localized cloudburst conditions. Stay away from natural drainage nullahs and seasonal streams." },
+  };
+
+  function updateLivePreview() {
+    const zoneId = document.getElementById('override-zone').value;
+    const zObj = _zonesCache.find(z => z.zone_id === zoneId);
+    const region = zObj?.name || zoneId;
+    const disaster = document.getElementById('override-disaster').value;
+    const color = document.getElementById('override-color').value;
+
+    const h = HAZARD_TEXTS[disaster] || HAZARD_TEXTS["FLOOD"];
+    const isRed = color === "RED";
+    const title = isRed ? `🚨 EMERGENCY: ${h.label} in ${region}` : color === "YELLOW" ? `⚠️ HAZARD WARNING: ${h.label} in ${region}` : `🛡️ ALL CLEAR in ${region}`;
+    const advice = isRed ? h.red : h.yellow;
+    const score = isRed ? "88%" : "48%";
+    const priority = isRed ? "IMMEDIATE" : "SHORT_TERM";
+    const body = `${region}: ${h.desc.charAt(0).toUpperCase() + h.desc.slice(1)} (Risk: ${score}) [${priority} Priority]. ${advice}`;
+
+    document.getElementById('preview-title').textContent = title;
+    document.getElementById('preview-body').textContent = body;
+  }
+
+  document.getElementById('override-zone').addEventListener('change', updateLivePreview);
+  document.getElementById('override-disaster').addEventListener('change', updateLivePreview);
+  document.getElementById('override-color').addEventListener('change', updateLivePreview);
+
+  // Send Test Push
+  async function sendTestPush() {
+    if (!myToken) { log('No token — subscribe first.', 'err'); return; }
+    const zoneId = document.getElementById('override-zone').value;
+    const disaster = document.getElementById('override-disaster').value;
+    const color = document.getElementById('override-color').value;
+    const zObj = _zonesCache.find(z => z.zone_id === zoneId);
+    const region = zObj?.name || zoneId;
+
+    log(`Sending test push for ${region} (${disaster}, ${color})…`, 'inf');
+    try {
+      const res = await fetch(`${API}/admin/test-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fcm_token: myToken, zone_id: zoneId, worst_hazard: disaster, zone_color: color }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        log(`Test push accepted by FCM ✓ (message_id: ${data.message_id.slice(-20)})`, 'ok');
+        log(`🔔 Title: ${data.title}`, 'ok');
+
+        // Also pop the floating pill toast in page
+        showFloatingPill({
+          color: color,
+          zoneId: zoneId,
+          zoneName: region,
+          title: data.title,
+          body: data.body,
+          advice: data.body,
+        });
+      } else {
+        log(`Test push failed: ${JSON.stringify(data)}`, 'err');
+      }
+    } catch (err) {
+      log(`Error: ${err.message}`, 'err');
+    }
+  }
+
+  document.getElementById('btn-test-push').addEventListener('click', sendTestPush);
+  document.getElementById('btn-test-push-delayed').addEventListener('click', () => {
+    const btn = document.getElementById('btn-test-push-delayed');
+    btn.disabled = true;
+    let sec = 4;
+    log(`⏱️ Sending push in 4 seconds! MINIMIZE this browser window NOW to see the desktop banner…`, 'inf');
+    const timer = setInterval(() => {
+      sec--;
+      btn.textContent = `⏱️ Push in ${sec}s… MINIMIZE!`;
+      if (sec <= 0) {
+        clearInterval(timer);
+        btn.textContent = '⏱️ Push in 4s (Minimize Tab!)';
+        btn.disabled = false;
+        sendTestPush();
+      }
+    }, 1000);
+  });
+
+  // Override
+  async function sendOverride() {
+    const zone = document.getElementById('override-zone').value;
+    const disaster = document.getElementById('override-disaster').value;
+    const color = document.getElementById('override-color').value;
+    const zObj = _zonesCache.find(z => z.zone_id === zone);
+    const region = zObj?.name || zone;
+
+    log(`Broadcasting alert for ${region} → ${color} (${disaster})…`, 'inf');
+    try {
+      const res = await fetch(`${API}/admin/override-zone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          zone_id: zone,
+          zone_color: color,
+          worst_hazard: disaster,
+          hazard_scores: { [disaster]: color === 'RED' ? 0.88 : 0.48 }
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const fired = data.severity_fired;
+        log(`Override applied ✓ severity_fired=${fired} targeted=${data.targeted} delivered=${data.delivered}`, 'ok');
+
+        showFloatingPill({
+          color: color,
+          zoneId: zone,
+          zoneName: region,
+          title: `${color === 'RED' ? '🚨 EMERGENCY' : '⚠️ WARNING'}: ${disaster} in ${region}`,
+          hazard: disaster,
+          riskScore: color === 'RED' ? '88%' : '48%',
+          advice: color === 'RED' ? 'Immediate evacuation warning active. Move to safe ground.' : 'Hazard advisory active. Stay informed.',
+        });
+      } else {
+        log(`Override failed: ${JSON.stringify(data)}`, 'err');
+      }
+    } catch (err) {
+      log(`Error: ${err.message}`, 'err');
+    }
+  }
+
+  document.getElementById('btn-override').addEventListener('click', sendOverride);
+  document.getElementById('btn-override-delayed').addEventListener('click', () => {
+    const btn = document.getElementById('btn-override-delayed');
+    btn.disabled = true;
+    let sec = 4;
+    log(`⏱️ Overriding in 4 seconds! MINIMIZE this window NOW to see the Emergency banner…`, 'inf');
+    const timer = setInterval(() => {
+      sec--;
+      btn.textContent = `⏱️ Alert in ${sec}s… MINIMIZE!`;
+      if (sec <= 0) {
+        clearInterval(timer);
+        btn.textContent = '⏱️ Alert in 4s (Minimize Tab!)';
+        btn.disabled = false;
+        sendOverride();
+      }
+    }, 1000);
+  });
+</script>
+</body>
+</html>

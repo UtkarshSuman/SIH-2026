@@ -1,0 +1,58 @@
+.env
+__pycache__/
+*.pyc
+.gis_cache/
+root-isotope-457419-b2-906d411ef4c7.json
+*.db
+*.json
+!ml_service/inference/trained_models/*.json
+!ml_service/weighting/judgments/*.json
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*credentials*.json
+firebase-service-account*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs / local DB
+*.log
+hazard_readings.db
+*.sqlite3
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Stray/scratch folders — not meant for the repo
+*(not using)*/
