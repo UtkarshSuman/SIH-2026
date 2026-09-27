@@ -9,6 +9,7 @@ Endpoints:
   GET  /api/v1/rag/db-context   — Live DB dump for a region (debug/inspection)
 
 All routes require the X-API-Key header (set INTERNAL_API_KEY in .env).
+Heavy ML/vector dependencies are imported lazily inside handlers to ensure instant server startup on Render.
 """
 from __future__ import annotations
 
@@ -16,10 +17,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import verify_api_key
-from app.rag.chain import stream_rag_answer
-from app.rag.retriever import ingest_text, ingest_file
 from app.rag.models import RagDocumentLog, SessionLocal, ensure_table
-from app.rag.db import get_pg_connection
 from app.schemas.rag import (
     ChatRequest,
     IngestRequest,
@@ -44,10 +42,11 @@ async def rag_chat(req: ChatRequest):
     Each chunk is a raw string token from Gemini.
     Frontend should consume with EventSource or fetch + ReadableStream.
     """
+    from app.rag.chain import stream_rag_answer
+
     async def _event_stream():
         async for token in stream_rag_answer(req.message):
             # SSE format: "data: <token>\n\n"
-            # Sending raw text so the frontend can reconstruct however it likes
             yield token
 
     return StreamingResponse(_event_stream(), media_type="text/event-stream")
@@ -59,6 +58,8 @@ async def rag_chat(req: ChatRequest):
 @router.post("/rag/ingest", response_model=IngestResponse)
 async def rag_ingest(req: IngestRequest):
     """Ingest a pasted text document into the ChromaDB vector store."""
+    from app.rag.retriever import ingest_text
+
     if not req.content.strip():
         return IngestResponse(success=False, chunksCreated=0, title=req.title, error="content is empty")
 
@@ -78,12 +79,9 @@ async def rag_ingest(req: IngestRequest):
 async def rag_ingest_file(file: UploadFile = File(...)):
     """
     Upload a PDF, .txt, or .md file and ingest its text into ChromaDB.
-
-    curl example:
-      curl -X POST http://localhost:8000/api/v1/rag/ingest-file \\
-           -H "X-API-Key: your-key" \\
-           -F "file=@/path/to/document.pdf"
     """
+    from app.rag.retriever import ingest_file
+
     file_bytes = await file.read()
     filename = file.filename or "upload"
     title = filename.rsplit(".", 1)[0]  # strip extension for display
@@ -144,6 +142,8 @@ async def rag_db_context(region: str = Query(default="", description="Region slu
     Returns a live snapshot of hazard zone counts and top RED-zone habitations
     from the PostGIS database.  Useful for testing tool connectivity.
     """
+    from app.rag.db import get_pg_connection
+
     conn = None
     try:
         conn = get_pg_connection()
