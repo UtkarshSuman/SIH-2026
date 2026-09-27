@@ -289,7 +289,7 @@ export default function RedZoneSection() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
             {/* Map Container */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+            <div className="relative min-h-[620px] rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
               <RedZoneMap
                 zones={zones}
                 selectedZone={selectedLocation}

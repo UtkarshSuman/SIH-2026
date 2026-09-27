@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Navbar from "@/components/marketing/navbar";
 import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
 
 const FIREBASE_CONFIG = {
@@ -327,7 +328,9 @@ export default function AlertsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 antialiased pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased pb-20">
+      <Navbar />
+      <main>
       {/* ============================================================== */}
       {/* LIVE ALERT POPUP TOAST (Foreground Push Notification)           */}
       {/* ============================================================== */}
@@ -1019,5 +1022,6 @@ export default function AlertsPage() {
         </div>
       </div>
     </main>
+  </div>
   );
 }

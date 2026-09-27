@@ -29,6 +29,25 @@ export interface SiteInfo {
   status?: string;
 }
 
+// Recalculates tile coverage after mount and on window resize to prevent grey tiles
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const tid1 = setTimeout(() => map.invalidateSize(), 100);
+    const tid2 = setTimeout(() => map.invalidateSize(), 400);
+    const tid3 = setTimeout(() => map.invalidateSize(), 1000);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(tid1);
+      clearTimeout(tid2);
+      clearTimeout(tid3);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+  return null;
+}
+
 function MapBoundsRecenter({
   plans,
   sites,
@@ -185,6 +204,7 @@ export function RelocationRouteMap({
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
         />
 
+        <MapResizer />
         <MapBoundsRecenter plans={plans} sites={sites} activeZoneId={activeZoneId} />
 
         {/* Road Polyline Corridors (Only to sites with remaining capacity) */}

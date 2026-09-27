@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Polygon,
   Marker,
   GeoJSON,
   Circle,
+  CircleMarker,
   MapContainer,
   Popup,
   TileLayer,
@@ -52,6 +53,25 @@ function createPinIcon(colorHex) {
   });
 }
 
+// Recalculates tile coverage after mount and on window resize to prevent grey tiles
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const tid1 = setTimeout(() => map.invalidateSize(), 100);
+    const tid2 = setTimeout(() => map.invalidateSize(), 400);
+    const tid3 = setTimeout(() => map.invalidateSize(), 1000);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(tid1);
+      clearTimeout(tid2);
+      clearTimeout(tid3);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+  return null;
+}
+
 function MapFocus({ zone }) {
   const map = useMap();
   const lastZoneIdRef = useRef(null);
@@ -68,39 +88,131 @@ function MapFocus({ zone }) {
   return null;
 }
 
+// Click Handler: Shows green circular marker + live popup + fetches telemetry + updates color & card
 function MapClickHandler({ onPointAnalyzed, onLocationSelect }) {
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingPoint, setAnalyzingPoint] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    if (markerRef.current && analyzingPoint) {
+      try {
+        markerRef.current.openPopup();
+      } catch (_) {}
+    }
+  }, [analyzingPoint, statusMessage]);
 
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
-      if (!onPointAnalyzed) return;
+      setIsError(false);
+      setStatusMessage("🛰️ Fetching live GIS data (weather, slope, discharge) & running ML models...");
+      setAnalyzingPoint({ lat, lng });
 
       try {
-        setAnalyzing(true);
-        const res = await fetch(
-          `/api/zones?action=analyze-point&lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}`
-        );
-        if (!res.ok) throw new Error("Point analysis failed");
-        const analyzed = await res.json();
-        if (analyzed && analyzed.zoneId) {
-          onPointAnalyzed(analyzed);
-          if (onLocationSelect) onLocationSelect(analyzed);
+        const res = await fetch(`/api/analyze-point?lat=${lat}&lon=${lng}&radius_km=5`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setIsError(true);
+          setStatusMessage(`❌ Failed: ${errData.detail || errData.error || res.statusText}`);
+          setTimeout(() => setAnalyzingPoint(null), 4000);
+          return;
         }
+
+        const data = await res.json();
+        const score = data.hazard_scores?.[data.worst_hazard] ?? data.priority_score ?? 0.35;
+
+        const newZone = {
+          zoneId: data.zone_id || `custom-${lat.toFixed(4)}-${lng.toFixed(4)}`,
+          name: data.zone_name || `Point (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`,
+          district: "Custom Analyzed Spot",
+          state: "Live Telemetry",
+          lat: data.center?.lat ?? lat,
+          lng: data.center?.lon ?? lng,
+          zoneColor: data.zone_color || "GREEN",
+          worstHazard: data.worst_hazard || "MULTI-HAZARD",
+          worstScore: score,
+          worstStatus: data.zone_color || "GREEN",
+          hazardScores: {
+            FLOOD: data.hazard_scores?.FLOOD ?? 0,
+            LANDSLIDE: data.hazard_scores?.LANDSLIDE ?? 0,
+            EROSION: data.hazard_scores?.EROSION ?? 0,
+            CLOUDBURST: data.hazard_scores?.CLOUDBURST ?? 0,
+          },
+          priority: data.priority || "LOW",
+          priorityScore: data.priority_score ?? 0.0,
+          population: data.population ?? 1200,
+          slopeClass: data.hazard_details?.landslide?.parameters?.slope_degrees
+            ? `${data.hazard_details.landslide.parameters.slope_degrees}°`
+            : "N/A",
+          isClickAnalyzed: true,
+          metrics: {
+            rainfall_24h_mm: data.hazard_details?.flood?.parameters?.rainfall_mm_24h ?? 0,
+            rainfall_72h_mm: data.hazard_details?.flood?.parameters?.rainfall_mm_72h ?? 0,
+            river_discharge_m3s: data.hazard_details?.flood?.parameters?.river_discharge_m3s ?? 0,
+            soil_saturation_pct: data.hazard_details?.landslide?.parameters?.soil_moisture_pct ?? 0,
+            elevation_m: data.hazard_details?.flood?.parameters?.elevation_m ?? 0,
+          },
+        };
+
+        setAnalyzingPoint(null);
+        if (onPointAnalyzed) onPointAnalyzed(newZone);
+        if (onLocationSelect) onLocationSelect(newZone);
       } catch (err) {
-        console.error("Map click analysis failed:", err);
-      } finally {
-        setAnalyzing(false);
+        setIsError(true);
+        setStatusMessage(`❌ Error: ${err.message}`);
+        setTimeout(() => setAnalyzingPoint(null), 4000);
       }
     },
   });
 
-  return analyzing ? (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900/90 text-white text-xs px-3 py-1.5 rounded-full shadow-lg border border-slate-700 backdrop-blur animate-pulse flex items-center gap-2">
-      <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-      Running ML Multi-Hazard Assessment at coordinates...
-    </div>
-  ) : null;
+  if (!analyzingPoint) return null;
+
+  return (
+    <CircleMarker
+      ref={markerRef}
+      center={[analyzingPoint.lat, analyzingPoint.lng]}
+      radius={16}
+      pathOptions={{
+        color: isError ? "#ef4444" : "#10b981",
+        fillColor: isError ? "#f87171" : "#34d399",
+        fillOpacity: 0.85,
+        weight: 3,
+      }}
+    >
+      <Popup autoClose={false} closeOnClick={false}>
+        <div style={{ minWidth: "230px", fontSize: "12px", padding: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "700", color: "#0f172a" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
+                background: isError ? "#ef4444" : "#10b981",
+                animation: isError ? "none" : "ping 1.5s cubic-bezier(0,0,0.2,1) infinite",
+              }}
+            />
+            {isError ? "Analysis Failed" : "🛰 Analyzing Spot Live..."}
+          </div>
+          <p style={{ marginTop: "6px", color: "#334155", lineHeight: "1.4" }}>{statusMessage}</p>
+          <div
+            style={{
+              marginTop: "6px",
+              paddingTop: "6px",
+              borderTop: "1px solid #f1f5f9",
+              fontSize: "10px",
+              color: "#94a3b8",
+              fontFamily: "monospace",
+            }}
+          >
+            {analyzingPoint.lat.toFixed(5)}°N, {analyzingPoint.lng.toFixed(5)}°E
+          </div>
+        </div>
+      </Popup>
+    </CircleMarker>
+  );
 }
 
 export default function RedZoneMap({
@@ -134,7 +246,7 @@ export default function RedZoneMap({
   const basemap = basemaps[activeBasemap] || basemaps.terrain;
 
   return (
-    <div className="relative h-full w-full rounded-2xl overflow-hidden border border-slate-200/80 shadow-inner bg-slate-950">
+    <div className="relative min-h-[620px] h-[620px] w-full rounded-2xl border border-slate-200/80 shadow-inner bg-slate-950">
       {/* Offline/Fallback status indicator */}
       {isFallback && (
         <div className="absolute top-3 left-3 z-[1000] max-w-sm rounded-lg bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-md backdrop-blur flex items-center gap-2">
@@ -163,7 +275,7 @@ export default function RedZoneMap({
       <MapContainer
         center={[22.5, 82.0]}
         zoom={5}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
         zoomControl={false}
       >
         <TileLayer
@@ -173,8 +285,12 @@ export default function RedZoneMap({
           maxZoom={basemap.maxZoom}
         />
 
+        <MapResizer />
         <MapFocus zone={selectedZone} />
-        <MapClickHandler onPointAnalyzed={onPointAnalyzed} onLocationSelect={onLocationSelect} />
+        <MapClickHandler
+          onPointAnalyzed={onPointAnalyzed}
+          onLocationSelect={onLocationSelect}
+        />
 
         {zones.map((zone) => {
           if (!zone.lat || !zone.lng) return null;
@@ -247,13 +363,18 @@ export default function RedZoneMap({
 
               <div className="mt-2 pt-1.5 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
                 <span>{zone.isClickAnalyzed ? "Point Analyzed Live" : "Database Synchronized"}</span>
-                <span>{zone.lastAssessedAt ? new Date(zone.lastAssessedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Live"}</span>
+                <span>
+                  {zone.lastAssessedAt
+                    ? new Date(zone.lastAssessedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : "Live"}
+                </span>
               </div>
             </div>
           );
 
+          // CRITICAL: Use React.Fragment (not div) as wrapper inside MapContainer
           return (
-            <div key={zone.zoneId || `${zone.lat}-${zone.lng}`}>
+            <React.Fragment key={zone.zoneId || `${zone.lat}-${zone.lng}`}>
               {/* Authentic Real OSM Boundary Polygon */}
               {boundaryFeature ? (
                 <GeoJSON
@@ -271,14 +392,12 @@ export default function RedZoneMap({
                 </GeoJSON>
               ) : isReal || (coords && coords.length >= 3) ? (
                 <Polygon
-                  key={`poly-${zone.zoneId || zone.lat}`}
                   positions={coords}
                   pathOptions={{
                     color,
                     fillColor: color,
                     fillOpacity: isSelected ? 0.45 : zone.zoneColor === "RED" ? 0.35 : 0.22,
                     weight: isSelected ? 3.5 : 2,
-                    dashArray: zone.zoneColor === "YELLOW" ? "6, 6" : undefined,
                   }}
                   eventHandlers={{ click: () => onLocationSelect(zone) }}
                 >
@@ -286,15 +405,13 @@ export default function RedZoneMap({
                 </Polygon>
               ) : (
                 <Circle
-                  key={`circle-${zone.zoneId || zone.lat}`}
                   center={[zone.lat, zone.lng]}
-                  radius={2500}
+                  radius={isSelected ? 10000 : 7000}
                   pathOptions={{
                     color,
                     fillColor: color,
-                    fillOpacity: 0.25,
-                    weight: 2,
-                    dashArray: "6, 6",
+                    fillOpacity: isSelected ? 0.45 : zone.zoneColor === "RED" ? 0.35 : 0.22,
+                    weight: isSelected ? 3.5 : 2,
                   }}
                   eventHandlers={{ click: () => onLocationSelect(zone) }}
                 >
@@ -302,7 +419,7 @@ export default function RedZoneMap({
                 </Circle>
               )}
 
-              {/* Glowing Sphere Pin Marker (Preserved at each location) */}
+              {/* Center Marker Pin */}
               <Marker
                 position={[zone.lat, zone.lng]}
                 icon={createPinIcon(color)}
@@ -310,7 +427,7 @@ export default function RedZoneMap({
               >
                 <Popup>{popupContent}</Popup>
               </Marker>
-            </div>
+            </React.Fragment>
           );
         })}
       </MapContainer>

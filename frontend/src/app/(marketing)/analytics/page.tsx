@@ -26,6 +26,7 @@ import {
   Wind,
 } from "lucide-react";
 import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
+import Navbar from "@/components/marketing/navbar";
 
 interface HistoryPoint {
   id: string;
@@ -175,7 +176,9 @@ function AnalyticsContent() {
   const warnThreshold = zone?.warningThreshold ?? 0.40;
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-800 pb-16">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 pb-16">
+      <Navbar />
+      <main>
       {/* Top Banner & Control Toolbar */}
       <section className="border-b border-slate-200 bg-white px-5 py-7 sm:px-8 lg:px-12 shadow-sm">
         <div className="mx-auto max-w-7xl">
@@ -1024,7 +1027,8 @@ function AnalyticsContent() {
           </div>
         )}
       </div>
-    </main>
+      </main>
+    </div>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 
-import Adminnavbar from "./adminnavbar";
+import Navbar from "@/components/marketing/navbar";
 import Adminheader from "./adminheader";
 import Adminsummarycards from "./adminsummarycards";
 import Mapfilters from "./mapfilters";
@@ -258,14 +258,14 @@ export default function Admindashboard() {
       {/* ===============================
           NAVBAR
       ================================ */}
-      <Adminnavbar />
+      <Navbar />
 
       <main className="px-6 py-6 space-y-6">
         {/* ===============================
             HEADER & ACTIONS
         ================================ */}
         <div className="flex flex-col gap-4">
-          <Adminheader />
+          <Adminheader onPipelineSuccess={() => loadDashboard(true)} />
 
           {/* Offline Fallback Banner */}
           {isFallback && (

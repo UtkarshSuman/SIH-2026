@@ -204,6 +204,19 @@ _last_pipeline_trigger = 0.0
 _is_pipeline_running = False
 PIPELINE_COOLDOWN_SECONDS = 30.0
 
+@app.get("/api/pipeline/status")
+async def get_pipeline_status():
+    """Return whether the pipeline is currently running, and cooldown remaining."""
+    global _last_pipeline_trigger, _is_pipeline_running
+    now = time.time()
+    elapsed = now - _last_pipeline_trigger
+    rem = max(0, int(math.ceil(PIPELINE_COOLDOWN_SECONDS - elapsed)))
+    return {
+        "is_running": _is_pipeline_running,
+        "is_on_cooldown": rem > 0,
+        "cooldown_remaining": rem if rem > 0 else (30 if _is_pipeline_running else 0),
+    }
+
 @app.post("/api/pipeline/trigger-all")
 async def trigger_pipeline_all(request: Request):
     """Manually trigger live GIS fetching, ML inference, and DB update across all zones."""

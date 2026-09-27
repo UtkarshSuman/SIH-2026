@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import type { RelocationZonePlan } from "@/hooks/use-relocation-plan";
 import type { RelocationSiteData } from "@/lib/data-service";
+import Navbar from "@/components/marketing/navbar";
 import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
+import { PipelineTriggerButton } from "@/components/common/pipeline-trigger-button";
 
 const RelocationRouteMap = dynamic(
   () => import("@/components/map/relocation-route-map").then((m) => m.RelocationRouteMap),
@@ -106,38 +108,6 @@ function RelocationContent() {
     return () => clearInterval(interval);
   }, [lastVersion]);
 
-  // Aggregate Metrics
-  const metrics = useMemo(() => {
-    const totalEvacuees = plans.reduce((acc, p) => acc + p.population, 0);
-    const totalCapacity = sites.reduce((acc, s) => acc + s.capacity, 0);
-    const totalOccupancy = sites.reduce((acc, s) => acc + s.currentOccupancy, 0);
-    const totalRemaining = sites.reduce((acc, s) => acc + s.remainingCapacity, 0);
-    const totalUsableArea = sites.reduce((acc, s) => acc + s.usableAreaSqm, 0);
-
-    return {
-      totalEvacuees,
-      totalCapacity,
-      totalOccupancy,
-      totalRemaining,
-      totalUsableArea,
-      siteCount: sites.length,
-      redZoneCount: plans.filter((p) => p.worstStatus === "RED").length,
-    };
-  }, [plans, sites]);
-
-  const activePlan = useMemo(() => {
-    return plans.find((p) => p.zoneId === activeZoneId) || plans[0];
-  }, [plans, activeZoneId]);
-
-  const filteredSites = useMemo(() => {
-    if (selectedSiteFilter === "ALL") return sites;
-    return sites.filter((s) => s.district.toLowerCase() === selectedSiteFilter.toLowerCase());
-  }, [sites, selectedSiteFilter]);
-
-  const districts = useMemo(() => {
-    return Array.from(new Set(sites.map((s) => s.district)));
-  }, [sites]);
-
   const redAreas = useMemo(() => {
     if (zonesList.length > 0) {
       return zonesList.filter((z) => (z.zoneColor || z.worstStatus) === "RED" || z.worstScore >= 0.7);
@@ -185,106 +155,159 @@ function RelocationContent() {
     return [];
   }, [zonesList]);
 
+  // Aggregate Metrics: Evacuee Demand = Red + Yellow populations, Sphere Capacity = Green Zones Capacity
+  const metrics = useMemo(() => {
+    const redPop = redAreas.reduce((acc: number, z: any) => acc + (z.population || 0), 0);
+    const yellowPop = yellowAreas.reduce((acc: number, z: any) => acc + (z.population || 0), 0);
+    const totalEvacuees = redPop + yellowPop > 0 ? redPop + yellowPop : plans.reduce((acc, p) => acc + p.population, 0);
+
+    const greenCap = greenAreas.reduce((acc: number, z: any) => acc + (z.capacity || z.population || 0), 0);
+    const sitesCap = sites.reduce((acc, s) => acc + s.capacity, 0);
+    const totalCapacity = greenCap > 0 ? greenCap : sitesCap;
+
+    const totalOccupancy = sites.reduce((acc, s) => acc + s.currentOccupancy, 0);
+    const totalRemaining = Math.max(0, totalCapacity - totalEvacuees);
+    const totalUsableArea = sites.reduce((acc, s) => acc + s.usableAreaSqm, 0);
+
+    return {
+      redPop,
+      yellowPop,
+      totalEvacuees,
+      totalCapacity,
+      totalOccupancy,
+      totalRemaining,
+      totalUsableArea,
+      siteCount: sites.length,
+      redZoneCount: redAreas.length,
+      yellowZoneCount: yellowAreas.length,
+      greenZoneCount: greenAreas.length,
+    };
+  }, [redAreas, yellowAreas, greenAreas, plans, sites]);
+
+  const activePlan = useMemo(() => {
+    return plans.find((p) => p.zoneId === activeZoneId) || plans[0];
+  }, [plans, activeZoneId]);
+
+  const filteredSites = useMemo(() => {
+    if (selectedSiteFilter === "ALL") return sites;
+    return sites.filter((s) => s.district.toLowerCase() === selectedSiteFilter.toLowerCase());
+  }, [sites, selectedSiteFilter]);
+
+  const districts = useMemo(() => {
+    return Array.from(new Set(sites.map((s) => s.district)));
+  }, [sites]);
+
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-800">
-      {/* Top Header Banner */}
-      <section className="border-b border-slate-200 bg-white px-5 py-8 sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                {isFallback ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-0.5 text-xs font-bold text-amber-800">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Offline Cache Mode
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                    Live Database Connected
-                  </span>
-                )}
-                <span className="text-xs text-slate-400 font-medium">Sphere Standard: 45 m²/person</span>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800">
+      <Navbar />
+
+      <main>
+        {/* Top Header Banner */}
+        <section className="border-b border-slate-200 bg-white px-5 py-8 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  {isFallback ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-0.5 text-xs font-bold text-amber-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Offline Cache Mode
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      Live Database Connected
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-400 font-medium">Sphere Standard: 45 m²/person</span>
+                </div>
+                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  Relocation Corridors &amp; Carrying Capacity Engine
+                </h1>
+                <p className="mt-1 text-sm text-slate-500 max-w-3xl">
+                  Real-time road evacuation routing from high-risk Red Zones to certified safe resettlement townships.
+                  All sites are evaluated against Sphere humanitarian space &amp; lifeline standards.
+                </p>
               </div>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                Relocation Corridors &amp; Carrying Capacity Engine
-              </h1>
-              <p className="mt-1 text-sm text-slate-500 max-w-3xl">
-                Real-time road evacuation routing from high-risk Red Zones to certified safe resettlement townships.
-                All sites are evaluated against Sphere humanitarian space &amp; lifeline standards.
-              </p>
+
+              {/* Quick Filter by Zone + Pipeline Trigger */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-400 uppercase">Focus Zone:</span>
+                  {plans.map((p) => (
+                    <button
+                      key={p.zoneId}
+                      onClick={() => setActiveZoneId(p.zoneId)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                        activeZoneId === p.zoneId
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p.zoneName.split(",")[0]}
+                    </button>
+                  ))}
+                </div>
+                <PipelineTriggerButton
+                  variant="slate"
+                  buttonText="⚡ Trigger Live Assessment Pipeline"
+                  showStatusBanner={false}
+                  onSuccess={async () => { await loadData(); }}
+                />
+              </div>
             </div>
 
-            {/* Quick Filter by Zone */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase">Focus Zone:</span>
-              {plans.map((p) => (
-                <button
-                  key={p.zoneId}
-                  onClick={() => setActiveZoneId(p.zoneId)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
-                    activeZoneId === p.zoneId
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {p.zoneName.split(",")[0]}
-                </button>
-              ))}
+            {/* Offline Fallback Warning Banner */}
+            {isFallback && (
+              <div className="mt-4">
+                <OfflineFallbackBanner
+                  isFallback={true}
+                  message={fallbackWarning || "Database or backend offline using internal latest data."}
+                  source="Internal Latest Snapshot"
+                  onRetry={loadData}
+                  isRetrying={isLoading}
+                />
+              </div>
+            )}
+
+            {loadError && (
+              <p className="mt-4 text-sm font-medium text-red-700">{loadError}</p>
+            )}
+
+            {/* Metric KPI Badges */}
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+              <div className="rounded-xl border border-red-100 bg-red-50/60 p-3.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-red-700">Evacuee Demand</p>
+                <p className="mt-1 text-xl font-black text-red-900">{metrics.totalEvacuees.toLocaleString()}</p>
+                <p className="text-[11px] text-red-600 font-medium">{metrics.redZoneCount} Red + {metrics.yellowZoneCount} Yellow Zones</p>
+              </div>
+
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Sphere Capacity</p>
+                <p className="mt-1 text-xl font-black text-emerald-900">{metrics.totalCapacity.toLocaleString()}</p>
+                <p className="text-[11px] text-emerald-600 font-medium">Safe Green Zones ({metrics.greenZoneCount} Areas)</p>
+              </div>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">Available Headroom</p>
+                <p className="mt-1 text-xl font-black text-blue-900">{metrics.totalRemaining.toLocaleString()}</p>
+                <p className="text-[11px] text-blue-600 font-medium">Vacant verified capacity</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Usable Land Area</p>
+                <p className="mt-1 text-xl font-black text-slate-900">{(metrics.totalUsableArea / 10000).toFixed(1)} ha</p>
+                <p className="text-[11px] text-slate-500 font-medium">{metrics.totalUsableArea.toLocaleString()} m² built</p>
+              </div>
+
+              <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Shelter Network</p>
+                <p className="mt-1 text-xl font-black text-slate-900">{metrics.siteCount} Townships</p>
+                <p className="text-[11px] text-emerald-600 font-medium">100% Road Connected</p>
+              </div>
             </div>
           </div>
-
-          {/* Offline Fallback Warning Banner */}
-          {isFallback && (
-            <div className="mt-4">
-              <OfflineFallbackBanner
-                isFallback={true}
-                message={fallbackWarning || "Database or backend offline using internal latest data."}
-                source="Internal Latest Snapshot"
-                onRetry={loadData}
-                isRetrying={isLoading}
-              />
-            </div>
-          )}
-
-          {loadError && (
-            <p className="mt-4 text-sm font-medium text-red-700">{loadError}</p>
-          )}
-
-          {/* Metric KPI Badges */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-            <div className="rounded-xl border border-red-100 bg-red-50/60 p-3.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-red-700">Evacuee Demand</p>
-              <p className="mt-1 text-xl font-black text-red-900">{metrics.totalEvacuees.toLocaleString()}</p>
-              <p className="text-[11px] text-red-600 font-medium">{metrics.redZoneCount} Active Red Zones</p>
-            </div>
-
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Sphere Capacity</p>
-              <p className="mt-1 text-xl font-black text-emerald-900">{metrics.totalCapacity.toLocaleString()}</p>
-              <p className="text-[11px] text-emerald-600 font-medium">@ 45 m² per person</p>
-            </div>
-
-            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">Available Headroom</p>
-              <p className="mt-1 text-xl font-black text-blue-900">{metrics.totalRemaining.toLocaleString()}</p>
-              <p className="text-[11px] text-blue-600 font-medium">Vacant verified beds</p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Usable Land Area</p>
-              <p className="mt-1 text-xl font-black text-slate-900">{(metrics.totalUsableArea / 10000).toFixed(1)} ha</p>
-              <p className="text-[11px] text-slate-500 font-medium">{metrics.totalUsableArea.toLocaleString()} m² built</p>
-            </div>
-
-            <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Shelter Network</p>
-              <p className="mt-1 text-xl font-black text-slate-900">{metrics.siteCount} Townships</p>
-              <p className="text-[11px] text-emerald-600 font-medium">100% Road Connected</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
       {/* Main Content Area */}
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
@@ -750,7 +773,8 @@ function RelocationContent() {
           </div>
         </section>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }
 

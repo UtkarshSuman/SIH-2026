@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import {
   MapContainer,
   TileLayer,
@@ -69,17 +71,42 @@ function MapRecenter({ position, zoom = 9 }) {
   return null;
 }
 
+// Ensures Leaflet recalculates tile coverage after mount and on resize
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    // Initial invalidation after container paints
+    const tid = setTimeout(() => map.invalidateSize(), 150);
+    // Also invalidate on window resize (handles sm/lg breakpoint changes)
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(tid);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+  return null;
+}
+
 function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
   const [analyzingPoint, setAnalyzingPoint] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const markerRef = useRef(null);
+
+  // Auto-open popup on mount/update (React-Leaflet v3+ needs explicit openPopup())
+  useEffect(() => {
+    if (markerRef.current && analyzingPoint) {
+      try { markerRef.current.openPopup(); } catch (_) {}
+    }
+  }, [analyzingPoint, statusMessage]);
 
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
-      setAnalyzingPoint({ lat, lng });
       setIsError(false);
       setStatusMessage("🛰️ Fetching live GIS data (weather, slope, discharge) & running ML models...");
+      setAnalyzingPoint({ lat, lng });
 
       try {
         const res = await fetch(`/api/analyze-point?lat=${lat}&lon=${lng}&radius_km=5`);
@@ -87,7 +114,7 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
           const errData = await res.json().catch(() => ({}));
           setIsError(true);
           setStatusMessage(`❌ Failed: ${errData.detail || errData.error || res.statusText}`);
-          setTimeout(() => setAnalyzingPoint(null), 4000);
+          setTimeout(() => setAnalyzingPoint(null), 4500);
           return;
         }
 
@@ -95,7 +122,7 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
         const score = data.hazard_scores?.[data.worst_hazard] ?? data.priority_score ?? 0.35;
 
         const newZone = {
-          zoneId: data.zone_id,
+          zoneId: data.zone_id || `custom-${lat.toFixed(4)}-${lng.toFixed(4)}`,
           name: data.zone_name || `Point (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`,
           district: "Custom Analyzed Spot",
           state: "Live Telemetry",
@@ -104,13 +131,24 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
           zoneColor: data.zone_color || "GREEN",
           worstHazard: data.worst_hazard || "MULTI-HAZARD",
           worstScore: score,
-          hazardScores: data.hazard_scores || {},
-          priority: data.priority || "NONE",
-          priorityScore: data.priority_score || 0.0,
-          population: 1200,
+          hazardScores: {
+            FLOOD: data.hazard_scores?.FLOOD ?? 0,
+            LANDSLIDE: data.hazard_scores?.LANDSLIDE ?? 0,
+            EROSION: data.hazard_scores?.EROSION ?? 0,
+            CLOUDBURST: data.hazard_scores?.CLOUDBURST ?? 0,
+          },
+          priority: data.priority || "LOW",
+          priorityScore: data.priority_score ?? 0.0,
+          population: data.population ?? 1200,
+          slopeClass: data.hazard_details?.landslide?.parameters?.slope_degrees
+            ? `${data.hazard_details.landslide.parameters.slope_degrees}°`
+            : "N/A",
           isClickAnalyzed: true,
           metrics: {
             rainfall_24h_mm: data.hazard_details?.flood?.parameters?.rainfall_mm_24h ?? 0,
+            rainfall_72h_mm: data.hazard_details?.flood?.parameters?.rainfall_mm_72h ?? 0,
+            river_discharge_m3s: data.hazard_details?.flood?.parameters?.river_discharge_m3s ?? 0,
+            soil_saturation_pct: data.hazard_details?.landslide?.parameters?.soil_moisture_pct ?? 0,
             elevation_m: data.hazard_details?.flood?.parameters?.elevation_m ?? 0,
           },
         };
@@ -121,7 +159,7 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
       } catch (err) {
         setIsError(true);
         setStatusMessage(`❌ Error: ${err.message}`);
-        setTimeout(() => setAnalyzingPoint(null), 4000);
+        setTimeout(() => setAnalyzingPoint(null), 4500);
       }
     },
   });
@@ -130,24 +168,29 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
 
   return (
     <CircleMarker
+      ref={markerRef}
       center={[analyzingPoint.lat, analyzingPoint.lng]}
-      radius={12}
+      radius={14}
       pathOptions={{
         color: isError ? "#ef4444" : "#10b981",
         fillColor: isError ? "#f87171" : "#34d399",
-        fillOpacity: 0.8,
+        fillOpacity: 0.85,
         weight: 3,
       }}
     >
-      <Popup position={[analyzingPoint.lat, analyzingPoint.lng]} autoClose={false}>
-        <div className="p-1 min-w-[220px] text-xs">
-          <div className="flex items-center gap-2 font-bold text-slate-900">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${isError ? "bg-red-500" : "bg-emerald-500 animate-ping"}`} />
-            {isError ? "Analysis Failed" : "Analyzing Spot Live"}
+      <Popup autoClose={false} closeOnClick={false}>
+        <div style={{ minWidth: "230px", fontSize: "12px", padding: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "700", color: "#0f172a" }}>
+            <span style={{
+              display: "inline-block", width: "10px", height: "10px", borderRadius: "50%",
+              background: isError ? "#ef4444" : "#10b981",
+              animation: isError ? "none" : "ping 1.5s cubic-bezier(0,0,0.2,1) infinite"
+            }} />
+            {isError ? "Analysis Failed" : "🛰 Analyzing Spot Live..."}
           </div>
-          <p className="mt-1.5 text-slate-700">{statusMessage}</p>
-          <div className="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
-            {analyzingPoint.lat.toFixed(4)}°N, {analyzingPoint.lng.toFixed(4)}°E
+          <p style={{ marginTop: "6px", color: "#334155", lineHeight: "1.4" }}>{statusMessage}</p>
+          <div style={{ marginTop: "6px", paddingTop: "6px", borderTop: "1px solid #f1f5f9", fontSize: "10px", color: "#94a3b8", fontFamily: "monospace" }}>
+            {analyzingPoint.lat.toFixed(5)}°N, {analyzingPoint.lng.toFixed(5)}°E
           </div>
         </div>
       </Popup>
@@ -156,6 +199,7 @@ function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
 }
 
 export default function MapSection() {
+
   const router = useRouter();
 
   const [zones, setZones] = useState([]);
@@ -591,13 +635,13 @@ export default function MapSection() {
         {/* Map and information panel */}
         <div className="relative z-0 mt-10 grid gap-5 lg:grid-cols-[1.55fr_1fr]">
           {/* Map Container */}
-          <div className="relative z-0 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+          <div className="relative z-0 rounded-2xl border border-emerald-100 bg-white shadow-sm">
             <div className="relative z-0 h-[400px] sm:h-[480px] lg:h-[580px]">
               <MapContainer
                 center={mapPosition}
                 zoom={9}
                 scrollWheelZoom={true}
-                className="rescue-leaflet-map h-full w-full"
+                style={{ height: "100%", width: "100%", zIndex: 0 }}
               >
                 <TileLayer
                   attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, USGS, NPS, NRCAN"
@@ -606,6 +650,7 @@ export default function MapSection() {
                 />
 
                 <MapRecenter position={mapPosition} zoom={9} />
+                <MapResizer />
                 <HomeMapClickHandler onPointAnalyzed={handlePointAnalyzed} onSelectZone={setSelectedZone} />
 
 
@@ -620,7 +665,7 @@ export default function MapSection() {
                   const coords = zone.boundaryCoordinates || getZoneBoundary(zone);
 
                   return (
-                    <div key={zone.zoneId}>
+                    <React.Fragment key={zone.zoneId}>
                       {/* Real OSM Administrative Boundary */}
                       {boundaryFeature ? (
                         <GeoJSON
@@ -701,7 +746,7 @@ export default function MapSection() {
                           </div>
                         </Popup>
                       </Marker>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
               </MapContainer>

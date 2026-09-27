@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { CalendarDays, CircleCheck } from "lucide-react";
+import { PipelineTriggerButton } from "@/components/common/pipeline-trigger-button";
 
-export default function Adminheader() {
+export default function Adminheader({ onPipelineSuccess }) {
   const [currentDate, setCurrentDate] = useState(null);
 
   useEffect(() => {
@@ -43,9 +44,17 @@ export default function Adminheader() {
         </p>
       </div>
 
-      {/* Date + System Status */}
+      {/* Date + System Status + Pipeline */}
 
-      <div className="flex items-center gap-8">
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Pipeline Trigger */}
+        <PipelineTriggerButton
+          variant="emerald"
+          buttonText="⚡ Trigger Live Assessment Pipeline"
+          showStatusBanner={false}
+          onSuccess={onPipelineSuccess}
+        />
+
         {/* Date */}
 
         <div className="flex items-center gap-3 text-sm text-slate-600">

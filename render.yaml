@@ -2,13 +2,13 @@ services:
   - type: web
     name: rescue-arc-backend
     runtime: python
-    rootDir: backend-main/backend
+    rootDir: backend-main
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.7
+        value: 3.11.9
       - key: FRONTEND_BASE_URL
         sync: false
       - key: DATABASE_URL
@@ -18,4 +18,6 @@ services:
       - key: DB_SSLMODE
         value: require
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GEMINI_API_KEY
         sync: false

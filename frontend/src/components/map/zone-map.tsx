@@ -15,7 +15,8 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Polygon, Popup } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Polygon, Popup, useMap } from "react-leaflet";
 import { getZoneBoundary } from "@/lib/zone-boundaries";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,6 +27,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 const WAYANAD_CENTER: [number, number] = [11.65, 76.1];
 
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const tid1 = setTimeout(() => map.invalidateSize(), 100);
+    const tid2 = setTimeout(() => map.invalidateSize(), 400);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(tid1);
+      clearTimeout(tid2);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+  return null;
+}
+
 export function ZoneMap({ geojson }: { geojson: GeoJSON.FeatureCollection | null }) {
   return (
     <MapContainer center={WAYANAD_CENTER} zoom={11} style={{ height: "100%", width: "100%" }}>
@@ -33,6 +50,7 @@ export function ZoneMap({ geojson }: { geojson: GeoJSON.FeatureCollection | null
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
         attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom"
       />
+      <MapResizer />
 
       {geojson?.features.map((feature) => {
         const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;

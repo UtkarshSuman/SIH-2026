@@ -80,6 +80,25 @@ const indiaBounds = [
   [37.0, 98.0],
 ];
 
+// Recalculates tile coverage after mount and on window resize to prevent grey tiles
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const tid1 = setTimeout(() => map.invalidateSize(), 100);
+    const tid2 = setTimeout(() => map.invalidateSize(), 400);
+    const tid3 = setTimeout(() => map.invalidateSize(), 1000);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(tid1);
+      clearTimeout(tid2);
+      clearTimeout(tid3);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+  return null;
+}
+
 export default function Hazardmapview({
   locations = [],
   zones = [],
@@ -87,7 +106,7 @@ export default function Hazardmapview({
   onLocationSelect,
 }) {
   return (
-    <div className="relative h-[680px] w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative min-h-[680px] h-[680px] w-full rounded-xl border border-slate-200 bg-white shadow-sm">
       <MapContainer
         bounds={indiaBounds}
         maxBounds={indiaBounds}
@@ -95,7 +114,7 @@ export default function Hazardmapview({
         minZoom={4}
         maxZoom={12}
         zoomControl={false}
-        className="h-full w-full"
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
       >
         {/* =========================
             BASE MAP
@@ -106,6 +125,7 @@ export default function Hazardmapview({
         />
 
         <ZoomControl position="topright" />
+        <MapResizer />
         <MapFocus selectedLocation={selectedLocation} />
 
         {/* =========================

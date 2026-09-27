@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, MapPin, ArrowRight, ShieldAlert, CheckCircle2, AlertTriangle, Loader2, Edit3, X, Save } from "lucide-react";
+import { Users, MapPin, ArrowRight, ShieldAlert, CheckCircle2, AlertTriangle, Loader2, Edit3, X, Save, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }) {
   const [plans, setPlans] = useState([]);
+  const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingZoneId, setEditingZoneId] = useState(null);
   const [editPopulation, setEditPopulation] = useState({});
@@ -126,10 +127,12 @@ export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }
     }
   };
 
+  const displayedPlans = showAll ? plans : plans.slice(0, 6);
+
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-slate-800">
@@ -138,6 +141,11 @@ export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
               Live DB Sync
             </span>
+            {plans.length > 0 && (
+              <span className="text-xs font-medium text-slate-400">
+                ({displayedPlans.length} of {plans.length} shown)
+              </span>
+            )}
           </div>
 
           <p className="mt-1 text-sm text-slate-500">
@@ -145,8 +153,21 @@ export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }
           </p>
         </div>
 
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-          <Users className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center gap-3">
+          {plans.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-all cursor-pointer"
+            >
+              <span>{showAll ? "Show 6 Cards" : `Show All (${plans.length})`}</span>
+              {showAll ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+          )}
+
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 shrink-0">
+            <Users className="h-5 w-5 text-blue-600" />
+          </div>
         </div>
       </div>
 
@@ -160,9 +181,10 @@ export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }
           No relocation plans currently recorded in the database.
         </div>
       ) : (
-        /* Population Cards */
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {plans.map((item) => {
+        <>
+          {/* Population Cards (Limited to 6 by default) */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {displayedPlans.map((item) => {
             const isEditing = editingZoneId === item.zoneId;
             const isSaving = savingZoneId === item.zoneId;
             const itemFeedback = feedback?.zoneId === item.zoneId ? feedback : null;
@@ -345,6 +367,34 @@ export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }
             );
           })}
         </div>
+
+        {/* Expand / Collapse Button */}
+        {plans.length > 6 && (
+          <div className="mt-6 flex flex-col items-center justify-center gap-2 border-t border-slate-100 pt-5">
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className="group inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-800 shadow-xs hover:border-blue-400 hover:bg-blue-50/70 hover:text-blue-700 transition-all cursor-pointer active:scale-95"
+            >
+              <span>
+                {showAll
+                  ? "Collapse Cards (Show 6 Only)"
+                  : `View All ${plans.length} Relocation Planning Cards (${plans.length - 6} more)`}
+              </span>
+              {showAll ? (
+                <ChevronUp className="h-4 w-4 text-blue-600 transition-transform group-hover:-translate-y-0.5" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-y-0.5" />
+              )}
+            </button>
+            <span className="text-[11px] text-slate-400">
+              {showAll
+                ? `Showing all ${plans.length} disaster-affected relocation plans`
+                : `Showing 6 of ${plans.length} dynamic relocation planning zones`}
+            </span>
+          </div>
+        )}
+      </>
       )}
     </section>
   );
