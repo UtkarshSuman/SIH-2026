@@ -1,5 +1,5 @@
 # Rescue Arc Backend — Production Dependencies
-# Pinned to exact verified versions to eliminate pip backtracking and resolver depth errors
+# Verified zero-conflict pinned versions matching local environment
 
 # ── Core Framework & Server ───────────────────────────────────────────────────
 fastapi>=0.115.0,<0.142.0
@@ -15,7 +15,7 @@ numpy>=1.26.0,<3.0.0
 psycopg2-binary>=2.9.9,<3.0.0
 sqlalchemy>=2.0.30,<3.0.0
 
-# ── Google & Firebase Core Stack (Exact Pinned to prevent resolver depth) ─────
+# ── Google & Firebase Core Stack (Exact Pinned to prevent resolver conflict) ───
 protobuf==5.29.6
 googleapis-common-protos==1.75.0
 google-auth==2.58.1
