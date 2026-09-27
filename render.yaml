@@ -3,7 +3,7 @@ services:
     name: rescue-arc-backend
     runtime: python
     rootDir: backend-main
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
