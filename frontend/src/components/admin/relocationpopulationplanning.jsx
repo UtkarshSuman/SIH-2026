@@ -1,49 +1,147 @@
 "use client";
 
-import { Users, MapPin, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, MapPin, ArrowRight, ShieldAlert, CheckCircle2, AlertTriangle, Loader2, Edit3, X, Save } from "lucide-react";
 
-const populationData = [
-  {
-    id: 1,
-    village: "Village A",
-    zone: "Red Zone Z-101",
-    totalPopulation: 5000,
-    affectedPopulation: 4500,
-    relocationSite: "Shelter Alpha",
-    assignedCapacity: 4800,
-  },
-  {
-    id: 2,
-    village: "Village B",
-    zone: "Red Zone Z-087",
-    totalPopulation: 3200,
-    affectedPopulation: 2700,
-    relocationSite: "Shelter Beta",
-    assignedCapacity: 3000,
-  },
-  {
-    id: 3,
-    village: "Village C",
-    zone: "Red Zone Z-056",
-    totalPopulation: 4100,
-    affectedPopulation: 3500,
-    relocationSite: "Shelter Gamma",
-    assignedCapacity: 3800,
-  },
-];
+export default function RelocationPopulationPlanning({ onNotify, onPlanUpdated }) {
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingZoneId, setEditingZoneId] = useState(null);
+  const [editPopulation, setEditPopulation] = useState({});
+  const [savingZoneId, setSavingZoneId] = useState(null);
+  const [feedback, setFeedback] = useState(null); // { zoneId, type, message }
 
-export default function RelocationPopulationPlanning() {
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/v1/relocation/plan", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.zones) && json.zones.length > 0) {
+          setPlans(json.zones);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed loading dynamic relocation plans:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const handleStartEdit = (plan) => {
+    setEditingZoneId(plan.zoneId);
+    setEditPopulation((prev) => ({
+      ...prev,
+      [plan.zoneId]: plan.population || 0,
+    }));
+    setFeedback(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingZoneId(null);
+    setFeedback(null);
+  };
+
+  const handleSaveQuota = async (plan) => {
+    const newPop = Number(editPopulation[plan.zoneId]);
+    if (isNaN(newPop) || newPop < 0) {
+      setFeedback({
+        zoneId: plan.zoneId,
+        type: "error",
+        message: "Please enter a valid positive number for evacuees.",
+      });
+      return;
+    }
+
+    try {
+      setSavingZoneId(plan.zoneId);
+      setFeedback(null);
+
+      onNotify?.({
+        type: "loading",
+        text: `Applying changes to database: Updating evacuee quota for ${plan.zoneName}...`,
+      });
+
+      const res = await fetch("/api/admin/zones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zoneId: plan.zoneId,
+          population: newPop,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update quota in database");
+      }
+
+      setFeedback({
+        zoneId: plan.zoneId,
+        type: "success",
+        message: `✓ Saved! Evacuee quota set to ${newPop.toLocaleString()} in database.`,
+      });
+
+      onNotify?.({
+        type: "success",
+        text: `✓ Evacuee population quota for ${plan.zoneName} updated to ${newPop.toLocaleString()} in PostgreSQL database!`,
+      });
+
+      // Update local state immediately
+      setPlans((prev) =>
+        prev.map((p) =>
+          p.zoneId === plan.zoneId
+            ? {
+                ...p,
+                population: newPop,
+                shortfall: Math.max(0, newPop - (p.totalCapacityUsed || 0)),
+                isFullyAccommodated: (p.totalCapacityUsed || 0) >= newPop,
+              }
+            : p
+        )
+      );
+
+      setEditingZoneId(null);
+      onPlanUpdated?.();
+      loadPlans();
+    } catch (err) {
+      const errMsg = err.message || "Failed to update quota in database";
+      setFeedback({
+        zoneId: plan.zoneId,
+        type: "error",
+        message: errMsg,
+      });
+      onNotify?.({
+        type: "error",
+        text: `❌ Error saving quota for ${plan.zoneName}: ${errMsg}`,
+      });
+    } finally {
+      setSavingZoneId(null);
+    }
+  };
+
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">
-            Relocation Population Planning
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-800">
+              Relocation Population Planning
+            </h2>
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              Live DB Sync
+            </span>
+          </div>
 
           <p className="mt-1 text-sm text-slate-500">
-            Population requiring relocation based on affected population.
+            Real-time population requiring evacuation and assigned emergency relocation site capacities.
           </p>
         </div>
 
@@ -52,101 +150,202 @@ export default function RelocationPopulationPlanning() {
         </div>
       </div>
 
-      {/* Population Cards */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {populationData.map((item) => {
-          const unaffectedPopulation =
-            item.totalPopulation - item.affectedPopulation;
+      {loading ? (
+        <div className="flex h-44 items-center justify-center gap-2 text-slate-400">
+          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <span className="text-sm">Loading dynamic relocation plans from database...</span>
+        </div>
+      ) : plans.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+          No relocation plans currently recorded in the database.
+        </div>
+      ) : (
+        /* Population Cards */
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {plans.map((item) => {
+            const isEditing = editingZoneId === item.zoneId;
+            const isSaving = savingZoneId === item.zoneId;
+            const itemFeedback = feedback?.zoneId === item.zoneId ? feedback : null;
 
-          const remainingCapacity =
-            item.assignedCapacity - item.affectedPopulation;
+            const primaryAllocation = item.allocations?.[0];
+            const shelterName = primaryAllocation?.siteName || "Designated Safe Shelter";
+            const shelterCapacity = primaryAllocation?.capacity || 5000;
+            const allocated = primaryAllocation?.contribution || item.totalCapacityUsed || item.population;
+            const remainingCapacity = shelterCapacity - allocated;
 
-          return (
-            <div
-              key={item.id}
-              className="rounded-xl border border-slate-200 p-4"
-            >
-              {/* Village */}
-              <div className="mb-4 flex items-start justify-between">
+            return (
+              <div
+                key={item.zoneId}
+                className="flex flex-col justify-between rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
+              >
                 <div>
-                  <h3 className="font-semibold text-slate-800">
-                    {item.village}
-                  </h3>
+                  {/* Zone Header */}
+                  <div className="mb-4 flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-slate-800">
+                          {item.zoneName}
+                        </h3>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            item.worstStatus === "RED"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {item.worstStatus === "RED" ? "CRITICAL" : "ALERT"}
+                        </span>
+                      </div>
 
-                  <p className="mt-1 text-xs text-red-500">{item.zone}</p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        {item.hazardType} &bull; Zone: {item.zoneId}
+                      </p>
+                    </div>
+
+                    <MapPin className="h-4 w-4 text-slate-400" />
+                  </div>
+
+                  {/* Feedback Banner */}
+                  {itemFeedback && (
+                    <div
+                      className={`mb-3 flex items-start gap-2 rounded-lg p-2.5 text-xs font-medium ${
+                        itemFeedback.type === "success"
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                          : "border border-red-200 bg-red-50 text-red-800"
+                      }`}
+                    >
+                      {itemFeedback.type === "success" ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
+                      )}
+                      <span>{itemFeedback.message}</span>
+                    </div>
+                  )}
+
+                  {/* Population Information */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Affected Evacuees</span>
+
+                      {isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={editPopulation[item.zoneId] ?? item.population}
+                            onChange={(e) =>
+                              setEditPopulation((prev) => ({
+                                ...prev,
+                                [item.zoneId]: e.target.value,
+                              }))
+                            }
+                            className="w-24 rounded border border-blue-400 px-2 py-1 text-right text-sm font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={isSaving}
+                          />
+                        </div>
+                      ) : (
+                        <span className="font-bold text-red-600">
+                          {item.population.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Assigned Shelter</span>
+
+                      <span className="max-w-[170px] truncate text-right font-medium text-slate-800" title={shelterName}>
+                        {shelterName}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Shelter Sphere Capacity</span>
+
+                      <span className="font-medium text-slate-800">
+                        {shelterCapacity.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="my-2 border-t border-slate-100" />
+
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-slate-700">
+                        Evacuee Allocation Status
+                      </span>
+
+                      <span
+                        className={`font-semibold ${
+                          item.isFullyAccommodated
+                            ? "text-emerald-600"
+                            : "text-amber-600"
+                        }`}
+                      >
+                        {item.isFullyAccommodated ? "Fully Accommodated" : `Shortfall: ${item.shortfall?.toLocaleString() || "0"}`}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Remaining Site Headroom</span>
+
+                      <span
+                        className={`font-semibold ${
+                          remainingCapacity >= 0 ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
+                        {remainingCapacity.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <MapPin className="h-4 w-4 text-slate-400" />
+                {/* Actions */}
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  {isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSaveQuota(item)}
+                        disabled={isSaving}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Applying to DB...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-3.5 w-3.5" />
+                            Save Quota to DB
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleStartEdit(item)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-800"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Adjust Quota in DB
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {/* Population Information */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Total Population</span>
-
-                  <span className="font-medium text-slate-800">
-                    {item.totalPopulation.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Affected Population</span>
-
-                  <span className="font-medium text-red-600">
-                    {item.affectedPopulation.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Unaffected Population</span>
-
-                  <span className="font-medium text-green-600">
-                    {unaffectedPopulation.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="my-3 border-t border-slate-100" />
-
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium text-slate-700">
-                    Population to Relocate
-                  </span>
-
-                  <span className="font-bold text-blue-600">
-                    {item.affectedPopulation.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Assigned Capacity</span>
-
-                  <span className="font-medium text-slate-800">
-                    {item.assignedCapacity.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Remaining Capacity</span>
-
-                  <span
-                    className={`font-semibold ${
-                      remainingCapacity >= 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {remainingCapacity.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action */}
-              <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
-                View Relocation Plan
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

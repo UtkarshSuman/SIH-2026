@@ -1,21 +1,24 @@
 "use client";
 
-import { Users, Plus, Minus, X, Save, Loader2 } from "lucide-react";
-
-import { useState } from "react";
+import { Users, Plus, Minus, X, Save, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Relocationpopulation({
   sites = [],
   onClose,
   onPopulationUpdated,
+  onNotify,
 }) {
   const [localSites, setLocalSites] = useState(sites);
-
   const [manualValues, setManualValues] = useState({});
-
   const [savingId, setSavingId] = useState(null);
+  const [statusFeedback, setStatusFeedback] = useState(null); // { type: "loading" | "success" | "error", message: string }
 
-  const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (sites && sites.length > 0) {
+      setLocalSites(sites);
+    }
+  }, [sites]);
 
   function changePopulation(id, amount) {
     setLocalSites((previous) =>
@@ -41,251 +44,292 @@ export default function Relocationpopulation({
 
   function addManualPopulation(id) {
     const value = Number(manualValues[id] || 0);
-
-    if (!Number.isFinite(value) || value <= 0) {
-      return;
-    }
-
+    if (!Number.isFinite(value) || value <= 0) return;
     changePopulation(id, value);
-
-    setManualValues((previous) => ({
-      ...previous,
-      [id]: "",
-    }));
+    setManualValues((previous) => ({ ...previous, [id]: "" }));
   }
 
   function removeManualPopulation(id) {
     const value = Number(manualValues[id] || 0);
-
-    if (!Number.isFinite(value) || value <= 0) {
-      return;
-    }
-
+    if (!Number.isFinite(value) || value <= 0) return;
     changePopulation(id, -value);
-
-    setManualValues((previous) => ({
-      ...previous,
-      [id]: "",
-    }));
+    setManualValues((previous) => ({ ...previous, [id]: "" }));
   }
 
   async function savePopulation(site) {
     try {
       setSavingId(site.id);
-      setMessage("");
+      setStatusFeedback({
+        type: "loading",
+        message: `Applying changes to database for ${site.name}...`,
+      });
+      onNotify?.({
+        type: "loading",
+        text: `Applying changes to database: Updating ${site.name} carrying capacity...`,
+      });
 
       const response = await fetch(
         `/api/admin/relocation-sites/${site.id}/population`,
         {
           method: "PATCH",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             population: site.population,
+            currentOccupancy: site.population,
           }),
         },
       );
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to update population");
+        throw new Error(data.error || "Failed to update population in database");
       }
 
-      setMessage(`${site.name} population updated successfully.`);
+      const successMsg = `✓ Successfully applied changes to database: ${site.name} capacity updated to ${site.population.toLocaleString()} occupants.`;
+      setStatusFeedback({
+        type: "success",
+        message: successMsg,
+      });
 
       onPopulationUpdated?.(site);
+      onNotify?.({
+        type: "success",
+        text: successMsg,
+      });
     } catch (error) {
       console.error("Population update error:", error);
-
-      setMessage("Failed to update population.");
+      const errMsg = `❌ Error updating database: ${error.message || "Failed to update"}`;
+      setStatusFeedback({
+        type: "error",
+        message: errMsg,
+      });
+      onNotify?.({
+        type: "error",
+        text: errMsg,
+      });
     } finally {
       setSavingId(null);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[85vh]">
         {/* Header */}
-
-        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+        <div className="flex items-center justify-between border-b border-slate-200 p-5 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-              <Users size={21} className="text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold">
+              <Users size={20} />
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-[#0b1838]">
-                Relocation Site Population
+              <h3 className="text-xl font-bold text-slate-900">
+                Relocation Site Population & Capacity
               </h3>
-
-              <p className="text-sm text-slate-500">
-                Update population using + / − or manual adjustment.
+              <p className="text-xs text-slate-500">
+                Live database synchronizer — adjustments directly update PostgreSQL records.
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Sites */}
+        {/* Global Feedback Banner inside modal */}
+        {statusFeedback && (
+          <div
+            className={`px-5 py-3 text-xs sm:text-sm font-medium flex items-center justify-between shrink-0 border-b ${
+              statusFeedback.type === "loading"
+                ? "bg-blue-50 text-blue-900 border-blue-200"
+                : statusFeedback.type === "success"
+                ? "bg-emerald-50 text-emerald-900 border-emerald-200"
+                : "bg-red-50 text-red-900 border-red-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {statusFeedback.type === "loading" && (
+                <Loader2 size={16} className="animate-spin text-blue-600" />
+              )}
+              {statusFeedback.type === "success" && (
+                <CheckCircle2 size={16} className="text-emerald-600" />
+              )}
+              {statusFeedback.type === "error" && (
+                <AlertTriangle size={16} className="text-red-600" />
+              )}
+              <span>{statusFeedback.message}</span>
+            </div>
+            {statusFeedback.type !== "loading" && (
+              <button
+                onClick={() => setStatusFeedback(null)}
+                className="text-xs font-bold opacity-60 hover:opacity-100 ml-3"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
-        <div className="max-h-[65vh] space-y-3 overflow-y-auto p-5">
+        {/* Sites List */}
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">
           {localSites.map((site) => {
             const occupancy =
               site.capacity > 0
                 ? Math.round((site.population / site.capacity) * 100)
                 : 0;
+            const isSavingThis = savingId === site.id;
 
             return (
               <div
                 key={site.id}
-                className="rounded-xl border border-slate-200 p-4"
+                className={`rounded-xl border p-4 transition-all ${
+                  isSavingThis
+                    ? "border-blue-300 bg-blue-50/40 ring-2 ring-blue-100"
+                    : "border-slate-200 bg-white hover:border-slate-300"
+                }`}
               >
                 {/* Site Header */}
-
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="font-semibold text-slate-800">
-                      {site.name}
-                    </h4>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      {site.location}
+                    <h4 className="font-bold text-slate-900">{site.name}</h4>
+                    <p className="text-xs text-slate-500">
+                      {site.location || `${site.district}, ${site.state}`}
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                    {site.status}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      site.status === "Full" || occupancy >= 100
+                        ? "bg-red-100 text-red-700"
+                        : occupancy >= 80
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {site.status || (occupancy >= 100 ? "Full" : "Available")}
                   </span>
                 </div>
 
-                {/* Population */}
+                {/* Adjust Controls */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-y border-slate-100 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => changePopulation(site.id, -100)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition"
+                      title="-100 occupants"
+                    >
+                      <Minus size={14} />
+                    </button>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-slate-500">Current Population</p>
+                    <button
+                      type="button"
+                      onClick={() => changePopulation(site.id, -10)}
+                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+                    >
+                      -10
+                    </button>
 
-                    <p className="mt-1 text-2xl font-bold text-[#0b1838]">
+                    <span className="min-w-20 text-center font-mono font-bold text-slate-900 text-sm">
                       {site.population.toLocaleString()}
-                    </p>
-                  </div>
+                    </span>
 
-                  {/* + / - */}
-
-                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => changePopulation(site.id, -1)}
-                      disabled={site.population <= 0}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                      title="Decrease by 1"
+                      type="button"
+                      onClick={() => changePopulation(site.id, 10)}
+                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
                     >
-                      <Minus size={18} />
+                      +10
                     </button>
 
                     <button
-                      onClick={() => changePopulation(site.id, 1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-700 text-white transition hover:bg-emerald-800"
-                      title="Increase by 1"
+                      type="button"
+                      onClick={() => changePopulation(site.id, 100)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition"
+                      title="+100 occupants"
                     >
-                      <Plus size={18} />
+                      <Plus size={14} />
                     </button>
                   </div>
-                </div>
 
-                {/* =================================
-                    MANUAL ADJUSTMENT
-                ================================== */}
-
-                <div className="mt-4 rounded-lg bg-slate-50 p-3">
-                  <p className="mb-2 text-xs font-semibold text-slate-600">
-                    Manual Population Adjustment
-                  </p>
-
-                  <div className="flex gap-2">
+                  {/* Manual input */}
+                  <div className="flex items-center gap-1.5">
                     <input
                       type="number"
-                      min="1"
+                      placeholder="Add / Cut"
                       value={manualValues[site.id] || ""}
-                      onChange={(event) =>
-                        handleManualValue(site.id, event.target.value)
-                      }
-                      placeholder="e.g. 100"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      onChange={(e) => handleManualValue(site.id, e.target.value)}
+                      className="w-24 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-800 outline-none focus:border-emerald-500"
                     />
 
                     <button
+                      type="button"
                       onClick={() => addManualPopulation(site.id)}
-                      className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                      className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
                     >
                       + Add
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => removeManualPopulation(site.id)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      className="rounded-lg bg-red-50 border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition"
                     >
-                      − Remove
+                      − Sub
                     </button>
                   </div>
                 </div>
 
-                {/* Capacity */}
-
-                <div className="mt-4">
+                {/* Capacity Progress Bar */}
+                <div className="mt-3">
                   <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-slate-500">Occupancy</span>
-
-                    <span className="font-medium text-slate-700">
-                      {site.population.toLocaleString()} /{" "}
-                      {site.capacity.toLocaleString()}
+                    <span className="text-slate-500">Live Carrying Capacity</span>
+                    <span className="font-semibold text-slate-800">
+                      {site.population.toLocaleString()} / {site.capacity.toLocaleString()} ({occupancy}%)
                     </span>
                   </div>
 
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className={`h-full rounded-full ${
-                        occupancy >= 90
+                      className={`h-full rounded-full transition-all ${
+                        occupancy >= 95
                           ? "bg-red-500"
-                          : occupancy >= 70
-                            ? "bg-yellow-500"
-                            : "bg-emerald-500"
+                          : occupancy >= 75
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
                       }`}
-                      style={{
-                        width: `${Math.min(occupancy, 100)}%`,
-                      }}
+                      style={{ width: `${Math.min(occupancy, 100)}%` }}
                     />
                   </div>
-
-                  <p className="mt-1 text-right text-xs text-slate-500">
-                    {occupancy}% occupied
-                  </p>
                 </div>
 
-                {/* Save */}
+                {/* Save to database button */}
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    Remaining: {Math.max(0, site.capacity - site.population).toLocaleString()} slots
+                  </span>
 
-                <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => savePopulation(site)}
-                    disabled={savingId === site.id}
-                    className="flex items-center gap-2 rounded-lg bg-[#0b1838] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#14244d] disabled:opacity-60"
+                    disabled={isSavingThis}
+                    className="flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-800 disabled:opacity-60 shadow-xs"
                   >
-                    {savingId === site.id ? (
+                    {isSavingThis ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Saving...
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Applying changes...</span>
                       </>
                     ) : (
                       <>
-                        <Save size={16} />
-                        Save Changes
+                        <Save size={14} />
+                        <span>Save to Database</span>
                       </>
                     )}
                   </button>
@@ -294,14 +338,6 @@ export default function Relocationpopulation({
             );
           })}
         </div>
-
-        {/* Message */}
-
-        {message && (
-          <div className="border-t border-slate-200 px-5 py-3">
-            <p className="text-sm text-emerald-700">{message}</p>
-          </div>
-        )}
       </div>
     </div>
   );

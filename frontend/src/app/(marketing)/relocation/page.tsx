@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import type { RelocationZonePlan } from "@/hooks/use-relocation-plan";
 import type { RelocationSiteData } from "@/lib/data-service";
+import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
 
 const RelocationRouteMap = dynamic(
   () => import("@/components/map/relocation-route-map").then((m) => m.RelocationRouteMap),
@@ -17,21 +18,26 @@ function RelocationContent() {
 
   const [plans, setPlans] = useState<RelocationZonePlan[]>([]);
   const [sites, setSites] = useState<RelocationSiteData[]>([]);
+  const [zonesList, setZonesList] = useState<any[]>([]);
   const [activeZoneId, setActiveZoneId] = useState<string>(initialZoneId);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [selectedSiteFilter, setSelectedSiteFilter] = useState<string>("ALL");
   const [lastVersion, setLastVersion] = useState(0);
+  const [isFallback, setIsFallback] = useState(false);
+  const [fallbackWarning, setFallbackWarning] = useState("");
 
   const loadData = async () => {
     try {
-      const [plansRes, sitesRes] = await Promise.all([
+      const [plansRes, sitesRes, zonesRes] = await Promise.all([
         fetch("/api/v1/relocation/plan"),
         fetch("/api/v1/relocation/sites"),
+        fetch("/api/zones").catch(() => null),
       ]);
-      const [plansData, sitesData] = await Promise.all([
+      const [plansData, sitesData, zonesData] = await Promise.all([
         plansRes.json().catch(() => null),
         sitesRes.json().catch(() => null),
+        zonesRes && zonesRes.ok ? zonesRes.json().catch(() => null) : null,
       ]);
 
       if (!plansRes.ok || !sitesRes.ok) {
@@ -48,6 +54,26 @@ function RelocationContent() {
       }
       if (sitesData?.sites) {
         setSites(sitesData.sites);
+      }
+      if (Array.isArray(zonesData)) {
+        setZonesList(zonesData);
+      }
+
+      const isFb = Boolean(
+        plansData?.isFallback ||
+        sitesData?.isFallback ||
+        plansRes.headers.get("x-is-fallback") === "true" ||
+        sitesRes.headers.get("x-is-fallback") === "true"
+      );
+      setIsFallback(isFb);
+      if (isFb) {
+        setFallbackWarning(
+          plansData?.warning ||
+          sitesData?.warning ||
+          plansRes.headers.get("x-fallback-warning") ||
+          sitesRes.headers.get("x-fallback-warning") ||
+          "Database or backend offline using internal latest data."
+        );
       }
       setLoadError("");
     } catch (err) {
@@ -112,6 +138,53 @@ function RelocationContent() {
     return Array.from(new Set(sites.map((s) => s.district)));
   }, [sites]);
 
+  const redAreas = useMemo(() => {
+    if (zonesList.length > 0) {
+      return zonesList.filter((z) => (z.zoneColor || z.worstStatus) === "RED" || z.worstScore >= 0.7);
+    }
+    return plans
+      .filter((p) => p.worstStatus === "RED")
+      .map((p) => ({
+        zoneId: p.zoneId,
+        name: p.zoneName,
+        worstHazard: p.hazardType,
+        worstScore: p.priorityScore ?? 0.88,
+        population: p.population,
+        district: p.zoneName.split(",")[1]?.trim() || "Critical Sector",
+      }));
+  }, [zonesList, plans]);
+
+  const yellowAreas = useMemo(() => {
+    if (zonesList.length > 0) {
+      return zonesList.filter(
+        (z) => (z.zoneColor || z.worstStatus) === "YELLOW" || (z.worstScore >= 0.4 && z.worstScore < 0.7)
+      );
+    }
+    return plans
+      .filter((p) => p.worstStatus === "YELLOW")
+      .map((p) => ({
+        zoneId: p.zoneId,
+        name: p.zoneName,
+        worstHazard: p.hazardType,
+        worstScore: p.priorityScore ?? 0.52,
+        population: p.population,
+        district: p.zoneName.split(",")[1]?.trim() || "Warning Sector",
+      }));
+  }, [zonesList, plans]);
+
+  const greenAreas = useMemo(() => {
+    if (zonesList.length > 0) {
+      const greens = zonesList.filter(
+        (z) =>
+          (z.zoneColor || z.worstStatus) === "GREEN" ||
+          (z.worstScore < 0.4 && (z.zoneColor || z.worstStatus) !== "RED" && (z.zoneColor || z.worstStatus) !== "YELLOW")
+      );
+      if (greens.length > 0) return greens;
+      return [...zonesList].sort((a, b) => (a.worstScore || 0) - (b.worstScore || 0)).slice(0, 3);
+    }
+    return [];
+  }, [zonesList]);
+
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-800">
       {/* Top Header Banner */}
@@ -120,14 +193,21 @@ function RelocationContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  NDMA / NDRF DSS • PS 26191
-                </span>
+                {isFallback ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-0.5 text-xs font-bold text-amber-800">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Offline Cache Mode
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    Live Database Connected
+                  </span>
+                )}
                 <span className="text-xs text-slate-400 font-medium">Sphere Standard: 45 m²/person</span>
               </div>
               <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                Relocation Corridors & Carrying Capacity Engine
+                Relocation Corridors &amp; Carrying Capacity Engine
               </h1>
               <p className="mt-1 text-sm text-slate-500 max-w-3xl">
                 Real-time road evacuation routing from high-risk Red Zones to certified safe resettlement townships.
@@ -153,6 +233,19 @@ function RelocationContent() {
               ))}
             </div>
           </div>
+
+          {/* Offline Fallback Warning Banner */}
+          {isFallback && (
+            <div className="mt-4">
+              <OfflineFallbackBanner
+                isFallback={true}
+                message={fallbackWarning || "Database or backend offline using internal latest data."}
+                source="Internal Latest Snapshot"
+                onRetry={loadData}
+                isRetrying={isLoading}
+              />
+            </div>
+          )}
 
           {loadError && (
             <p className="mt-4 text-sm font-medium text-red-700">{loadError}</p>
@@ -214,6 +307,7 @@ function RelocationContent() {
               ) : (
                 <RelocationRouteMap
                   plans={plans}
+                  sites={sites}
                   activeZoneId={activeZoneId}
                   onSelectZone={(id) => setActiveZoneId(id)}
                 />
@@ -321,6 +415,177 @@ function RelocationContent() {
             ) : null}
           </div>
         </div>
+
+        {/* ============================================================== */}
+        {/* 3 CARDS: AREAS IN RED, YELLOW AND GREEN ZONES                  */}
+        {/* ============================================================== */}
+        <section className="mt-10">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <div>
+              <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900 flex items-center gap-2">
+                <span>🗺️</span>
+                <span>Jurisdictional Hazard &amp; Safety Matrix</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Live multi-hazard categorization of habitations across Red, Yellow, and Green zones.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-slate-400">Click any card item to focus map</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {/* 🔴 RED ZONE CARD */}
+            <div className="flex flex-col justify-between rounded-2xl border border-red-200/90 bg-gradient-to-b from-red-50/70 via-white to-white p-5 shadow-xs hover:shadow-md transition-all">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 border border-red-200 px-3 py-1 text-xs font-bold text-red-800">
+                    <span className="h-2 w-2 rounded-full bg-red-600 animate-ping" />
+                    🔴 Red Zones ({redAreas.length})
+                  </span>
+                  <span className="rounded-md bg-red-100/90 px-2 py-0.5 text-[10px] font-bold text-red-700 uppercase tracking-wide">
+                    Evacuate
+                  </span>
+                </div>
+                <p className="mt-2.5 text-xs text-slate-600 leading-relaxed">
+                  Critical risk threshold (Score &ge; 0.70). Immediate evacuation directives and safe corridors dispatched.
+                </p>
+
+                <div className="mt-4 space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {redAreas.map((area: any) => (
+                    <div
+                      key={area.zoneId}
+                      onClick={() => {
+                        setActiveZoneId(area.zoneId);
+                        window.scrollTo({ top: 380, behavior: "smooth" });
+                      }}
+                      className={`cursor-pointer rounded-xl border p-3 text-xs transition-all ${
+                        activeZoneId === area.zoneId
+                          ? "border-red-500 bg-red-50/90 ring-2 ring-red-400/30 shadow-xs"
+                          : "border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <strong className="text-slate-900 font-bold">{area.name}</strong>
+                        <span className="font-mono font-bold text-red-600 text-[11px]">
+                          {(area.worstScore ?? 0.85).toFixed(2)} Risk
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{area.worstHazard || "MULTI_HAZARD"}</span>
+                        </span>
+                        <span>{Number(area.population || 0).toLocaleString()} citizens</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 border-t border-red-100 pt-3 text-[11px] text-red-700 font-semibold flex items-center justify-between">
+                <span>Total Evacuees:</span>
+                <span className="font-bold">{redAreas.reduce((acc: number, z: any) => acc + (z.population || 0), 0).toLocaleString()} citizens</span>
+              </div>
+            </div>
+
+            {/* 🟡 YELLOW ZONE CARD */}
+            <div className="flex flex-col justify-between rounded-2xl border border-amber-200/90 bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xs hover:shadow-md transition-all">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-200 px-3 py-1 text-xs font-bold text-amber-800">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    🟡 Yellow Zones ({yellowAreas.length})
+                  </span>
+                  <span className="rounded-md bg-amber-100/90 px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase tracking-wide">
+                    Warning
+                  </span>
+                </div>
+                <p className="mt-2.5 text-xs text-slate-600 leading-relaxed">
+                  Elevated hazard telemetry (Score 0.40 &ndash; 0.69). Early warning monitoring &amp; standby shelters ready.
+                </p>
+
+                <div className="mt-4 space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {yellowAreas.map((area: any) => (
+                    <div
+                      key={area.zoneId}
+                      onClick={() => {
+                        setActiveZoneId(area.zoneId);
+                        window.scrollTo({ top: 380, behavior: "smooth" });
+                      }}
+                      className={`cursor-pointer rounded-xl border p-3 text-xs transition-all ${
+                        activeZoneId === area.zoneId
+                          ? "border-amber-500 bg-amber-50/90 ring-2 ring-amber-400/30 shadow-xs"
+                          : "border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <strong className="text-slate-900 font-bold">{area.name}</strong>
+                        <span className="font-mono font-bold text-amber-700 text-[11px]">
+                          {(area.worstScore ?? 0.52).toFixed(2)} Risk
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <span>🔔</span>
+                          <span>{area.worstHazard || "MONITORED"}</span>
+                        </span>
+                        <span>{Number(area.population || 0).toLocaleString()} citizens</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 border-t border-amber-100 pt-3 text-[11px] text-amber-800 font-semibold flex items-center justify-between">
+                <span>Monitored Population:</span>
+                <span className="font-bold">{yellowAreas.reduce((acc: number, z: any) => acc + (z.population || 0), 0).toLocaleString()} citizens</span>
+              </div>
+            </div>
+
+            {/* 🟢 GREEN ZONE CARD */}
+            <div className="flex flex-col justify-between rounded-2xl border border-emerald-200/90 bg-gradient-to-b from-emerald-50/70 via-white to-white p-5 shadow-xs hover:shadow-md transition-all">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                    🟢 Green Zones ({greenAreas.length})
+                  </span>
+                  <span className="rounded-md bg-emerald-100/90 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wide">
+                    Safe
+                  </span>
+                </div>
+                <p className="mt-2.5 text-xs text-slate-600 leading-relaxed">
+                  Parameters within safe tolerance. Certified low-vulnerability terrain hosting relief shelters.
+                </p>
+
+                <div className="mt-4 space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {greenAreas.map((area: any) => (
+                    <div
+                      key={area.zoneId || area.id}
+                      className="rounded-xl border border-slate-200 bg-white p-3 text-xs hover:border-emerald-300 hover:bg-emerald-50/20 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <strong className="text-slate-900 font-bold">{area.name}</strong>
+                        <span className="font-mono font-bold text-emerald-700 text-[11px]">
+                          ✓ Safe
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                          <span>🛡️</span>
+                          <span>{area.district || area.state || "Secure Area"}</span>
+                        </span>
+                        <span>{Number(area.population || area.capacity || 0).toLocaleString()} capacity/pop</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 border-t border-emerald-100 pt-3 text-[11px] text-emerald-800 font-semibold flex items-center justify-between">
+                <span>Relocation Status:</span>
+                <span className="font-bold">Active Receiving Facilities</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Section 2: Candidate Relocation Sites & Carrying Capacity Cards */}
         <section className="mt-12">

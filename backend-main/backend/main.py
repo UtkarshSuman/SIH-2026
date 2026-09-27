@@ -9,11 +9,13 @@ for p in [
     ROOT_DIR,
     BASE_DIR,
     BASE_DIR / "GIS-Scripts-FETCH-API-layer" / "rescue_arc_alert",
+    BASE_DIR / "GIS-Scripts-FETCH-API-layer" / "gis_fetcher",
     BASE_DIR / "GIS-Scripts-FETCH-API-layer" / "hazard_platform",
 ]:
     p_str = str(p)
     if p_str not in sys.path:
         sys.path.insert(0, p_str)
+
 
 root_main_file = ROOT_DIR / "main.py"
 spec = importlib.util.spec_from_file_location("root_main", root_main_file)

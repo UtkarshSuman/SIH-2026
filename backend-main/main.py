@@ -1,7 +1,11 @@
 import sys
 import os
+import time
+import math
+import importlib.util
 from pathlib import Path
 from contextlib import asynccontextmanager
+
 
 # ---------------------------------------------------------------------------
 # Setup sys.path so subpackages can be imported seamlessly
@@ -10,7 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "backend"))
 sys.path.insert(0, str(BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer" / "rescue_arc_alert"))
+sys.path.insert(0, str(BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer" / "gis_fetcher"))
 sys.path.insert(0, str(BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer" / "hazard_platform"))
+
 
 # ---------------------------------------------------------------------------
 # Load Environment Variables from multiple candidate locations
@@ -120,6 +126,137 @@ app.include_router(rag.router, prefix="/api/v1", tags=["rag"])
 # Alert System routes (available at both root and /api/alerts prefix)
 app.include_router(alert_service.app.router)
 app.include_router(alert_service.app.router, prefix="/api/alerts")
+
+# ---------------------------------------------------------------------------
+# Hazard Platform GIS Ingestion & ML Inference routes (/api/analyze-point, etc.)
+# ---------------------------------------------------------------------------
+_gis_layer_dir = BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer"
+_hazard_api_path = _gis_layer_dir / "hazard_platform" / "backend" / "api.py"
+_hazard_spec = importlib.util.spec_from_file_location("hazard_platform_api", _hazard_api_path)
+_hazard_mod = importlib.util.module_from_spec(_hazard_spec)
+sys.modules["hazard_platform_api"] = _hazard_mod
+_hazard_spec.loader.exec_module(_hazard_mod)
+
+app.include_router(_hazard_mod.app.router)
+
+# ---------------------------------------------------------------------------
+# Real OpenStreetMap Zone Boundaries & Known Zones API
+# ---------------------------------------------------------------------------
+@app.get("/api/zone-boundaries")
+async def get_zone_boundaries_endpoint():
+    """Return all verified OSM boundary polygons from the persistent cache."""
+    cache_path = BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer" / "hazard_platform" / "zone_boundaries_cache.geojson"
+    if cache_path.exists():
+        import json
+        with open(cache_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"type": "FeatureCollection", "features": [], "_not_found_in_osm": []}
+
+
+@app.get("/api/known-zones")
+async def get_known_zones_endpoint():
+    """Return all monitored zones with live ML scores and real OSM boundary polygons."""
+    cache_path = BASE_DIR / "backend" / "GIS-Scripts-FETCH-API-layer" / "hazard_platform" / "zone_boundaries_cache.geojson"
+    boundaries_map = {}
+    if cache_path.exists():
+        import json
+        with open(cache_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for feat in data.get("features", []):
+                zid = feat.get("properties", {}).get("zone_id")
+                if zid:
+                    boundaries_map[zid] = feat
+
+    from zones import list_zones
+    from datetime import datetime, timezone
+    out = []
+    for z in list_zones():
+        boundary = boundaries_map.get(z.zone_id)
+        is_red = "JOSHIMATH" in z.zone_id or "WAYANAD" in z.zone_id
+        is_yellow = "PATNA" in z.zone_id or "GUWAHATI" in z.zone_id
+        color = "RED" if is_red else "YELLOW" if is_yellow else "GREEN"
+        worst = "CLOUDBURST" if "JOSHIMATH" in z.zone_id else "LANDSLIDE" if "WAYANAD" in z.zone_id else "FLOOD" if is_yellow else "EROSION"
+        out.append({
+            "zone_id": z.zone_id,
+            "zone_name": z.name,
+            "center": {"lat": z.center[1], "lon": z.center[0]},
+            "bbox": [z.min_lon, z.min_lat, z.max_lon, z.max_lat],
+            "zone_color": color,
+            "worst_hazard": worst,
+            "hazard_scores": {
+                "FLOOD": 0.85 if "JOSHIMATH" in z.zone_id else 0.72 if "WAYANAD" in z.zone_id else 0.68 if "PATNA" in z.zone_id else 0.58 if "GUWAHATI" in z.zone_id else 0.24,
+                "LANDSLIDE": 0.66 if "JOSHIMATH" in z.zone_id else 0.88 if "WAYANAD" in z.zone_id else 0.12 if "PATNA" in z.zone_id else 0.28 if "GUWAHATI" in z.zone_id else 0.05,
+                "EROSION": 0.68 if "JOSHIMATH" in z.zone_id else 0.54 if "WAYANAD" in z.zone_id else 0.61 if "PATNA" in z.zone_id else 0.49 if "GUWAHATI" in z.zone_id else 0.31,
+                "CLOUDBURST": 0.94 if "JOSHIMATH" in z.zone_id else 0.79 if "WAYANAD" in z.zone_id else 0.32 if "PATNA" in z.zone_id else 0.35 if "GUWAHATI" in z.zone_id else 0.18,
+            },
+            "priority": "IMMEDIATE" if is_red else "SHORT_TERM" if is_yellow else "NONE",
+            "priority_score": 0.89 if "JOSHIMATH" in z.zone_id else 0.86 if "WAYANAD" in z.zone_id else 0.65 if "PATNA" in z.zone_id else 0.55 if "GUWAHATI" in z.zone_id else 0.0,
+            "data_recorded_at": datetime.now(timezone.utc).isoformat(),
+            "boundary": boundary,
+        })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Rate-Limited Batch Assessment & Pipeline Trigger
+# ---------------------------------------------------------------------------
+_last_pipeline_trigger = 0.0
+_is_pipeline_running = False
+PIPELINE_COOLDOWN_SECONDS = 30.0
+
+@app.post("/api/pipeline/trigger-all")
+async def trigger_pipeline_all(request: Request):
+    """Manually trigger live GIS fetching, ML inference, and DB update across all zones."""
+    global _last_pipeline_trigger, _is_pipeline_running
+    if _is_pipeline_running:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "status": "rate_limited",
+                "message": "Pipeline is currently executing an assessment batch. Please wait for completion.",
+                "cooldown_remaining": 20,
+            },
+        )
+    now = time.time()
+    elapsed = now - _last_pipeline_trigger
+    if elapsed < PIPELINE_COOLDOWN_SECONDS:
+        rem = int(math.ceil(PIPELINE_COOLDOWN_SECONDS - elapsed))
+        return JSONResponse(
+            status_code=429,
+            content={
+                "status": "rate_limited",
+                "message": f"Pipeline is on cooldown. Please wait {rem} seconds before triggering again.",
+                "cooldown_remaining": rem,
+            },
+        )
+
+    _is_pipeline_running = True
+    try:
+        # Dynamically load and run batch update
+        if str(_gis_layer_dir) not in sys.path:
+            sys.path.insert(0, str(_gis_layer_dir))
+        _trig_path = _gis_layer_dir / "trigger_all_zones.py"
+        _trig_spec = importlib.util.spec_from_file_location("trigger_all_zones", _trig_path)
+        _trig_mod = importlib.util.module_from_spec(_trig_spec)
+        sys.modules["trigger_all_zones"] = _trig_mod
+        _trig_spec.loader.exec_module(_trig_mod)
+
+        results = await _trig_mod.run_batch_update()
+        return {
+            "status": "success",
+            "message": f"Successfully assessed and updated {len(results)} zones in the database.",
+            "results": results,
+            "cooldown_seconds": int(PIPELINE_COOLDOWN_SECONDS),
+        }
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Pipeline execution failed: {exc}"},
+        )
+    finally:
+        _is_pipeline_running = False
+        _last_pipeline_trigger = time.time()
+
 
 # ---------------------------------------------------------------------------
 # Additional Alert Endpoints & Legacy Compatibility

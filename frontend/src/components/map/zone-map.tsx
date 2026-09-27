@@ -15,7 +15,8 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Circle, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Popup } from "react-leaflet";
+import { getZoneBoundary } from "@/lib/zone-boundaries";
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: "#22c55e",
@@ -29,8 +30,8 @@ export function ZoneMap({ geojson }: { geojson: GeoJSON.FeatureCollection | null
   return (
     <MapContainer center={WAYANAD_CENTER} zoom={11} style={{ height: "100%", width: "100%" }}>
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+        attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom"
       />
 
       {geojson?.features.map((feature) => {
@@ -43,15 +44,17 @@ export function ZoneMap({ geojson }: { geojson: GeoJSON.FeatureCollection | null
           hazards: Record<string, { status: string; riskScore: number; updatedAt: string }>;
         };
 
+        const boundary = getZoneBoundary({ zoneId: props.zoneId, lat, lng });
+
         return (
-          <Circle
+          <Polygon
             key={props.zoneId}
-            center={[lat, lng]}
-            radius={props.radiusMeters}
+            positions={boundary}
             pathOptions={{
-              color: STATUS_COLORS[props.worstStatus],
-              fillColor: STATUS_COLORS[props.worstStatus],
+              color: STATUS_COLORS[props.worstStatus] || "#22c55e",
+              fillColor: STATUS_COLORS[props.worstStatus] || "#22c55e",
               fillOpacity: 0.35,
+              weight: 2,
             }}
           >
             <Popup>
@@ -65,7 +68,7 @@ export function ZoneMap({ geojson }: { geojson: GeoJSON.FeatureCollection | null
                 ))}
               </div>
             </Popup>
-          </Circle>
+          </Polygon>
         );
       })}
     </MapContainer>

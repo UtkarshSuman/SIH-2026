@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { RelocationSiteRecord } from "@/lib/database-store";
+import type { RelocationSiteData as RelocationSiteRecord } from "@/lib/data-service";
 
 export default function AdminRelocationSitesPage() {
   const [sites, setSites] = useState<RelocationSiteRecord[]>([]);

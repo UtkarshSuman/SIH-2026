@@ -1,13 +1,16 @@
 /**
- * FEATURE: Email verification link handler. The link emailed to the user
- * (see server/services/email.ts) points here as
- * /api/auth/verify-email?token=xxx. On a valid, unexpired token: marks
- * User.emailVerified, deletes the token (one-time use), and redirects to
- * /login with a status flag the LoginForm reads to show a success/error
- * message.
+ * GET /api/auth/verify-email?token=xxx
+ *
+ * Email verification handler — validates token, marks user verified,
+ * then redirects to /login with ?verified=1 or ?verified=0.
+ * Uses Supabase REST API (no direct PostgreSQL needed).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@sih/database";
+import {
+  findEmailVerificationToken,
+  markEmailVerified,
+  deleteEmailVerificationToken,
+} from "@/lib/auth-rest-client";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
@@ -18,17 +21,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const record = await prisma.emailVerificationToken.findUnique({ where: { token } });
+  try {
+    const record = await findEmailVerificationToken(token);
 
-  if (!record || record.expiresAt < new Date()) {
+    if (!record || new Date(record.expires_at) < new Date()) {
+      loginUrl.searchParams.set("verified", "0");
+      return NextResponse.redirect(loginUrl);
+    }
+
+    await markEmailVerified(record.user_id);
+    await deleteEmailVerificationToken(token);
+  } catch (err) {
+    console.error("[VerifyEmail] Error:", err);
     loginUrl.searchParams.set("verified", "0");
     return NextResponse.redirect(loginUrl);
   }
-
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: record.userId }, data: { emailVerified: new Date() } }),
-    prisma.emailVerificationToken.delete({ where: { token } }),
-  ]);
 
   loginUrl.searchParams.set("verified", "1");
   return NextResponse.redirect(loginUrl);

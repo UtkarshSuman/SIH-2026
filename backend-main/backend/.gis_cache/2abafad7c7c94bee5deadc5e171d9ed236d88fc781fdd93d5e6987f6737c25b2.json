@@ -1,0 +1,1 @@
+[{"geometry": {"type": "Point", "coordinates": [78.6572255, 24.984066]}, "properties": {"river_discharge_m3s": 1.17, "river_level_change_rate_m_per_hr": -0.0025, "river_level_m": null, "_dates": ["2026-09-24", "2026-09-25", "2026-09-26"]}, "source": "river_discharge", "fetched_at": "2026-09-26T19:41:38.673997+00:00"}]

@@ -6,6 +6,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "generate": "prisma generate --schema=prisma/schema.prisma",
+    "pull": "dotenv -e ../../.env -- prisma db pull",
+    "db:pull": "dotenv -e ../../.env -- prisma db pull",
     "push": "dotenv -e ../../.env -- prisma db push",
     "migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",

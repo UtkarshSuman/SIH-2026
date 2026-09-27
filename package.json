@@ -9,6 +9,7 @@
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "pnpm --filter @sih/database generate",
+    "db:pull": "pnpm --filter @sih/database pull",
     "db:push": "pnpm --filter @sih/database push",
     "db:migrate": "pnpm --filter @sih/database migrate",
     "db:studio": "pnpm --filter @sih/database studio",

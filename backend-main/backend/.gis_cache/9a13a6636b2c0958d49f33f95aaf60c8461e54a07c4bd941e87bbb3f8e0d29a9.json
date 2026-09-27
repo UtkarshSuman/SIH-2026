@@ -1,0 +1,1 @@
+[{"geometry": {"type": "Point", "coordinates": [91.7362, 26.1445]}, "properties": {"time": "2026-09-26T18:30", "interval": 900, "temperature": 26.8, "windspeed": 6.4, "winddirection": 223, "is_day": 0, "weathercode": 51, "humidity": 88, "rain_rate": 0.0, "rain_24h": 0.7000000000000001, "rain_72h": 6.5}, "source": "weather", "fetched_at": "2026-09-26T18:35:51.291906+00:00"}]

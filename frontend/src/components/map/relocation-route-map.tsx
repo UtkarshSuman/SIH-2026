@@ -12,11 +12,12 @@ import {
 import { fetchRoadRoute } from "@/lib/routing";
 import type { RelocationZonePlan } from "@/hooks/use-relocation-plan";
 
-interface SiteInfo {
+export interface SiteInfo {
   id: string;
   siteCode?: string;
   name: string;
   district?: string;
+  state?: string;
   lat: number;
   lng: number;
   capacity: number;
@@ -24,7 +25,8 @@ interface SiteInfo {
   remainingCapacity?: number;
   totalAreaSqm?: number;
   usableAreaSqm?: number;
-  waterSourceType?: string;
+  waterSourceType?: string | null;
+  status?: string;
 }
 
 function MapBoundsRecenter({
@@ -71,34 +73,55 @@ function MapBoundsRecenter({
   return null;
 }
 
+function isSiteFullyOccupied(site: SiteInfo): boolean {
+  if (site.status === "FULL") return true;
+  if (site.remainingCapacity !== undefined && site.remainingCapacity <= 0) return true;
+  if (
+    site.currentOccupancy !== undefined &&
+    site.capacity !== undefined &&
+    site.currentOccupancy >= site.capacity
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function RelocationRouteMap({
   plans,
+  sites: propSites,
   activeZoneId,
   onSelectZone,
 }: {
   plans: RelocationZonePlan[];
+  sites?: SiteInfo[];
   activeZoneId?: string;
   onSelectZone?: (zoneId: string) => void;
 }) {
-  const [sites, setSites] = useState<SiteInfo[]>([]);
+  const [internalSites, setInternalSites] = useState<SiteInfo[]>([]);
   const [routes, setRoutes] = useState<Record<string, [number, number][]>>({});
 
-  // Fetch sites from internal API (resilient database read)
+  // Use props if provided from parent (relocation page with real-time poll), otherwise fallback to internal fetch
+  const sites = useMemo(() => {
+    return propSites && propSites.length > 0 ? propSites : internalSites;
+  }, [propSites, internalSites]);
+
+  // Fetch sites from internal API (resilient database read) if prop not passed
   useEffect(() => {
+    if (propSites && propSites.length > 0) return;
     let cancelled = false;
     fetch("/api/v1/relocation/sites")
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled && data.sites) setSites(data.sites);
+        if (!cancelled && data.sites) setInternalSites(data.sites);
       })
       .catch((err) => console.warn("Failed to load relocation sites:", err));
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [propSites]);
 
-  // Compute or load road routes
+  // Compute or load road routes — automatically hides routes to fully occupied sites!
   useEffect(() => {
     if (sites.length === 0 || plans.length === 0) return;
     let cancelled = false;
@@ -108,8 +131,14 @@ export function RelocationRouteMap({
 
       for (const plan of plans) {
         for (const alloc of plan.allocations) {
-          const site = sites.find((s) => s.id === alloc.siteId);
+          const site = sites.find((s) => s.id === alloc.siteId || (s.siteCode && s.siteCode === alloc.siteId));
           if (!site) continue;
+
+          // When a relocation site is fully occupied, its evacuation path disappears from the frontend
+          if (isSiteFullyOccupied(site)) {
+            continue;
+          }
+
           const key = `${plan.zoneId}-${site.id}`;
 
           // If pre-computed road coordinates exist on the allocation, use them immediately
@@ -152,17 +181,21 @@ export function RelocationRouteMap({
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
         />
 
         <MapBoundsRecenter plans={plans} sites={sites} activeZoneId={activeZoneId} />
 
-        {/* Road Polyline Corridors */}
+        {/* Road Polyline Corridors (Only to sites with remaining capacity) */}
         {Object.entries(routes).map(([key, path]) => {
-          const [zoneId] = key.split("-SITE-").length > 1
-            ? [key.split("-SITE-")[0]]
-            : key.split(/-(?=site-)/);
+          const targetSite = sites.find(
+            (s) => key.endsWith(`-${s.id}`) || (s.siteCode && key.endsWith(`-${s.siteCode}`))
+          );
+          if (targetSite && isSiteFullyOccupied(targetSite)) {
+            return null; // Route is closed/disappeared because destination is full
+          }
+
           const isHighlighted = !activeZoneId || key.startsWith(activeZoneId);
 
           return (
@@ -228,39 +261,51 @@ export function RelocationRouteMap({
 
         {/* Safe Relocation Destination Sites */}
         {sites.map((site) => {
+          const isFull = isSiteFullyOccupied(site);
+          const markerColor = isFull ? "#dc2626" : "#16a34a";
+          const fillColor = isFull ? "#f87171" : "#22c55e";
+
           return (
             <CircleMarker
               key={site.id}
               center={[site.lat, site.lng]}
-              radius={9}
+              radius={isFull ? 8 : 10}
               pathOptions={{
-                color: "#16a34a",
-                fillColor: "#22c55e",
-                fillOpacity: 0.85,
+                color: markerColor,
+                fillColor: fillColor,
+                fillOpacity: 0.9,
                 weight: 2,
               }}
             >
               <Popup>
                 <div className="p-1 text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-700">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                    SAFE RELOCATION TOWNSHIP
+                  <div className={`flex items-center gap-1.5 font-bold ${isFull ? "text-red-700" : "text-emerald-700"}`}>
+                    <span className={`h-2 w-2 rounded-full ${isFull ? "bg-red-600" : "bg-emerald-600"}`} />
+                    {isFull ? "SITE FULLY OCCUPIED (0 CAPACITY LEFT)" : "SAFE RELOCATION TOWNSHIP"}
                   </div>
                   <strong className="mt-0.5 block text-sm text-slate-900">{site.name}</strong>
                   <p className="mt-1 text-slate-600">
-                    Sphere Capacity (45 m²/person):{" "}
-                    <span className="font-semibold text-slate-900">{site.capacity.toLocaleString()}</span>
+                    Sphere Capacity: <span className="font-semibold text-slate-900">{site.capacity.toLocaleString()}</span>
                   </p>
-                  {site.remainingCapacity !== undefined && (
-                    <p className="text-slate-600">
-                      Remaining Headroom:{" "}
-                      <span className="font-semibold text-emerald-700">
-                        {site.remainingCapacity.toLocaleString()} available
-                      </span>
-                    </p>
+                  <p className="text-slate-600">
+                    Current Occupancy: <span className="font-semibold text-slate-900">{(site.currentOccupancy ?? 0).toLocaleString()}</span>
+                  </p>
+                  <p className="text-slate-600">
+                    Remaining Headroom:{" "}
+                    <span className={`font-semibold ${isFull ? "text-red-600 font-bold" : "text-emerald-700"}`}>
+                      {site.remainingCapacity !== undefined
+                        ? site.remainingCapacity.toLocaleString()
+                        : Math.max(0, site.capacity - (site.currentOccupancy || 0)).toLocaleString()}{" "}
+                      {isFull ? "beds (FULL)" : "beds available"}
+                    </span>
+                  </p>
+                  {isFull && (
+                    <div className="mt-1.5 rounded bg-red-50 p-1.5 text-[11px] font-semibold text-red-700 border border-red-200">
+                      ⚠️ Evacuation corridor closed. New evacuees routed to alternate facilities.
+                    </div>
                   )}
                   {site.usableAreaSqm && (
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 mt-1">
                       Usable Area: {site.usableAreaSqm.toLocaleString()} m²
                     </p>
                   )}
@@ -275,15 +320,19 @@ export function RelocationRouteMap({
       <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-[11px] font-medium text-slate-700 shadow-md backdrop-blur-sm">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
-          Red Zone Habitation
+          Red Zone
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
-          Safe Relocation Site
+          Available Safe Site
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+          Fully Occupied Site
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-0.5 w-4 bg-blue-600" />
-          Evacuation Road Route
+          Active Evacuation Route (Hidden if site is full)
         </span>
       </div>
     </div>

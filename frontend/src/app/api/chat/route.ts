@@ -15,7 +15,14 @@
  */
 
 import { NextRequest } from "next/server";
-import { dbStore, ZoneRecord, RelocationSiteRecord, RelocationPlanRecord } from "@/lib/database-store";
+import {
+  getRecentZones,
+  getRecentRelocationSites,
+  getRecentRelocationPlan,
+  ZoneData as ZoneRecord,
+  RelocationSiteData as RelocationSiteRecord,
+  RelocationZonePlanData as RelocationPlanRecord,
+} from "@/lib/data-service";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. RAG Knowledge Corpus (Disaster Standards, Sphere Handbook, AHP, NDMA SOPs)
@@ -113,7 +120,7 @@ interface ToolResult {
 }
 
 async function toolGetZoneStatus(query: string): Promise<ToolResult> {
-  const zones = await dbStore.getZones();
+  const zones = await getRecentZones();
   const cleanQ = query.trim().toLowerCase();
 
   // Match by ID, name, district, or state
@@ -155,7 +162,7 @@ async function toolGetZoneStatus(query: string): Promise<ToolResult> {
 }
 
 async function toolGetHighRiskZones(): Promise<ToolResult> {
-  const zones = await dbStore.getZones();
+  const zones = await getRecentZones();
   const redZones = zones
     .filter((z) => z.zoneColor === "RED" || z.worstScore >= 0.7)
     .sort((a, b) => b.worstScore - a.worstScore);
@@ -188,7 +195,7 @@ async function toolGetHighRiskZones(): Promise<ToolResult> {
 }
 
 async function toolGetRelocationSites(districtOrState?: string): Promise<ToolResult> {
-  const sites = await dbStore.getRelocationSites();
+  const sites = await getRecentRelocationSites();
   let filtered = sites;
   if (districtOrState) {
     const clean = districtOrState.trim().toLowerCase();
@@ -227,7 +234,7 @@ async function toolGetRelocationSites(districtOrState?: string): Promise<ToolRes
 }
 
 async function toolGetRelocationPlans(zoneQuery?: string): Promise<ToolResult> {
-  const plans = await dbStore.getRelocationPlans();
+  const plans = await getRecentRelocationPlan();
   let filtered = plans;
   if (zoneQuery) {
     const clean = zoneQuery.trim().toLowerCase();
@@ -266,9 +273,9 @@ async function toolGetRelocationPlans(zoneQuery?: string): Promise<ToolResult> {
 }
 
 async function toolGetDatabaseSummary(): Promise<ToolResult> {
-  const zones = await dbStore.getZones();
-  const sites = await dbStore.getRelocationSites();
-  const plans = await dbStore.getRelocationPlans();
+  const zones = await getRecentZones();
+  const sites = await getRecentRelocationSites();
+  const plans = await getRecentRelocationPlan();
 
   const redCount = zones.filter((z) => z.zoneColor === "RED").length;
   const yellowCount = zones.filter((z) => z.zoneColor === "YELLOW").length;

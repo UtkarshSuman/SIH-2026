@@ -1,18 +1,15 @@
 /**
- * FEATURE: "Forgot password" request handler. Generates a short-lived
- * (1 hour) reset token and emails a reset link via Resend.
+ * POST /api/auth/forgot-password
  *
- * SECURITY NOTE: this always returns the same success response whether or
- * not the email exists in the database - returning a different response
- * for "email not found" lets attackers enumerate which emails have
- * accounts, so we deliberately hide that distinction.
- *
+ * Generates a short-lived (1 hour) reset token and emails a reset link.
+ * Always returns the same success response to prevent email enumeration.
+ * Uses Supabase REST API (no direct PostgreSQL needed).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@sih/database";
 import { forgotPasswordSchema } from "@/lib/validators";
 import { generateSecureToken, hoursFromNow } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/server/services/email";
+import { findUserByEmail, createPasswordResetToken } from "@/lib/auth-rest-client";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -28,21 +25,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-
-  if (user) {
-    const token = generateSecureToken();
-    await prisma.passwordResetToken.create({
-      data: { userId: user.id, token, expiresAt: hoursFromNow(1) },
-    });
-
-    try {
-      await sendPasswordResetEmail(user.email, token);
-    } catch (err) {
-      console.error("Failed to send password reset email:", err);
+  try {
+    const user = await findUserByEmail(parsed.data.email);
+    if (user) {
+      const token = generateSecureToken();
+      await createPasswordResetToken(user.id, token, hoursFromNow(1));
+      try {
+        await sendPasswordResetEmail(user.email, token);
+      } catch (err) {
+        console.error("[ForgotPassword] Email send failed:", err);
+      }
     }
+  } catch (err) {
+    console.error("[ForgotPassword] DB error:", err);
   }
 
-  // Same response regardless of whether `user` was found - see SECURITY NOTE above.
+  // Same response regardless of whether user exists (prevents enumeration)
   return NextResponse.json(GENERIC_SUCCESS);
 }

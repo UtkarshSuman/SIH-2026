@@ -1,15 +1,3 @@
-/**
- * FEATURE: Rescue Arc Disaster Intelligence Copilot - Floating Chat Widget.
- * Visible on every page, backed by RAG retrieval and live PostGIS database fetching tools.
- * 
- * Features:
- * - Always accessible across all routes (no auth wall for life safety hazard queries).
- * - Dual viewport: Compact Floating Mode (420px) and Expanded Analytics Mode (760px).
- * - RAG & Live Database execution badges (shows queried telemetry & cited standards).
- * - Interactive categorized starter prompts with live DB & RAG pills.
- * - Rich markdown rendering for tables, lists, and colored hazard badges.
- * - Auto-scroll, copy-to-clipboard, stream cancellation, and chat reset.
- */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -32,6 +20,7 @@ import {
   Activity,
   User,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { chatSuggestionCategories } from "@/data/chat-suggestions";
@@ -86,53 +75,52 @@ export function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9999] font-sans antialiased">
+    <div className="fixed bottom-6 right-6 z-[9999] font-sans antialiased">
       {/* ─────────────────────────────────────────────────────────────
           1. CHAT PANEL
       ───────────────────────────────────────────────────────────── */}
       {isOpen && (
         <div
-          className={`mb-3 flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-background/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ${
+          className={`mb-3 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl transition-all duration-300 ${
             isExpanded
               ? "h-[740px] w-[820px] max-w-[calc(100vw-40px)] max-h-[calc(100vh-100px)]"
               : "h-[580px] w-[420px] max-w-[calc(100vw-30px)] max-h-[calc(100vh-100px)]"
           }`}
           style={{
             boxShadow:
-              "0 20px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(37, 99, 235, 0.12)",
+              "0 20px 50px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(226, 232, 240, 0.8)",
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 px-4 py-3 text-white">
-            <div className="flex items-center gap-2.5">
-              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 shadow-md">
-                <Bot className="h-5 w-5 text-white" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-slate-900"></span>
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3.5 text-slate-900">
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                <Bot className="h-5 w-5 text-emerald-700" />
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white"></span>
                 </span>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold tracking-tight">Rescue Arc AI</h3>
-                  <span className="rounded-full bg-blue-500/20 border border-blue-400/30 px-1.5 py-0.2 text-[10px] font-semibold text-blue-300">
-                    RAG + Live DB
+                  <h3 className="text-sm font-bold tracking-tight text-slate-900">Rescue Arc Copilot</h3>
+                  <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                    Live GIS + RAG
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>Real-time GIS & PostGIS telemetry active</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>Telemetry &amp; NDMA SOPs Active</span>
                 </div>
               </div>
             </div>
 
             {/* Header Controls */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 text-slate-400">
               <button
                 type="button"
                 onClick={clearMessages}
                 title="Clear conversation"
-                className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
@@ -141,7 +129,7 @@ export function ChatWidget() {
                 type="button"
                 onClick={() => setIsExpanded((e) => !e)}
                 title={isExpanded ? "Collapse view" : "Expand view"}
-                className="hidden sm:inline-flex rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="hidden sm:inline-flex rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
@@ -150,7 +138,7 @@ export function ChatWidget() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Close chat"
-                className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors ml-1"
+                className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700 transition-colors ml-0.5"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -158,42 +146,42 @@ export function ChatWidget() {
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 space-y-3 overflow-y-auto p-4 text-xs scroll-smooth">
+          <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50/60 p-4 text-xs scroll-smooth">
             {/* Empty State / Welcome Screen */}
             {messages.length === 0 && (
               <div className="flex flex-col gap-3 py-2">
-                <div className="rounded-xl border border-border/60 bg-gradient-to-b from-primary/5 via-transparent to-transparent p-4 text-center">
-                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <ShieldAlert className="h-5 w-5" />
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-center shadow-xs">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700">
+                    <Bot className="h-6 w-6" />
                   </div>
-                  <h4 className="text-sm font-semibold text-foreground">Disaster Intelligence Copilot</h4>
-                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                    Query real-time hazard classifications, PostGIS physical telemetry, Sphere-standard shelter capacities, and NDMA evacuation SOPs.
+                  <h4 className="text-sm font-bold text-slate-900">How can I help you today?</h4>
+                  <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
+                    Ask about hazard zones, live flood telemetry, safe shelter capacities, or NDMA evacuation protocols.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[10px]">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                      <Database className="h-3 w-3" /> Live GIS Tools
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-emerald-800 font-semibold">
+                      <Database className="h-3 w-3 text-emerald-700" /> Live GIS Tools
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-blue-600 dark:text-blue-400 font-medium">
-                      <BookOpen className="h-3 w-3" /> RAG Standards
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-blue-800 font-semibold">
+                      <BookOpen className="h-3 w-3 text-blue-700" /> RAG Standards
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-amber-600 dark:text-amber-400 font-medium">
-                      <Activity className="h-3 w-3" /> 24/7 Monitored
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-amber-800 font-semibold">
+                      <Activity className="h-3 w-3 text-amber-700" /> 24/7 Monitored
                     </span>
                   </div>
                 </div>
 
                 {/* Categories Tabs */}
                 <div>
-                  <div className="flex items-center gap-1 border-b border-border/40 pb-1 mb-2">
+                  <div className="flex items-center gap-1 border-b border-slate-200 pb-1.5 mb-2">
                     {chatSuggestionCategories.map((cat, idx) => (
                       <button
                         key={cat.category}
                         onClick={() => setActiveCategory(idx)}
-                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                        className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
                           activeCategory === idx
-                            ? "bg-primary text-primary-foreground shadow-xs"
-                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-200/70 hover:text-slate-900"
                         }`}
                       >
                         {cat.category}
@@ -207,24 +195,24 @@ export function ChatWidget() {
                       <button
                         key={p.label}
                         onClick={() => handlePromptClick(p.query)}
-                        className="group flex items-center justify-between rounded-xl border border-border/70 bg-card p-2.5 text-left text-xs transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-xs"
+                        className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-2.5 text-left text-xs transition-all hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-xs"
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-base">{p.icon}</span>
                           <div>
-                            <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                            <span className="font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors">
                               {p.label}
                             </span>
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">{p.query}</p>
+                            <p className="text-[11px] text-slate-500 line-clamp-1">{p.query}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
                           {p.badge && (
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">
                               {p.badge}
                             </span>
                           )}
-                          <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all" />
+                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-emerald-700 transition-all" />
                         </div>
                       </button>
                     ))}
@@ -243,17 +231,17 @@ export function ChatWidget() {
                   className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}
                 >
                   {/* Sender & Timestamp */}
-                  <div className="flex items-center gap-1.5 px-1 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5 px-1 text-[10px] text-slate-500">
                     {isUser ? (
                       <>
-                        <span>{session?.user?.name || "You"}</span>
+                        <span className="font-medium text-slate-700">{session?.user?.name || "You"}</span>
                         <span>•</span>
                         <span>{m.timestamp}</span>
                       </>
                     ) : (
                       <>
-                        <span className="font-semibold text-primary flex items-center gap-1">
-                          <Bot className="h-3 w-3" /> Rescue Arc Copilot
+                        <span className="font-bold text-emerald-800 flex items-center gap-1">
+                          <Bot className="h-3 w-3 text-emerald-700" /> Rescue Arc Copilot
                         </span>
                         <span>•</span>
                         <span>{m.timestamp}</span>
@@ -263,10 +251,10 @@ export function ChatWidget() {
 
                   {/* Message Bubble */}
                   <div
-                    className={`relative rounded-2xl px-3.5 py-2.5 text-xs transition-all ${
+                    className={`relative rounded-2xl px-4 py-3 text-xs transition-all ${
                       isUser
-                        ? "max-w-[85%] bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md font-medium"
-                        : "max-w-[95%] border border-border/70 bg-card text-card-foreground shadow-xs"
+                        ? "max-w-[85%] bg-emerald-700 text-white shadow-xs font-medium"
+                        : "max-w-[95%] border border-slate-200/90 bg-white text-slate-900 shadow-xs"
                     }`}
                   >
                     {isUser ? (
@@ -279,14 +267,14 @@ export function ChatWidget() {
                             {m.toolsUsed.map((t) => (
                               <span
                                 key={t}
-                                className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400"
+                                className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800"
                               >
-                                <Database className="h-2.5 w-2.5" />
+                                <Database className="h-2.5 w-2.5 text-emerald-700" />
                                 {t}()
                               </span>
                             ))}
-                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                              <BookOpen className="h-2.5 w-2.5" />
+                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+                              <BookOpen className="h-2.5 w-2.5 text-blue-700" />
                               RAG Verified
                             </span>
                           </div>
@@ -297,13 +285,13 @@ export function ChatWidget() {
                           <ChatMarkdown content={m.content} />
                         ) : (
                           isStreaming && (
-                            <div className="flex items-center gap-2 text-muted-foreground py-1">
+                            <div className="flex items-center gap-2 text-slate-500 py-1">
                               <span className="flex h-2 w-2 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                               </span>
-                              <span className="text-[11px] animate-pulse">
-                                Executing tools & synthesizing GIS telemetry...
+                              <span className="text-[11px] font-medium text-slate-600 animate-pulse">
+                                Executing tools &amp; synthesizing GIS telemetry...
                               </span>
                             </div>
                           )
@@ -314,15 +302,15 @@ export function ChatWidget() {
 
                   {/* Message Actions (Assistant Only) */}
                   {!isUser && m.content && (
-                    <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-2 px-1 text-[10px] text-slate-500">
                       <button
                         onClick={() => handleCopy(m.id, m.content)}
-                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        className="flex items-center gap-1 hover:text-slate-900 transition-colors font-medium"
                       >
                         {copiedId === m.id ? (
                           <>
-                            <Check className="h-3 w-3 text-emerald-500" />
-                            <span className="text-emerald-500">Copied</span>
+                            <Check className="h-3 w-3 text-emerald-600" />
+                            <span className="text-emerald-700 font-semibold">Copied</span>
                           </>
                         ) : (
                           <>
@@ -342,15 +330,15 @@ export function ChatWidget() {
 
           {/* Streaming Stop Indicator */}
           {isStreaming && (
-            <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between border-t border-slate-200 bg-emerald-50/50 px-3.5 py-1.5 text-[11px] text-slate-600">
               <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
                 Streaming answer from RAG + Database Store...
               </span>
               <button
                 type="button"
                 onClick={stopStreaming}
-                className="text-[10px] font-semibold text-destructive hover:underline"
+                className="text-[10px] font-bold text-red-600 hover:underline"
               >
                 Stop Generating
               </button>
@@ -360,7 +348,7 @@ export function ChatWidget() {
           {/* Input Form */}
           <form
             onSubmit={handleSubmit}
-            className="border-t border-border/70 bg-card/60 p-3 backdrop-blur-md"
+            className="border-t border-slate-200/90 bg-white p-3"
           >
             <div className="relative flex items-center">
               <input
@@ -368,22 +356,22 @@ export function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about zones, live telemetry, shelters, Sphere standards..."
-                className="w-full rounded-xl border border-border/80 bg-background/90 px-3.5 py-2.5 pr-10 text-xs shadow-inner transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 pr-10 text-xs text-slate-900 shadow-inner transition-colors placeholder:text-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isStreaming}
-                className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-700 text-white shadow-xs transition-transform hover:scale-105 hover:bg-emerald-800 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-muted-foreground/75">
+            <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-slate-500">
               <span>Enter to send • Shift+Enter for new line</span>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                PostGIS & RAG Connected
+              <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                PostGIS &amp; RAG Connected
               </span>
             </div>
           </form>
@@ -391,36 +379,33 @@ export function ChatWidget() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. FLOATING LAUNCHER BUTTON
+          2. FLOATING NATURAL CIRCULAR LAUNCHER BUTTON
       ───────────────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleToggle}
         aria-label={isOpen ? "Close AI Disaster Assistant" : "Open AI Disaster Assistant"}
-        className="group relative flex items-center gap-2.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 p-3.5 text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
-        style={{
-          boxShadow: "0 10px 30px -5px rgba(37, 99, 235, 0.45)",
-        }}
+        className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-lg shadow-emerald-950/20 transition-all duration-200 hover:scale-105 hover:bg-emerald-800 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
       >
-        {/* Pulsing Aura */}
-        <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 opacity-30 blur-sm group-hover:opacity-60 transition-opacity animate-pulse" />
+        {isOpen ? (
+          <X className="h-6 w-6 transition-transform duration-200" />
+        ) : (
+          <>
+            <MessageSquare className="h-6 w-6 transition-transform duration-200" />
+            {/* Subtle active online indicator */}
+            <span className="absolute top-1 right-1 flex h-3 w-3">
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border-2 border-white"></span>
+            </span>
+          </>
+        )}
 
-        <div className="relative flex items-center gap-2">
-          {isOpen ? (
-            <ChevronDown className="h-5 w-5 transition-transform" />
-          ) : (
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              <span className="text-xs font-bold tracking-tight pr-1 hidden sm:inline-block">
-                AI Disaster Copilot
-              </span>
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Hover Tooltip (Desktop only) */}
+        {!isOpen && (
+          <div className="absolute right-16 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-md transition-opacity duration-150 pointer-events-none group-hover:opacity-100">
+            Ask Rescue Arc Copilot
+            <span className="absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rotate-45 bg-slate-900" />
+          </div>
+        )}
       </button>
     </div>
   );

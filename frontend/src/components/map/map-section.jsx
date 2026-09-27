@@ -5,13 +5,20 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Polygon,
+  GeoJSON,
   Circle,
+  CircleMarker,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { getZoneBoundary, getZoneBoundaryFeature, hasRealBoundary } from "@/lib/zone-boundaries";
+import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
 import "leaflet/dist/leaflet.css";
+
 
 function createPinIcon(colorHex) {
   return L.divIcon({
@@ -48,12 +55,104 @@ const GREEN_ICON = createPinIcon("#10b981");
 
 function MapRecenter({ position, zoom = 9 }) {
   const map = useMap();
+  const lastPosRef = useRef(null);
+
   useEffect(() => {
     if (position && position[0] && position[1]) {
-      map.flyTo(position, zoom, { duration: 1.2 });
+      const posKey = `${position[0].toFixed(4)},${position[1].toFixed(4)}`;
+      if (lastPosRef.current !== posKey) {
+        lastPosRef.current = posKey;
+        map.flyTo(position, zoom, { duration: 1.2 });
+      }
     }
   }, [map, position, zoom]);
   return null;
+}
+
+function HomeMapClickHandler({ onPointAnalyzed, onSelectZone }) {
+  const [analyzingPoint, setAnalyzingPoint] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+
+  useMapEvents({
+    click: async (e) => {
+      const { lat, lng } = e.latlng;
+      setAnalyzingPoint({ lat, lng });
+      setIsError(false);
+      setStatusMessage("🛰️ Fetching live GIS data (weather, slope, discharge) & running ML models...");
+
+      try {
+        const res = await fetch(`/api/analyze-point?lat=${lat}&lon=${lng}&radius_km=5`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setIsError(true);
+          setStatusMessage(`❌ Failed: ${errData.detail || errData.error || res.statusText}`);
+          setTimeout(() => setAnalyzingPoint(null), 4000);
+          return;
+        }
+
+        const data = await res.json();
+        const score = data.hazard_scores?.[data.worst_hazard] ?? data.priority_score ?? 0.35;
+
+        const newZone = {
+          zoneId: data.zone_id,
+          name: data.zone_name || `Point (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`,
+          district: "Custom Analyzed Spot",
+          state: "Live Telemetry",
+          lat: data.center?.lat ?? lat,
+          lng: data.center?.lon ?? lng,
+          zoneColor: data.zone_color || "GREEN",
+          worstHazard: data.worst_hazard || "MULTI-HAZARD",
+          worstScore: score,
+          hazardScores: data.hazard_scores || {},
+          priority: data.priority || "NONE",
+          priorityScore: data.priority_score || 0.0,
+          population: 1200,
+          isClickAnalyzed: true,
+          metrics: {
+            rainfall_24h_mm: data.hazard_details?.flood?.parameters?.rainfall_mm_24h ?? 0,
+            elevation_m: data.hazard_details?.flood?.parameters?.elevation_m ?? 0,
+          },
+        };
+
+        setAnalyzingPoint(null);
+        if (onPointAnalyzed) onPointAnalyzed(newZone);
+        if (onSelectZone) onSelectZone(newZone);
+      } catch (err) {
+        setIsError(true);
+        setStatusMessage(`❌ Error: ${err.message}`);
+        setTimeout(() => setAnalyzingPoint(null), 4000);
+      }
+    },
+  });
+
+  if (!analyzingPoint) return null;
+
+  return (
+    <CircleMarker
+      center={[analyzingPoint.lat, analyzingPoint.lng]}
+      radius={12}
+      pathOptions={{
+        color: isError ? "#ef4444" : "#10b981",
+        fillColor: isError ? "#f87171" : "#34d399",
+        fillOpacity: 0.8,
+        weight: 3,
+      }}
+    >
+      <Popup position={[analyzingPoint.lat, analyzingPoint.lng]} autoClose={false}>
+        <div className="p-1 min-w-[220px] text-xs">
+          <div className="flex items-center gap-2 font-bold text-slate-900">
+            <span className={`inline-block h-2.5 w-2.5 rounded-full ${isError ? "bg-red-500" : "bg-emerald-500 animate-ping"}`} />
+            {isError ? "Analysis Failed" : "Analyzing Spot Live"}
+          </div>
+          <p className="mt-1.5 text-slate-700">{statusMessage}</p>
+          <div className="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+            {analyzingPoint.lat.toFixed(4)}°N, {analyzingPoint.lng.toFixed(4)}°E
+          </div>
+        </div>
+      </Popup>
+    </CircleMarker>
+  );
 }
 
 export default function MapSection() {
@@ -65,23 +164,128 @@ export default function MapSection() {
   const [search, setSearch] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-
   const [lastVersion, setLastVersion] = useState(0);
+  const [isFallback, setIsFallback] = useState(false);
+  const [fallbackWarning, setFallbackWarning] = useState("");
+  const [fallbackSource, setFallbackSource] = useState("");
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Rate Limiting & Pipeline State
+  const [isTriggering, setIsTriggering] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [pipelineStatus, setPipelineStatus] = useState(null);
+  const cooldownIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+    };
+  }, []);
+
+  const startCooldown = (seconds) => {
+    setCooldownRemaining(seconds);
+    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+    cooldownIntervalRef.current = setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownIntervalRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleTriggerPipeline = async () => {
+    if (isTriggering || cooldownRemaining > 0) return;
+
+    setIsTriggering(true);
+    setPipelineStatus({
+      type: "loading",
+      message: "Running multi-hazard GIS ingestion & ML inference across all zones (~15-20s)...",
+    });
+
+    try {
+      const res = await fetch("/api/pipeline/trigger", { method: "POST" });
+      const data = await res.json();
+
+      if (res.status === 429) {
+        const waitTime = data.cooldown_remaining || 30;
+        startCooldown(waitTime);
+        setPipelineStatus({
+          type: "warning",
+          message: data.message || `Pipeline is rate-limited. Please wait ${waitTime}s.`,
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || data.detail || "Pipeline run failed.");
+      }
+
+      setPipelineStatus({
+        type: "success",
+        message: `✓ Pipeline complete! Assessed and upgraded ${data.results?.length || 5} zones in database.`,
+      });
+
+      startCooldown(data.cooldown_seconds || 30);
+      await loadZones();
+    } catch (err) {
+      setPipelineStatus({
+        type: "error",
+        message: `Pipeline trigger failed: ${err.message}`,
+      });
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
+  const handlePointAnalyzed = (newZone) => {
+    setZones((prev) => {
+      const exists = prev.some((z) => z.zoneId === newZone.zoneId);
+      return exists ? prev.map((z) => (z.zoneId === newZone.zoneId ? newZone : z)) : [newZone, ...prev];
+    });
+    setSelectedZone(newZone);
+    setMapPosition([newZone.lat, newZone.lng]);
+    setPipelineStatus({
+      type: "info",
+      message: `📍 Analyzed point (${newZone.name}) scored as ${newZone.zoneColor} ZONE [${newZone.worstHazard}] and added to map!`,
+    });
+  };
 
   // Fetch dynamic zones from API/database
-  const loadZones = async () => {
+  const loadZones = async (isRetry = false) => {
     try {
-      const res = await fetch("/api/zones");
+      if (isRetry) setIsRetrying(true);
+      else setIsLoading(true);
+
+      const res = await fetch(`/api/zones?format=details&retry=${isRetry}&t=${Date.now()}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setZones(data);
-        // If no selected zone or updating existing selected zone
+      const fallbackHeader = res.headers.get("x-is-fallback") === "true";
+      const warningHeader =
+        res.headers.get("x-fallback-warning") ||
+        "Database or backend offline using internal latest data.";
+      const isFb = Boolean(data?.isFallback ?? fallbackHeader);
+
+      setIsFallback(isFb);
+      if (isFb) {
+        setFallbackWarning(data?.warning || warningHeader);
+        setFallbackSource(data?.source || res.headers.get("x-source") || "Internal Latest Snapshot");
+      }
+
+      const rawZones = Array.isArray(data) ? data : data?.zones || [];
+      if (rawZones.length > 0) {
+        setZones(rawZones);
         setSelectedZone((prev) => {
           if (!prev) {
-            const highestRisk = [...data].sort((a, b) => b.worstScore - a.worstScore)[0];
-            return highestRisk || data[0];
+            const highestRisk = [...rawZones].sort(
+              (a, b) => (b.worstScore || 0) - (a.worstScore || 0)
+            )[0];
+            return highestRisk || rawZones[0];
           }
-          const updated = data.find((z) => z.zoneId === prev.zoneId);
+          const updated = rawZones.find((z) => z.zoneId === prev.zoneId);
           return updated || prev;
         });
       }
@@ -89,6 +293,7 @@ export default function MapSection() {
       console.warn("Failed to load dynamic zones:", err);
     } finally {
       setIsLoading(false);
+      if (isRetry) setIsRetrying(false);
     }
   };
 
@@ -170,6 +375,16 @@ export default function MapSection() {
     };
   }, [selectedZone]);
 
+  const dynamicStats = useMemo(() => {
+    const total = zones.length;
+    const red = zones.filter((z) => z.zoneColor === "RED").length;
+    const yellow = zones.filter((z) => z.zoneColor === "YELLOW").length;
+    const green = zones.filter((z) => z.zoneColor === "GREEN").length;
+    const totalPop = zones.reduce((acc, z) => acc + (Number(z.population) || 0), 0);
+    const topRisk = [...zones].sort((a, b) => (b.worstScore || 0) - (a.worstScore || 0))[0];
+    return { total, red, yellow, green, totalPop, topRisk };
+  }, [zones]);
+
   return (
     <section
       id="map"
@@ -190,6 +405,120 @@ export default function MapSection() {
             Dynamic ML hazard risk scores, real-time weather & terrain telemetry, and Sphere-standard
             evacuation readiness for vulnerable habitations.
           </p>
+
+          {/* Trigger Pipeline Button with Rate Limiting */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleTriggerPipeline}
+              disabled={isTriggering || cooldownRemaining > 0}
+              className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md transition-all ${
+                isTriggering
+                  ? "cursor-wait bg-slate-800 opacity-90"
+                  : cooldownRemaining > 0
+                  ? "cursor-not-allowed bg-slate-400 opacity-80 shadow-none"
+                  : "bg-emerald-700 hover:bg-emerald-800 hover:shadow-lg active:scale-95"
+              }`}
+            >
+              {isTriggering ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Running Live Multi-Hazard Pipeline...</span>
+                </>
+              ) : cooldownRemaining > 0 ? (
+                <>
+                  <span>⏳</span>
+                  <span>Rate-Limited ({cooldownRemaining}s cooldown)</span>
+                </>
+              ) : (
+                <>
+                  <span>⚡</span>
+                  <span>Trigger Live Assessment & Database Update</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Pipeline Status Message Banner */}
+          {pipelineStatus && (
+            <div
+              className={`mx-auto mt-4 max-w-2xl flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs sm:text-sm font-medium ${
+                pipelineStatus.type === "loading"
+                  ? "border-amber-200 bg-amber-50 text-amber-900"
+                  : pipelineStatus.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : pipelineStatus.type === "warning"
+                  ? "border-orange-200 bg-orange-50 text-orange-900"
+                  : pipelineStatus.type === "info"
+                  ? "border-blue-200 bg-blue-50 text-blue-900"
+                  : "border-red-200 bg-red-50 text-red-900"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {pipelineStatus.type === "loading" && (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+                )}
+                <span>{pipelineStatus.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPipelineStatus(null)}
+                className="ml-3 text-xs text-slate-400 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Interactive Map Click Hint */}
+          <div className="mx-auto mt-4 max-w-xl text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 px-3.5 py-1 text-xs font-semibold text-emerald-800">
+              <span>👆 Tip:</span> Click anywhere on the map to live-analyze that exact spot.
+            </span>
+          </div>
+
+          {/* Offline Fallback Banner */}
+          {isFallback && (
+            <div className="mx-auto mt-5 max-w-4xl text-left">
+              <OfflineFallbackBanner
+                isFallback={true}
+                message={fallbackWarning || "Database or backend offline using internal latest data."}
+                source={fallbackSource || "Internal Latest Snapshot"}
+                onRetry={() => loadZones(true)}
+                isRetrying={isRetrying}
+              />
+            </div>
+          )}
+
+          {/* Dynamic Macro KPI Cards */}
+          <div className="mx-auto mt-6 max-w-5xl grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 text-center">
+            <div className="rounded-xl border border-emerald-100 bg-white p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Habitations</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{dynamicStats.total}</p>
+            </div>
+            <div className="rounded-xl border border-red-100 bg-red-50/70 p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">Red Alert</p>
+              <p className="mt-1 text-lg font-black text-red-700">{dynamicStats.red}</p>
+            </div>
+            <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Yellow Watch</p>
+              <p className="mt-1 text-lg font-black text-amber-700">{dynamicStats.yellow}</p>
+            </div>
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Green Safe</p>
+              <p className="mt-1 text-lg font-black text-emerald-700">{dynamicStats.green}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Monitored Pop</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{dynamicStats.totalPop.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Peak Threat</p>
+              <p className="mt-1 text-xs font-bold text-slate-900 truncate" title={dynamicStats.topRisk?.name}>
+                {dynamicStats.topRisk ? `${dynamicStats.topRisk.worstHazard} (${(dynamicStats.topRisk.worstScore * 100).toFixed(0)}%)` : "N/A"}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Search bar */}
@@ -271,11 +600,14 @@ export default function MapSection() {
                 className="rescue-leaflet-map h-full w-full"
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, USGS, NPS, NRCAN"
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={18}
                 />
 
                 <MapRecenter position={mapPosition} zoom={9} />
+                <HomeMapClickHandler onPointAnalyzed={handlePointAnalyzed} onSelectZone={setSelectedZone} />
+
 
                 {/* Render All Dynamic Zones on the map */}
                 {zones.map((zone) => {
@@ -283,25 +615,61 @@ export default function MapSection() {
                   const isYellow = zone.zoneColor === "YELLOW";
                   const colorHex = isRed ? "#ef4444" : isYellow ? "#f59e0b" : "#10b981";
                   const icon = isRed ? RED_ICON : isYellow ? YELLOW_ICON : GREEN_ICON;
+                  const boundaryFeature = getZoneBoundaryFeature(zone);
+                  const isReal = hasRealBoundary(zone);
+                  const coords = zone.boundaryCoordinates || getZoneBoundary(zone);
 
                   return (
                     <div key={zone.zoneId}>
-                      {/* Bounding Area Circle */}
-                      <Circle
-                        center={[zone.lat, zone.lng]}
-                        radius={isRed ? 4500 : 3500}
-                        pathOptions={{
-                          color: colorHex,
-                          fillColor: colorHex,
-                          fillOpacity: isRed ? 0.35 : 0.2,
-                          weight: 2,
-                        }}
-                        eventHandlers={{
-                          click: () => handleSelectZone(zone),
-                        }}
-                      />
+                      {/* Real OSM Administrative Boundary */}
+                      {boundaryFeature ? (
+                        <GeoJSON
+                          key={`geojson-${zone.zoneId}-${zone.lastAssessedAt || ""}`}
+                          data={boundaryFeature}
+                          style={{
+                            color: colorHex,
+                            fillColor: colorHex,
+                            fillOpacity: zone.zoneId === selectedZone?.zoneId ? 0.42 : isRed ? 0.32 : 0.18,
+                            weight: zone.zoneId === selectedZone?.zoneId ? 3.5 : 2,
+                          }}
+                          eventHandlers={{
+                            click: () => handleSelectZone(zone),
+                          }}
+                        />
+                      ) : isReal || (coords && coords.length >= 3) ? (
+                        <Polygon
+                          key={`poly-${zone.zoneId}`}
+                          positions={coords}
+                          pathOptions={{
+                            color: colorHex,
+                            fillColor: colorHex,
+                            fillOpacity: zone.zoneId === selectedZone?.zoneId ? 0.42 : isRed ? 0.32 : 0.18,
+                            weight: zone.zoneId === selectedZone?.zoneId ? 3.5 : 2,
+                            dashArray: isRed ? undefined : isYellow ? "6, 6" : undefined,
+                          }}
+                          eventHandlers={{
+                            click: () => handleSelectZone(zone),
+                          }}
+                        />
+                      ) : (
+                        <Circle
+                          key={`circle-${zone.zoneId}`}
+                          center={[zone.lat, zone.lng]}
+                          radius={2500}
+                          pathOptions={{
+                            color: colorHex,
+                            fillColor: colorHex,
+                            fillOpacity: 0.25,
+                            weight: 2,
+                            dashArray: "6, 6",
+                          }}
+                          eventHandlers={{
+                            click: () => handleSelectZone(zone),
+                          }}
+                        />
+                      )}
 
-                      {/* Center Point Marker */}
+                      {/* Glowing sphere marker at each location (PRESERVED) */}
                       <Marker
                         position={[zone.lat, zone.lng]}
                         icon={icon}
@@ -311,7 +679,14 @@ export default function MapSection() {
                       >
                         <Popup>
                           <div className="p-1">
-                            <strong className="text-slate-900">{zone.name}</strong>
+                            <div className="flex items-center justify-between gap-2">
+                              <strong className="text-slate-900">{zone.name}</strong>
+                              {isReal && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                  OSM Boundary
+                                </span>
+                              )}
+                            </div>
                             <div className="mt-1 flex items-center gap-1.5 text-xs">
                               <span
                                 className="inline-block h-2 w-2 rounded-full"

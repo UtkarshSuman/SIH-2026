@@ -1,9 +1,6 @@
-/**
- * GET /api/alerts/zones
- * Returns the list of monitored zones from the alert backend or Supabase table.
- * Tries port 8000 first, then 8001, with reliable static fallback.
- */
 import { NextResponse } from "next/server";
+import { getRecentZonesWithStatus } from "@/lib/data-service";
+import { centralFallbackStore, FALLBACK_WARNING_MESSAGE } from "@/lib/central-fallback-store";
 
 const DEFAULT_ENDPOINTS = [
   process.env.ALERT_API_BASE,
@@ -13,24 +10,12 @@ const DEFAULT_ENDPOINTS = [
   "http://127.0.0.1:8001",
 ].filter(Boolean) as string[];
 
-const FALLBACK_ZONES = [
-  { zone_id: "Z-KERALA-WAYANAD-01",        name: "Wayanad, Kerala",           hazard: "LANDSLIDE" },
-  { zone_id: "Z-UTTARAKHAND-JOSHIMATH-01", name: "Joshimath, Uttarakhand",    hazard: "LANDSLIDE" },
-  { zone_id: "Z-ODISHA-PURI-01",           name: "Puri, Odisha",              hazard: "EROSION" },
-  { zone_id: "Z-BIHAR-PATNA-01",           name: "Patna, Bihar",              hazard: "FLOOD" },
-  { zone_id: "Z-ASSAM-GUWAHATI-01",        name: "Guwahati, Assam",           hazard: "FLOOD" },
-  { zone_id: "Z-KERALA-IDUKKI-01",         name: "Idukki, Kerala",            hazard: "LANDSLIDE" },
-  { zone_id: "Z-TAMILNADU-NILGIRIS-01",    name: "Nilgiris, Tamil Nadu",       hazard: "LANDSLIDE" },
-  { zone_id: "Z-WESTBENGAL-DARJEELING-01", name: "Darjeeling, West Bengal",    hazard: "LANDSLIDE" },
-  { zone_id: "Z-ASSAM-DHEMAJI-01",         name: "Dhemaji-Lakhimpur, Assam",  hazard: "FLOOD" },
-  { zone_id: "Z-GUJARAT-KUTCH-01",         name: "Kutch, Gujarat",            hazard: "EROSION" },
-];
-
 export async function GET() {
+  // 1. Try FastAPI Alert Service endpoint first
   for (const base of DEFAULT_ENDPOINTS) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(`${base}/zones`, {
         signal: controller.signal,
       });
@@ -38,12 +23,44 @@ export async function GET() {
       if (res.ok) {
         const data = await res.json();
         if (data.zones && data.zones.length > 0) {
-          return NextResponse.json(data);
+          return NextResponse.json({
+            zones: data.zones,
+            isFallback: false,
+            source: "ALERT_BACKEND_API",
+          });
         }
       }
     } catch (_) {}
   }
 
-  // Guaranteed fallback
-  return NextResponse.json({ zones: FALLBACK_ZONES });
+  // 2. Try PostgreSQL via Prisma
+  try {
+    const zonesRes = await getRecentZonesWithStatus();
+    if (!zonesRes.isFallback && zonesRes.data && zonesRes.data.length > 0) {
+      return NextResponse.json({
+        zones: zonesRes.data.map((z) => ({
+          zone_id: z.zoneId,
+          name: z.name,
+          hazard: z.worstHazard || "LANDSLIDE",
+          color: z.zoneColor,
+          district: z.district,
+          state: z.state,
+        })),
+        isFallback: false,
+        source: "DATABASE",
+      });
+    }
+  } catch (_) {}
+
+  // 3. Centralized Fallback Store
+  const fallback = centralFallbackStore.getAlertZones();
+  const response = NextResponse.json({
+    zones: fallback.zones,
+    isFallback: true,
+    warning: FALLBACK_WARNING_MESSAGE,
+    source: "CENTRAL_FALLBACK_STORE",
+  });
+  response.headers.set("x-is-fallback", "true");
+  response.headers.set("x-fallback-warning", FALLBACK_WARNING_MESSAGE);
+  return response;
 }

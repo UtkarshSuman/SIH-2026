@@ -1,21 +1,17 @@
 /**
- * FEATURE: Auth.js (NextAuth v4) configuration - Credentials (email +
- * password) login, JWT/session callbacks that attach `id`, `role`, and
- * `emailVerified`. v4 exports one `authOptions` object (not the v5-style
- * destructured helpers) - every other file that needs the session imports
- * this `authOptions` and passes it to NextAuth's own functions.
+ * auth/config.ts
  *
- * INSTALLATION: npm install next-auth@^4.24.14 bcryptjs
- *   (already in frontend/package.json)
+ * NextAuth v4 configuration — Credentials (email + password) login.
+ * Uses Supabase REST API via auth-rest-client.ts (HTTPS/443).
+ * Does NOT use Prisma (direct PostgreSQL ports 5432/6543 are blocked).
  *
- * FUTURE RECOMMENDATION: add OAuth providers (Google/GitHub) to the
- * `providers` array below - they compose with Credentials with no other
- * changes needed anywhere else in the app.
+ * Roles: CITIZEN (default) | DEPARTMENT_OFFICIAL | ADMIN | SUPER_ADMIN
+ * Admin account: teamsih12@gmail.com / 12345678
  */
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@sih/database";
+import { findUserByEmail } from "@/lib/auth-rest-client";
 import { loginSchema } from "@/lib/validators";
 import { env } from "@/lib/env";
 
@@ -34,13 +30,20 @@ export const authOptions: NextAuthOptions = {
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-        if (!user?.passwordHash) return null; // no password set = OAuth-only account
+        let user;
+        try {
+          user = await findUserByEmail(parsed.data.email);
+        } catch (err) {
+          console.error("[Auth] Database lookup failed:", err);
+          return null;
+        }
 
-        const passwordValid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        if (!user?.password_hash) return null; // no password = OAuth-only
+
+        const passwordValid = await bcrypt.compare(parsed.data.password, user.password_hash);
         if (!passwordValid) return null;
 
-        if (env.REQUIRE_EMAIL_VERIFICATION && !user.emailVerified) {
+        if (env.REQUIRE_EMAIL_VERIFICATION && !user.email_verified) {
           throw new Error("EMAIL_NOT_VERIFIED");
         }
 
@@ -49,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
-          emailVerified: !!user.emailVerified,
+          emailVerified: !!user.email_verified,
         };
       },
     }),

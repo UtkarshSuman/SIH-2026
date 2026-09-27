@@ -1185,10 +1185,10 @@
         map,
       );
 
-      const darkLayer = L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      const topoLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
         {
-          attribution: "&copy; OpenStreetMap &copy; CARTO",
+          attribution: "Tiles &copy; Esri &mdash; Esri, USGS, DeLorme, TomTom",
           maxZoom: 18,
         },
       );
@@ -1235,7 +1235,7 @@
         "<span style='color:#94a3b8; font-weight:600;'>Raw Satellite Imagery</span>":
           satelliteBase,
         "<span style='color:#cbd5e1; font-weight:600;'>Topographic Basemap</span>":
-          darkLayer,
+          topoLayer,
       };
       const overlayMaps = {
         "<span style='display:inline-block; width:8px; height:8px; border-radius:50%; background:#f43f5e; margin-right:5px;'></span> High-Risk Habitations (762)":

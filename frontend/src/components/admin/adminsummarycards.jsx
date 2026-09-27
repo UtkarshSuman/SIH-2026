@@ -4,6 +4,7 @@ import { Users, Bell, MessageCircle, ArrowUpRight } from "lucide-react";
 
 export default function Adminsummarycards({
   relocationSites = [],
+  stats = null,
   onUpdatePopulation,
   onManageAlerts,
   onOpenChatbot,
@@ -21,6 +22,10 @@ export default function Adminsummarycards({
 
   const occupancy =
     totalCapacity > 0 ? Math.round((totalPopulation / totalCapacity) * 100) : 0;
+
+  const criticalCount = stats?.highRiskZones ?? 1;
+  const warningCount = stats?.moderateRiskZones ?? 2;
+  const totalAlerts = criticalCount + warningCount;
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -103,7 +108,9 @@ export default function Adminsummarycards({
                 Manage Alerts
               </p>
 
-              <h3 className="mt-1 text-2xl font-bold text-[#0b1838]">3</h3>
+              <h3 className="mt-1 text-2xl font-bold text-[#0b1838]">
+                {totalAlerts}
+              </h3>
             </div>
           </div>
 
@@ -117,13 +124,13 @@ export default function Adminsummarycards({
           <div>
             <p className="text-xs text-slate-500">Critical</p>
 
-            <p className="mt-1 font-semibold text-red-600">1</p>
+            <p className="mt-1 font-semibold text-red-600">{criticalCount}</p>
           </div>
 
           <div>
             <p className="text-xs text-slate-500">Warning</p>
 
-            <p className="mt-1 font-semibold text-yellow-600">2</p>
+            <p className="mt-1 font-semibold text-yellow-600">{warningCount}</p>
           </div>
 
           <div>

@@ -1,12 +1,18 @@
 /**
- * FEATURE: Completes the password reset - validates the token (exists,
- * unexpired, unused), hashes the new password, updates the User row, and
- * marks the token used so the same link can't be replayed.
+ * POST /api/auth/reset-password
+ *
+ * Completes the password reset — validates token (exists, unexpired, unused),
+ * hashes new password, updates user, marks token used.
+ * Uses Supabase REST API (no direct PostgreSQL needed).
  */
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@sih/database";
 import { resetPasswordSchema } from "@/lib/validators";
+import {
+  findPasswordResetToken,
+  updateUserPassword,
+  markPasswordResetTokenUsed,
+} from "@/lib/auth-rest-client";
 
 export async function POST(req: NextRequest) {
   const parsed = resetPasswordSchema.safeParse(await req.json());
@@ -18,9 +24,19 @@ export async function POST(req: NextRequest) {
   }
 
   const { token, password } = parsed.data;
-  const record = await prisma.passwordResetToken.findUnique({ where: { token } });
 
-  if (!record || record.used || record.expiresAt < new Date()) {
+  let record;
+  try {
+    record = await findPasswordResetToken(token);
+  } catch (err) {
+    console.error("[ResetPassword] DB lookup error:", err);
+    return NextResponse.json(
+      { success: false, error: { code: "DB_ERROR", message: "Database unavailable. Try again." } },
+      { status: 503 }
+    );
+  }
+
+  if (!record || record.used || new Date(record.expires_at) < new Date()) {
     return NextResponse.json(
       { success: false, error: { code: "INVALID_TOKEN", message: "This reset link is invalid or has expired." } },
       { status: 400 }
@@ -28,11 +44,8 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
-    prisma.passwordResetToken.update({ where: { token }, data: { used: true } }),
-  ]);
+  await updateUserPassword(record.user_id, passwordHash);
+  await markPasswordResetTokenUsed(token);
 
   return NextResponse.json({ success: true, data: { message: "Password updated successfully." } });
 }

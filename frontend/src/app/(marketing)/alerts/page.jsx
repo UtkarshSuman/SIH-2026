@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { OfflineFallbackBanner } from "@/components/ui/offline-fallback-banner";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCj5i1D_G6wg4g149CUhVf899IX5mifJ00",
@@ -15,19 +16,6 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY =
   "BClYIBxo0Bja4sxNdjJffH4aMaaW7P_ajlDaZco7gu1ocIg5MCWGZvs44D3D2LMCewVOw9XoGeDD1K-4j1GU-tQ";
 
-const FALLBACK_ZONES = [
-  { zone_id: "Z-KERALA-WAYANAD-01",        name: "Wayanad, Kerala",          defaultHazard: "LANDSLIDE" },
-  { zone_id: "Z-UTTARAKHAND-JOSHIMATH-01", name: "Joshimath, Uttarakhand",   defaultHazard: "LANDSLIDE" },
-  { zone_id: "Z-ODISHA-PURI-01",           name: "Puri, Odisha",             defaultHazard: "EROSION" },
-  { zone_id: "Z-BIHAR-PATNA-01",           name: "Patna, Bihar",             defaultHazard: "FLOOD" },
-  { zone_id: "Z-ASSAM-GUWAHATI-01",        name: "Guwahati, Assam",          defaultHazard: "FLOOD" },
-  { zone_id: "Z-KERALA-IDUKKI-01",         name: "Idukki, Kerala",           defaultHazard: "LANDSLIDE" },
-  { zone_id: "Z-TAMILNADU-NILGIRIS-01",    name: "Nilgiris, Tamil Nadu",      defaultHazard: "LANDSLIDE" },
-  { zone_id: "Z-WESTBENGAL-DARJEELING-01", name: "Darjeeling, West Bengal",   defaultHazard: "LANDSLIDE" },
-  { zone_id: "Z-ASSAM-DHEMAJI-01",         name: "Dhemaji-Lakhimpur, Assam", defaultHazard: "FLOOD" },
-  { zone_id: "Z-GUJARAT-KUTCH-01",         name: "Kutch, Gujarat",           defaultHazard: "EROSION" },
-];
-
 const HAZARD_OPTIONS = [
   { id: "LANDSLIDE", icon: "⛰️", label: "Landslide Risk", desc: "Slope instability & debris flow" },
   { id: "FLOOD",     icon: "🌊", label: "Flash Flood",    desc: "Critical water rise & submergence" },
@@ -37,9 +25,11 @@ const HAZARD_OPTIONS = [
 
 export default function AlertsPage() {
   const [activeTab, setActiveTab] = useState("subscribe"); // 'subscribe' | 'test' | 'simulate' | 'history'
-  const [zones, setZones] = useState(FALLBACK_ZONES);
-  const [selectedZone, setSelectedZone] = useState("Z-KERALA-WAYANAD-01");
+  const [zones, setZones] = useState([]);
+  const [selectedZone, setSelectedZone] = useState("");
   const [useLocation, setUseLocation] = useState(false);
+  const [isFallback, setIsFallback] = useState(false);
+  const [fallbackWarning, setFallbackWarning] = useState("");
   
   // Subscription state
   const [phase, setPhase] = useState("idle");
@@ -72,9 +62,32 @@ export default function AlertsPage() {
   // Load zones on mount
   useEffect(() => {
     fetch("/api/alerts/zones")
-      .then((r) => r.json())
-      .then((d) => { if (d.zones?.length) setZones(d.zones); })
-      .catch(() => {});
+      .then((r) => {
+        const isFb = r.headers.get("x-is-fallback") === "true";
+        if (isFb) {
+          setIsFallback(true);
+          setFallbackWarning(
+            r.headers.get("x-fallback-warning") ||
+            "Database or backend offline using internal latest data."
+          );
+        }
+        return r.json();
+      })
+      .then((d) => {
+        if (d?.isFallback) {
+          setIsFallback(true);
+          setFallbackWarning(
+            d.warning || "Database or backend offline using internal latest data."
+          );
+        }
+        if (d?.zones?.length) {
+          setZones(d.zones);
+          setSelectedZone((prev) => (prev ? prev : d.zones[0]?.zone_id || ""));
+        }
+      })
+      .catch((err) => {
+        console.warn("Alert zones load failed:", err);
+      });
 
     // Try reading cached token from localStorage
     try {
@@ -117,7 +130,21 @@ export default function AlertsPage() {
     setIsLoadingHistory(true);
     try {
       const res = await fetch("/api/alerts/history");
+      const isFb = res.headers.get("x-is-fallback") === "true";
+      if (isFb) {
+        setIsFallback(true);
+        setFallbackWarning(
+          res.headers.get("x-fallback-warning") ||
+          "Database or backend offline using internal latest data."
+        );
+      }
       const data = await res.json();
+      if (data?.isFallback) {
+        setIsFallback(true);
+        setFallbackWarning(
+          data.warning || "Database or backend offline using internal latest data."
+        );
+      }
       if (data.alerts) setHistoryLogs(data.alerts);
     } catch (e) {
       console.warn("History fetch error:", e);
@@ -133,12 +160,15 @@ export default function AlertsPage() {
     }
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      throw new Error("Notification permission was denied. Please allow notifications in browser settings.");
+      throw new Error("Notification permission was denied. Please allow notifications in your browser settings.");
     }
     if (!("serviceWorker" in navigator)) {
-      throw new Error("Service workers not supported in this browser.");
+      throw new Error("Service workers are not supported in this browser.");
     }
-    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    
+    // Register and ensure service worker is active and ready
+    await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+    const swReg = await navigator.serviceWorker.ready;
     swReg.active?.postMessage({ type: "INIT_CONFIG", config: FIREBASE_CONFIG });
 
     const { initializeApp, getApps } = await import("firebase/app");
@@ -146,12 +176,42 @@ export default function AlertsPage() {
     const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const msg = getMessaging(app);
     messagingRef.current = msg;
-    const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-    if (!token) throw new Error("Could not obtain FCM token. Check VAPID key configuration.");
-    
-    setStoredFcmToken(token);
-    try { localStorage.setItem("rescue_arc_fcm_token", token); } catch (_) {}
-    return token;
+
+    try {
+      const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      if (!token) throw new Error("Could not obtain FCM token. Check VAPID key configuration.");
+      
+      setStoredFcmToken(token);
+      try { localStorage.setItem("rescue_arc_fcm_token", token); } catch (_) {}
+      return token;
+    } catch (pushErr) {
+      const errStr = pushErr?.message || String(pushErr);
+      if (errStr.toLowerCase().includes("push service error") || errStr.toLowerCase().includes("registration failed")) {
+        const isBrave = typeof window !== "undefined" && Boolean(window.navigator?.brave);
+        let detail = "Google Push Service was blocked by your browser environment.";
+        if (isBrave) {
+          detail = "Brave Browser blocks Google Push by default. Enable 'Use Google services for push messaging' in brave://settings/privacy and restart Brave, or use In-App Dev Mode.";
+        } else {
+          detail = "Google Push Service connection failed (commonly caused by Incognito mode, ad blockers, or a network firewall blocking mtalk.google.com).";
+        }
+        throw new Error(`Registration failed (Push Service Error): ${detail}`);
+      }
+      throw pushErr;
+    }
+  }
+
+  // Fallback registration for local testing or blocked push service environments
+  async function handleSimulatedSubscribe() {
+    setPhase("subscribing");
+    setStatusMsg("Registering in In-App Notification Mode…");
+    const simToken = `DEV_LOCAL_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    setStoredFcmToken(simToken);
+    try { localStorage.setItem("rescue_arc_fcm_token", simToken); } catch (_) {}
+
+    const zoneName = zones.find((z) => z.zone_id === selectedZone)?.name ?? selectedZone;
+    setSubscribedZone(zoneName);
+    setPhase("success");
+    setStatusMsg(`Device successfully subscribed in In-App Mode for ${zoneName}! (You will receive foreground toast alerts)`);
   }
 
   // Handle standard user subscription
@@ -267,288 +327,390 @@ export default function AlertsPage() {
   }
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        .ar-hub { font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; background:#070d18; color:#e2e8f0; position:relative; overflow-x:hidden; }
-        .ar-glow { position:absolute; inset:0; background:radial-gradient(ellipse 70% 50% at 20% 15%,rgba(220,38,38,0.18) 0%,transparent 60%),radial-gradient(ellipse 60% 45% at 80% 25%,rgba(234,88,12,0.14) 0%,transparent 50%),radial-gradient(ellipse 70% 60% at 50% 90%,rgba(16,185,129,0.12) 0%,transparent 60%); pointer-events:none; }
-        .ar-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px); background-size:36px 36px; pointer-events:none; }
-        .ar-container { max-width:1120px; margin:0 auto; padding:48px 20px 80px; position:relative; z-index:10; }
-        .badge-pulse { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; background:rgba(220,38,38,0.15); border:1px solid rgba(220,38,38,0.35); border-radius:999px; font-size:12px; font-weight:700; color:#fca5a5; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:20px; }
-        .pulse-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:pdot 1.2s infinite ease-in-out; }
-        @keyframes pdot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.3; transform:scale(0.8); } }
-        .ar-title { font-size:clamp(32px,5vw,56px); font-weight:900; line-height:1.12; letter-spacing:-0.03em; margin:0 0 16px; color:#f8fafc; }
-        .ar-title .grad-red { background:linear-gradient(135deg,#ef4444 0%,#f97316 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .ar-desc { font-size:16px; color:#94a3b8; max-width:640px; margin:0 auto 36px; line-height:1.6; }
-        
-        /* Navigation Tabs */
-        .tab-bar { display:flex; justify-content:center; gap:10px; margin-bottom:36px; flex-wrap:wrap; }
-        .hub-tab { padding:12px 20px; border-radius:14px; font-size:14px; font-weight:700; border:1px solid rgba(255,255,255,0.1); background:rgba(15,23,42,0.7); color:#94a3b8; cursor:pointer; transition:all 200ms ease; display:flex; align-items:center; gap:8px; backdrop-filter:blur(10px); }
-        .hub-tab:hover { background:rgba(255,255,255,0.08); color:#f8fafc; border-color:rgba(255,255,255,0.2); }
-        .hub-tab.active { background:linear-gradient(135deg,rgba(220,38,38,0.25) 0%,rgba(249,115,22,0.2) 100%); border-color:rgba(239,68,68,0.5); color:#fecaca; box-shadow:0 8px 24px rgba(220,38,38,0.25); }
-
-        /* Card styles */
-        .glass-card { background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.12); border-radius:24px; padding:36px; box-shadow:0 24px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter:blur(24px); }
-        .card-header-title { font-size:22px; font-weight:800; color:#f8fafc; margin:0 0 6px; }
-        .card-header-desc { font-size:14px; color:#64748b; margin:0 0 24px; }
-
-        /* Form elements */
-        .form-label { display:block; font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
-        .select-input, .text-input { width:100%; padding:13px 16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:#f8fafc; font-size:14px; font-family:inherit; outline:none; transition:border-color 200ms; margin-bottom:20px; }
-        .select-input:focus, .text-input:focus { border-color:#ef4444; background:rgba(255,255,255,0.09); }
-        .select-input option { background:#0f172a; color:#f8fafc; }
-
-        /* Action button */
-        .btn-fire { width:100%; padding:15px 24px; border:none; border-radius:14px; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%); color:#fff; box-shadow:0 10px 28px rgba(220,38,38,0.4); transition:all 200ms ease; display:flex; align-items:center; justify-content:center; gap:10px; }
-        .btn-fire:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 14px 34px rgba(220,38,38,0.55); }
-        .btn-fire:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
-
-        .btn-secondary { padding:10px 18px; border-radius:10px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#e2e8f0; font-weight:600; font-size:13px; cursor:pointer; transition:background 150ms; display:inline-flex; align-items:center; gap:6px; }
-        .btn-secondary:hover { background:rgba(255,255,255,0.14); }
-
-        /* Hazard grid selector */
-        .hazard-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:24px; }
-        .hazard-opt { padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); cursor:pointer; transition:all 180ms ease; text-align:left; }
-        .hazard-opt:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.2); }
-        .hazard-opt.active { background:rgba(239,68,68,0.15); border-color:#ef4444; }
-        .hazard-opt-title { font-size:14px; font-weight:700; color:#f8fafc; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
-        .hazard-opt-desc { font-size:11px; color:#94a3b8; line-height:1.4; }
-
-        /* Severity buttons */
-        .sev-group { display:flex; gap:10px; margin-bottom:24px; }
-        .sev-btn { flex:1; padding:12px; border-radius:12px; border:1px solid; font-weight:800; font-size:13px; cursor:pointer; text-align:center; transition:all 150ms; }
-        .sev-btn.red { background:rgba(220,38,38,0.15); border-color:rgba(220,38,38,0.3); color:#fca5a5; }
-        .sev-btn.red.active { background:#dc2626; color:#fff; border-color:#ef4444; box-shadow:0 6px 20px rgba(220,38,38,0.4); }
-        .sev-btn.yellow { background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#fde68a; }
-        .sev-btn.yellow.active { background:#d97706; color:#fff; border-color:#f59e0b; box-shadow:0 6px 20px rgba(217,119,6,0.4); }
-
-        /* Output / Feedback Box */
-        .feedback-box { padding:16px; border-radius:14px; font-size:13px; line-height:1.5; margin-bottom:20px; border:1px solid; }
-        .feedback-box.info { background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#93c5fd; }
-        .feedback-box.success { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.25); color:#86efac; }
-        .feedback-box.error { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.3); color:#fca5a5; }
-
-        /* Toast Popup */
-        .live-toast { position:fixed; top:24px; right:24px; z-index:9999; max-width:440px; width:calc(100% - 48px); padding:20px; background:rgba(15,23,42,0.96); border:2px solid #ef4444; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.8),0 0 40px rgba(220,38,38,0.3); backdrop-filter:blur(24px); animation:slideIn 350ms cubic-bezier(0.16,1,0.3,1); }
-        @keyframes slideIn { from{ transform:translateX(120%); opacity:0; } to{ transform:translateX(0); opacity:1; } }
-        .toast-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
-        .toast-title { font-size:15px; font-weight:800; color:#fca5a5; }
-        .toast-close { background:none; border:none; color:#64748b; font-size:18px; cursor:pointer; padding:0 4px; }
-        .toast-close:hover { color:#fff; }
-        .toast-body { font-size:13px; color:#cbd5e1; line-height:1.5; }
-
-        /* Table */
-        .audit-table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
-        .audit-table th { padding:12px 14px; background:rgba(255,255,255,0.04); color:#94a3b8; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.1); }
-        .audit-table td { padding:14px; border-bottom:1px solid rgba(255,255,255,0.06); color:#cbd5e1; }
-        .pill-badge { padding:3px 9px; border-radius:99px; font-size:11px; font-weight:800; display:inline-block; }
-        .pill-red { background:rgba(220,38,38,0.2); color:#fca5a5; border:1px solid rgba(220,38,38,0.4); }
-        .pill-yellow { background:rgba(245,158,11,0.2); color:#fde68a; border:1px solid rgba(245,158,11,0.4); }
-      `}</style>
-
-      <div className="ar-hub">
-        <div className="ar-glow" />
-        <div className="ar-grid" />
-
-        {/* ============================================================== */}
-        {/* LIVE ALERT POPUP TOAST (Triggered by real push or manual test)  */}
-        {/* ============================================================== */}
-        {liveAlert && (
-          <div className="live-toast" role="alert">
-            <div className="toast-top">
-              <div className="toast-title">{liveAlert.title}</div>
-              <button className="toast-close" onClick={() => setLiveAlert(null)}>✕</button>
+    <main className="min-h-screen bg-slate-50 text-slate-900 antialiased pb-20">
+      {/* ============================================================== */}
+      {/* LIVE ALERT POPUP TOAST (Foreground Push Notification)           */}
+      {/* ============================================================== */}
+      {liveAlert && (
+        <div
+          className="fixed top-24 right-5 sm:right-8 z-[10000] max-w-md w-[calc(100%-40px)] rounded-2xl border-2 border-red-500 bg-white p-5 shadow-2xl shadow-red-500/20 transition-all duration-300 animate-in fade-in slide-in-from-top-4"
+          role="alert"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+              <h4 className="text-sm font-extrabold text-red-700 tracking-tight">{liveAlert.title}</h4>
             </div>
-            <div className="toast-body">{liveAlert.body}</div>
-            <div style={{ marginTop: "10px", fontSize: "11px", color: "#64748b", display: "flex", justifyContent: "space-between" }}>
-              <span>🚨 Rescue-Arc Multi-Hazard Protocol</span>
-              <span>{liveAlert.time}</span>
+            <button
+              onClick={() => setLiveAlert(null)}
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-700 font-medium">{liveAlert.body}</p>
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500 font-mono">
+            <span className="font-semibold text-red-600">🚨 Rescue Arc Multi-Hazard Alert</span>
+            <span>{liveAlert.time}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* HEADER SECTION                                                 */}
+      {/* ============================================================== */}
+      <section className="border-b border-emerald-100 bg-white px-5 py-12 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200 px-3 py-1 text-xs font-bold text-red-700 uppercase tracking-wider">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  Real-Time Broadcast Engine
+                </span>
+                <span className="text-xs font-semibold text-emerald-800 uppercase tracking-widest hidden sm:inline-block">
+                  • FCM Web Push
+                </span>
+              </div>
+
+              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                Emergency Alert <span className="text-emerald-700">&amp; Simulation Hub</span>
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                Instant hazard detection, FCM web push notifications, and real-time disaster test dispatching for field response units and citizens.
+              </p>
             </div>
+
+            {/* Quick status badges */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-700 shadow-xs">
+                {isFallback ? (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Offline Cache Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Live Database Connected</span>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-700 shadow-xs">
+                <span>
+                  Monitored Regions: <strong className="text-slate-900">{zones.length}</strong>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-700 shadow-xs">
+                <span className={`h-2 w-2 rounded-full ${storedFcmToken ? "bg-emerald-500" : "bg-amber-400"}`} />
+                <span>
+                  This Device:{" "}
+                  <strong className={storedFcmToken ? "text-emerald-700 font-bold" : "text-amber-700 font-semibold"}>
+                    {storedFcmToken ? "Subscribed" : "Unregistered"}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================== */}
+      {/* MAIN CONTAINER                                                 */}
+      {/* ============================================================== */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+        {/* Offline Fallback Warning Banner */}
+        {isFallback && (
+          <div className="mb-8">
+            <OfflineFallbackBanner
+              isFallback={true}
+              message={fallbackWarning || "Database or backend offline using internal latest data."}
+              source="Internal Latest Snapshot"
+            />
           </div>
         )}
 
-        <div className="ar-container">
-          {/* Header */}
-          <div style={{ textAlign: "center", marginBottom: "36px" }}>
-            <div className="badge-pulse">
-              <span className="pulse-dot" />
-              Real-Time Push &amp; Broadcast Engine
+        {/* Navigation Tabs */}
+        <div className="mb-8 flex items-center justify-start sm:justify-center overflow-x-auto pb-2 scrollbar-none gap-2">
+          {[
+            { id: "subscribe", label: "1. Subscribe Device", icon: "🔔" },
+            { id: "test", label: "2. Test My Device", icon: "⚡" },
+            { id: "simulate", label: "3. Simulate Red Zone Alert", icon: "🚨" },
+            { id: "history", label: "4. Broadcast History Log", icon: "📜" },
+          ].map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveTab(t.id)}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${
+                  isActive
+                    ? "bg-emerald-700 text-white shadow-md shadow-emerald-700/20 active:scale-[0.98]"
+                    : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-100 hover:text-slate-900 shadow-xs"
+                }`}
+              >
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ============================================================== */}
+        {/* TAB 1: SUBSCRIBE DEVICE                                         */}
+        {/* ============================================================== */}
+        {activeTab === "subscribe" && (
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-lg">
+                🔔
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-950">Citizen &amp; Official Alert Registration</h2>
+                <p className="text-xs text-slate-500">Enable real-time push warnings when risk rises in your jurisdiction.</p>
+              </div>
             </div>
-            <h1 className="ar-title">
-              Rescue Arc <span className="grad-red">Alert &amp; Simulation Hub</span>
-            </h1>
-            <p className="ar-desc">
-              Instant hazard detection, FCM web push notifications, and manual disaster testing suite for disaster management teams and citizens.
+
+            <p className="mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Subscribe your browser to receive push notifications when hazard severity transitions to Yellow (Warning) or Red (Evacuate).
             </p>
 
-            {/* Navigation Tabs */}
-            <div className="tab-bar">
+            {/* Location mode toggle */}
+            <div className="mt-6 flex gap-3">
               <button
-                className={`hub-tab ${activeTab === "subscribe" ? "active" : ""}`}
-                onClick={() => setActiveTab("subscribe")}
+                type="button"
+                className={`flex-1 rounded-xl py-3 px-4 text-xs sm:text-sm font-bold transition-all border ${
+                  !useLocation
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setUseLocation(false)}
               >
-                🔔 1. Subscribe Device
+                📍 Select Monitored Region
               </button>
               <button
-                className={`hub-tab ${activeTab === "test" ? "active" : ""}`}
-                onClick={() => setActiveTab("test")}
+                type="button"
+                className={`flex-1 rounded-xl py-3 px-4 text-xs sm:text-sm font-bold transition-all border ${
+                  useLocation
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setUseLocation(true)}
               >
-                ⚡ 2. Test My Device
-              </button>
-              <button
-                className={`hub-tab ${activeTab === "simulate" ? "active" : ""}`}
-                onClick={() => setActiveTab("simulate")}
-              >
-                🚨 3. Simulate Red Zone Alert
-              </button>
-              <button
-                className={`hub-tab ${activeTab === "history" ? "active" : ""}`}
-                onClick={() => setActiveTab("history")}
-              >
-                📜 4. Broadcast History Log
+                🛰️ Use GPS Auto-Detect
               </button>
             </div>
-          </div>
 
-          {/* ============================================================== */}
-          {/* TAB 1: SUBSCRIBE DEVICE                                         */}
-          {/* ============================================================== */}
-          {activeTab === "subscribe" && (
-            <div className="glass-card" style={{ maxWidth: "620px", margin: "0 auto" }}>
-              <h2 className="card-header-title">Citizen &amp; Official Alert Registration</h2>
-              <p className="card-header-desc">
-                Subscribe this device to receive immediate push alerts when hazard risk transitions to Yellow or Red in your zone.
-              </p>
-
-              <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-                <button
-                  type="button"
-                  className={`btn-secondary ${!useLocation ? "active" : ""}`}
-                  style={{ flex: 1, borderColor: !useLocation ? "#ef4444" : undefined }}
-                  onClick={() => setUseLocation(false)}
-                >
-                  📍 Select Monitored Zone
-                </button>
-                <button
-                  type="button"
-                  className={`btn-secondary ${useLocation ? "active" : ""}`}
-                  style={{ flex: 1, borderColor: useLocation ? "#ef4444" : undefined }}
-                  onClick={() => setUseLocation(true)}
-                >
-                  🛰️ Use GPS Auto-Detect
-                </button>
-              </div>
-
+            <div className="mt-6">
               {!useLocation ? (
                 <div>
-                  <label className="form-label">Select Your Target Region</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                    Target Region to Monitor
+                  </label>
                   <select
-                    className="select-input"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                     value={selectedZone}
                     onChange={(e) => setSelectedZone(e.target.value)}
                   >
                     {zones.map((z) => (
                       <option key={z.zone_id} value={z.zone_id}>
-                        {z.name || z.zone_id}
+                        {z.name || z.zone_id} ({z.zone_id})
                       </option>
                     ))}
                   </select>
                 </div>
               ) : (
-                <div className="feedback-box info">
-                  🛰️ When you click Subscribe, your browser will request GPS permission to associate your device with the nearest high-risk zone.
-                </div>
-              )}
-
-              {phase !== "idle" && (
-                <div
-                  className={`feedback-box ${
-                    phase === "success" ? "success" : phase === "error" ? "error" : "info"
-                  }`}
-                >
-                  {statusMsg}
-                </div>
-              )}
-
-              <button
-                className="btn-fire"
-                disabled={phase === "requesting" || phase === "subscribing"}
-                onClick={handleSubscribe}
-              >
-                {phase === "requesting" || phase === "subscribing" ? "Registering Device…" : "🔔 Subscribe to Hazard Alerts"}
-              </button>
-
-              {storedFcmToken && (
-                <div style={{ marginTop: "24px", paddingTop: "18px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#64748b" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>Registered Token:</span>
-                    <span style={{ color: "#34d399", fontWeight: 700 }}>● Active</span>
-                  </div>
-                  <div style={{ fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "4px", color: "#94a3b8" }}>
-                    {storedFcmToken.slice(0, 32)}…
-                  </div>
-                  <button
-                    onClick={() => setActiveTab("test")}
-                    style={{ marginTop: "10px", background: "none", border: "none", color: "#ef4444", fontWeight: 700, cursor: "pointer", padding: 0 }}
-                  >
-                    Proceed to Test My Device →
-                  </button>
+                <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-xs leading-relaxed text-blue-900">
+                  🛰️ When you click Subscribe, your browser will prompt for GPS location access to match you with the nearest active hazard zone.
                 </div>
               )}
             </div>
-          )}
 
-          {/* ============================================================== */}
-          {/* TAB 2: TEST PUSH TO MY DEVICE                                   */}
-          {/* ============================================================== */}
-          {activeTab === "test" && (
-            <div className="glass-card" style={{ maxWidth: "680px", margin: "0 auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                <h2 className="card-header-title">⚡ Instant Device Notification Test</h2>
-                <span className="pill-badge pill-red">Manual Test Mode</span>
-              </div>
-              <p className="card-header-desc">
-                Send an immediate test push notification to this browser to verify that the Firebase Cloud Messaging pipeline is fully operational.
-              </p>
-
-              <label className="form-label">1. Choose Hazard Scenario</label>
-              <div className="hazard-grid">
-                {HAZARD_OPTIONS.map((h) => (
-                  <div
-                    key={h.id}
-                    className={`hazard-opt ${testHazard === h.id ? "active" : ""}`}
-                    onClick={() => setTestHazard(h.id)}
-                  >
-                    <div className="hazard-opt-title">
-                      <span>{h.icon}</span>
-                      <span>{h.label}</span>
-                    </div>
-                    <div className="hazard-opt-desc">{h.desc}</div>
+            {/* Feedback Message */}
+            {phase !== "idle" && (
+              <div
+                className={`mt-6 rounded-xl border p-4 text-xs sm:text-sm font-medium ${
+                  phase === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : phase === "error"
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : "border-blue-200 bg-blue-50 text-blue-900"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  {phase === "requesting" || phase === "subscribing" ? (
+                    <span className="h-4 w-4 mt-0.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : phase === "success" ? (
+                    <span className="mt-0.5 shrink-0">✓</span>
+                  ) : (
+                    <span className="mt-0.5 shrink-0">⚠️</span>
+                  )}
+                  <div className="flex-1">
+                    <span>{statusMsg}</span>
+                    {phase === "error" && (
+                      <div className="mt-3 pt-3 border-t border-red-200/80 flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] text-red-700">Blocked by browser or network?</span>
+                        <button
+                          type="button"
+                          onClick={handleSimulatedSubscribe}
+                          className="rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 text-xs shadow-xs transition-colors"
+                        >
+                          Enable In-App Dev Mode (Bypass Push Service) →
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
+            )}
 
-              <label className="form-label">2. Select Severity Level</label>
-              <div className="sev-group">
+            {/* Primary Action Button */}
+            <button
+              type="button"
+              className="mt-6 w-full rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3.5 px-6 shadow-md shadow-emerald-700/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+              disabled={phase === "requesting" || phase === "subscribing"}
+              onClick={handleSubscribe}
+            >
+              {phase === "requesting" || phase === "subscribing" ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Registering Device…</span>
+                </>
+              ) : (
+                <>
+                  <span>🔔</span>
+                  <span>Subscribe to Hazard Alerts</span>
+                </>
+              )}
+            </button>
+
+            {/* Registered Token Card */}
+            {storedFcmToken && (
+              <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs text-slate-600">
+                <div className="flex items-center justify-between font-semibold">
+                  <span className="text-slate-700">Device Token Cached:</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Active in Browser
+                  </span>
+                </div>
+                <div className="mt-2 font-mono text-[11px] text-slate-500 break-all bg-white p-2 rounded-lg border border-slate-200/80">
+                  {storedFcmToken.slice(0, 48)}…
+                </div>
                 <button
                   type="button"
-                  className={`sev-btn red ${testColor === "RED" ? "active" : ""}`}
+                  onClick={() => setActiveTab("test")}
+                  className="mt-3 text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+                >
+                  Proceed to Test My Device →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 2: TEST PUSH TO MY DEVICE                                   */}
+        {/* ============================================================== */}
+        {activeTab === "test" && (
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-bold text-lg">
+                  ⚡
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-950">Instant Device Notification Test</h2>
+                  <p className="text-xs text-slate-500">Verify end-to-end delivery to this screen.</p>
+                </div>
+              </div>
+              <span className="rounded-full bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-bold text-red-700 uppercase tracking-wide">
+                Live Test Mode
+              </span>
+            </div>
+
+            <p className="mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Send an immediate test push notification through Firebase Admin SDK to ensure real-time delivery works on this device.
+            </p>
+
+            {/* Hazard Scenario Selection */}
+            <div className="mt-6">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
+                1. Choose Hazard Scenario
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {HAZARD_OPTIONS.map((h) => {
+                  const isSel = testHazard === h.id;
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => setTestHazard(h.id)}
+                      className={`rounded-xl border p-3 text-left transition-all ${
+                        isSel
+                          ? "border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/20"
+                          : "border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
+                        <span>{h.icon}</span>
+                        <span>{h.label}</span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-500 leading-snug">{h.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Severity Level Selection */}
+            <div className="mt-6">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                2. Select Severity Level
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  className={`rounded-xl border py-3 px-4 font-bold text-xs sm:text-sm transition-all ${
+                    testColor === "RED"
+                      ? "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/20"
+                      : "border-red-200 bg-red-50/80 text-red-700 hover:bg-red-100"
+                  }`}
                   onClick={() => setTestColor("RED")}
                 >
                   🚨 Emergency RED (Evacuate)
                 </button>
                 <button
                   type="button"
-                  className={`sev-btn yellow ${testColor === "YELLOW" ? "active" : ""}`}
+                  className={`rounded-xl border py-3 px-4 font-bold text-xs sm:text-sm transition-all ${
+                    testColor === "YELLOW"
+                      ? "border-amber-600 bg-amber-600 text-white shadow-md shadow-amber-600/20"
+                      : "border-amber-200 bg-amber-50/80 text-amber-700 hover:bg-amber-100"
+                  }`}
                   onClick={() => setTestColor("YELLOW")}
                 >
                   ⚠️ Warning YELLOW (Alert)
                 </button>
               </div>
+            </div>
 
-              <label className="form-label">3. Target Region for Test</label>
+            {/* Target Region */}
+            <div className="mt-6">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                3. Target Region for Test
+              </label>
               <select
-                className="select-input"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                 value={selectedZone}
                 onChange={(e) => setSelectedZone(e.target.value)}
               >
@@ -558,205 +720,304 @@ export default function AlertsPage() {
                   </option>
                 ))}
               </select>
-
-              {testStatus.msg && (
-                <div className={`feedback-box ${testStatus.state}`}>
-                  <div style={{ fontWeight: 700 }}>{testStatus.msg}</div>
-                  {testStatus.details && (
-                    <div style={{ marginTop: "8px", fontSize: "11px", opacity: 0.9 }}>
-                      {testStatus.details.message_id && <div>Message ID: <code>{testStatus.details.message_id}</code></div>}
-                      {testStatus.details.title && <div>Title: <code>{testStatus.details.title}</code></div>}
-                      {testStatus.details.backend && <div>Backend: <code>{testStatus.details.backend}</code></div>}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <button
-                className="btn-fire"
-                disabled={testStatus.state === "sending"}
-                onClick={handleManualTestPush}
-              >
-                {testStatus.state === "sending" ? "Dispatching Alert…" : "⚡ Send Instant Test Push Notification"}
-              </button>
             </div>
-          )}
 
-          {/* ============================================================== */}
-          {/* TAB 3: SIMULATE RED ZONE EMERGENCY BROADCAST                     */}
-          {/* ============================================================== */}
-          {activeTab === "simulate" && (
-            <div className="glass-card" style={{ maxWidth: "720px", margin: "0 auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                <h2 className="card-header-title">🚨 Full Zone Disaster Simulation</h2>
-                <span className="pill-badge pill-red">Authority Broadcast</span>
+            {/* Status Feedback */}
+            {testStatus.msg && (
+              <div
+                className={`mt-6 rounded-xl border p-4 text-xs sm:text-sm ${
+                  testStatus.state === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : testStatus.state === "error"
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : "border-blue-200 bg-blue-50 text-blue-900"
+                }`}
+              >
+                <div className="font-bold">{testStatus.msg}</div>
+                {testStatus.details && (
+                  <div className="mt-2 space-y-1 text-[11px] font-mono opacity-90 border-t border-current/10 pt-2">
+                    {testStatus.details.message_id && <div>Message ID: {testStatus.details.message_id}</div>}
+                    {testStatus.details.title && <div>Title: {testStatus.details.title}</div>}
+                  </div>
+                )}
               </div>
-              <p className="card-header-desc">
-                Simulate an automated or manual hazard escalation for an entire region. This inserts a transition classification into Supabase and broadcasts to all active registered subscribers.
-              </p>
+            )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div>
-                  <label className="form-label">Target Monitored Zone</label>
-                  <select
-                    className="select-input"
-                    value={simZone}
-                    onChange={(e) => setSimZone(e.target.value)}
-                  >
-                    {zones.map((z) => (
-                      <option key={z.zone_id} value={z.zone_id}>
-                        {z.name || z.zone_id}
-                      </option>
-                    ))}
-                  </select>
+            {/* Dispatch Button */}
+            <button
+              type="button"
+              className="mt-6 w-full rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3.5 px-6 shadow-md shadow-emerald-700/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+              disabled={testStatus.state === "sending"}
+              onClick={handleManualTestPush}
+            >
+              {testStatus.state === "sending" ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Dispatching Alert…</span>
+                </>
+              ) : (
+                <>
+                  <span>⚡</span>
+                  <span>Send Instant Test Push Notification</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 3: SIMULATE RED ZONE ESCALATION                             */}
+        {/* ============================================================== */}
+        {activeTab === "simulate" && (
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-700 border border-red-200 font-bold text-lg">
+                  🚨
                 </div>
-
                 <div>
-                  <label className="form-label">Primary Hazard Type</label>
-                  <select
-                    className="select-input"
-                    value={simHazard}
-                    onChange={(e) => setSimHazard(e.target.value)}
-                  >
-                    {HAZARD_OPTIONS.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.icon} {h.label}
-                      </option>
-                    ))}
-                  </select>
+                  <h2 className="text-xl font-extrabold text-slate-950">Full Zone Disaster Simulation</h2>
+                  <p className="text-xs text-slate-500">Trigger multi-subscriber regional escalation.</p>
                 </div>
               </div>
+              <span className="rounded-full bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-bold text-red-700 uppercase tracking-wide">
+                Authority Broadcast
+              </span>
+            </div>
 
-              <label className="form-label">Transition State</label>
-              <div className="sev-group">
+            <p className="mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Simulate an emergency escalation for a monitored region. This writes an audit snapshot to Supabase and broadcasts push notifications to all registered field devices in that zone.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Target Zone
+                </label>
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                  value={simZone}
+                  onChange={(e) => setSimZone(e.target.value)}
+                >
+                  {zones.map((z) => (
+                    <option key={z.zone_id} value={z.zone_id}>
+                      {z.name || z.zone_id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Primary Hazard Type
+                </label>
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                  value={simHazard}
+                  onChange={(e) => setSimHazard(e.target.value)}
+                >
+                  {HAZARD_OPTIONS.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.icon} {h.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Severity Escalation */}
+            <div className="mt-6">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Escalation State Target
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  className={`sev-btn red ${simColor === "RED" ? "active" : ""}`}
+                  className={`rounded-xl border py-3 px-4 font-bold text-xs sm:text-sm transition-all ${
+                    simColor === "RED"
+                      ? "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/20"
+                      : "border-red-200 bg-red-50/80 text-red-700 hover:bg-red-100"
+                  }`}
                   onClick={() => setSimColor("RED")}
                 >
                   🚨 Escalate to RED (Immediate Evacuation)
                 </button>
                 <button
                   type="button"
-                  className={`sev-btn yellow ${simColor === "YELLOW" ? "active" : ""}`}
+                  className={`rounded-xl border py-3 px-4 font-bold text-xs sm:text-sm transition-all ${
+                    simColor === "YELLOW"
+                      ? "border-amber-600 bg-amber-600 text-white shadow-md shadow-amber-600/20"
+                      : "border-amber-200 bg-amber-50/80 text-amber-700 hover:bg-amber-100"
+                  }`}
                   onClick={() => setSimColor("YELLOW")}
                 >
                   ⚠️ Escalate to YELLOW (Hazard Warning)
                 </button>
               </div>
+            </div>
 
-              {simResult && (
-                <div className={`feedback-box ${simResult.error ? "error" : "success"}`}>
-                  {simResult.error ? (
-                    <div>Error: {simResult.error}</div>
-                  ) : (
-                    <div>
-                      <div style={{ fontWeight: 800, marginBottom: "6px" }}>
-                        ✅ Zone Escalated: {simResult.prev_color || "GREEN"} → {simResult.new_color}
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginTop: "10px", fontSize: "12px" }}>
-                        <div>Targeted Devices: <strong>{simResult.targeted ?? 1}</strong></div>
-                        <div>Delivered Push: <strong>{simResult.delivered ?? 1}</strong></div>
-                        <div>Severity: <strong>{simResult.severity_fired ?? "alert"}</strong></div>
-                      </div>
-                      {simResult.classification_id && (
-                        <div style={{ fontSize: "11px", marginTop: "6px", opacity: 0.8 }}>
-                          Audit Classification ID: <code>{simResult.classification_id}</code>
-                        </div>
-                      )}
+            {/* Simulation Results Box */}
+            {simResult && (
+              <div
+                className={`mt-6 rounded-xl border p-4 text-xs sm:text-sm ${
+                  simResult.error
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                }`}
+              >
+                {simResult.error ? (
+                  <div>Error: {simResult.error}</div>
+                ) : (
+                  <div>
+                    <div className="font-extrabold text-sm text-emerald-950 mb-2">
+                      ✓ Zone Escalated: {simResult.prev_color || "GREEN"} → {simResult.new_color}
                     </div>
-                  )}
-                </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs border-t border-emerald-200/60 pt-2 font-medium">
+                      <div>
+                        Targeted: <strong>{simResult.targeted ?? 1}</strong>
+                      </div>
+                      <div>
+                        Delivered: <strong>{simResult.delivered ?? 1}</strong>
+                      </div>
+                      <div>
+                        Severity: <strong>{simResult.severity_fired ?? "alert"}</strong>
+                      </div>
+                    </div>
+                    {simResult.classification_id && (
+                      <div className="mt-2 text-[11px] font-mono text-emerald-800">
+                        Audit ID: {simResult.classification_id}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Trigger Button */}
+            <button
+              type="button"
+              className="mt-6 w-full rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-3.5 px-6 shadow-md shadow-red-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+              disabled={isSimulating}
+              onClick={handleSimulateDisaster}
+            >
+              {isSimulating ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Broadcasting Emergency Escalation…</span>
+                </>
+              ) : (
+                <>
+                  <span>🚨</span>
+                  <span>Trigger Disaster Emergency Broadcast</span>
+                </>
               )}
+            </button>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 4: AUDIT HISTORY LOG                                       */}
+        {/* ============================================================== */}
+        {activeTab === "history" && (
+          <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700 border border-blue-200 font-bold text-lg">
+                  📜
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-950">Alert Broadcast Audit Log</h2>
+                  <p className="text-xs text-slate-500">Live records of all push dispatches stored in Supabase.</p>
+                </div>
+              </div>
 
               <button
-                className="btn-fire"
-                disabled={isSimulating}
-                onClick={handleSimulateDisaster}
+                type="button"
+                onClick={fetchHistory}
+                disabled={isLoadingHistory}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-all shadow-xs"
               >
-                {isSimulating ? "Broadcasting Emergency Escalation…" : "🚨 Trigger Disaster Emergency Broadcast"}
+                <span className={isLoadingHistory ? "animate-spin" : ""}>🔄</span>
+                <span>Refresh Log</span>
               </button>
             </div>
-          )}
 
-          {/* ============================================================== */}
-          {/* TAB 4: AUDIT HISTORY LOG                                       */}
-          {/* ============================================================== */}
-          {activeTab === "history" && (
-            <div className="glass-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-                <div>
-                  <h2 className="card-header-title">📜 Alert Broadcast Audit Log</h2>
-                  <p className="card-header-desc" style={{ marginBottom: 0 }}>
-                    Live records of all push notifications dispatched by the Rescue Arc alert service.
-                  </p>
-                </div>
-                <button className="btn-secondary" onClick={fetchHistory} disabled={isLoadingHistory}>
-                  🔄 Refresh
-                </button>
-              </div>
-
-              <div style={{ overflowX: "auto" }}>
-                <table className="audit-table">
-                  <thead>
+            <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Time</th>
+                    <th className="py-3 px-4">Zone ID</th>
+                    <th className="py-3 px-4">Severity</th>
+                    <th className="py-3 px-4">Transition</th>
+                    <th className="py-3 px-4 text-center">Targeted</th>
+                    <th className="py-3 px-4 text-center">Delivered</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {historyLogs.length === 0 ? (
                     <tr>
-                      <th>Time</th>
-                      <th>Zone ID</th>
-                      <th>Severity</th>
-                      <th>Color Transition</th>
-                      <th>Targeted</th>
-                      <th>Delivered</th>
+                      <td colSpan={6} className="text-center py-12 text-slate-400 font-medium">
+                        {isLoadingHistory ? "Loading audit records from database…" : "No alert broadcast records found yet."}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {historyLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
-                          {isLoadingHistory ? "Loading audit logs…" : "No alert logs found yet."}
+                  ) : (
+                    historyLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-500">
+                          {new Date(log.sent_at).toLocaleString([], {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
+                          {log.zone_id}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase border ${
+                              log.severity === "alert"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {log.severity || "ALERT"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">
+                          {log.from_color || "—"} → <span className="text-emerald-700">{log.to_color}</span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono">{log.recipients_targeted ?? 0}</td>
+                        <td className="py-3 px-4 text-center font-mono font-bold text-emerald-700">
+                          {log.recipients_delivered ?? 0}
                         </td>
                       </tr>
-                    ) : (
-                      historyLogs.map((log) => (
-                        <tr key={log.id}>
-                          <td>{new Date(log.sent_at).toLocaleString()}</td>
-                          <td style={{ fontWeight: 600 }}>{log.zone_id}</td>
-                          <td>
-                            <span className={`pill-badge ${log.severity === "alert" ? "pill-red" : "pill-yellow"}`}>
-                              {log.severity?.toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            {log.from_color || "—"} → <strong>{log.to_color}</strong>
-                          </td>
-                          <td>{log.recipients_targeted ?? 0}</td>
-                          <td style={{ color: "#34d399", fontWeight: 700 }}>
-                            {log.recipients_delivered ?? 0}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-
-          {/* Direct admin links footer */}
-          <div style={{ marginTop: "40px", textAlign: "center", fontSize: "13px", color: "#64748b", display: "flex", justifyContent: "center", gap: "24px" }}>
-            <Link href="/dashboard/admin" style={{ color: "#94a3b8", textDecoration: "underline" }}>
-              Admin Dashboard &amp; Capacities
-            </Link>
-            <span>•</span>
-            <Link href="/admin/relocation-sites" style={{ color: "#94a3b8", textDecoration: "underline" }}>
-              Relocation Sites Capacity Manager
-            </Link>
-            <span>•</span>
-            <a href="http://localhost:8000/admin" target="_blank" rel="noreferrer" style={{ color: "#ef4444", textDecoration: "underline" }}>
-              Python Alert Admin Console (Port 8000) ↗
-            </a>
           </div>
+        )}
+
+        {/* Navigation & Documentation Links */}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-500">
+          <Link href="/dashboard/admin" className="hover:text-emerald-700 hover:underline transition-colors">
+            Admin Capacities Dashboard
+          </Link>
+          <span>•</span>
+          <Link href="/admin/relocation-sites" className="hover:text-emerald-700 hover:underline transition-colors">
+            Relocation Sites Manager
+          </Link>
+          <span>•</span>
+          <Link href="/redzone" className="hover:text-emerald-700 hover:underline transition-colors">
+            Live Hazard Map View
+          </Link>
         </div>
       </div>
-    </>
+    </main>
   );
 }

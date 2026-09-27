@@ -7,12 +7,11 @@ import { useState } from "react";
 
 const navItems = [
   { label: "Home", href: "/" },
-  { label: "Live Map", href: "/#map" },
   { label: "Relocation", href: "/relocation" },
   { label: "Analytics", href: "/analytics" },
   { label: "Features", href: "/features" },
   { label: "How It Works", href: "/how-it-works" },
-  { label: "Red Zone", href: "/redzone" },
+  { label: "Live Map", href: "/redzone" },
   { label: "🔔 Alerts", href: "/alerts" },
   { label: "About", href: "/about" },
 ];
