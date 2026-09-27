@@ -60,8 +60,8 @@ log = logging.getLogger("rescue_arc_alert")
 SUPABASE_URL: str = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_ROLE_KEY: str = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 SUPABASE_ANON_KEY: str = os.environ.get("SUPABASE_ANON_KEY", "")
-FIREBASE_SA_PATH: str = os.environ["FIREBASE_SERVICE_ACCOUNT_PATH"]
-if not os.path.isabs(FIREBASE_SA_PATH):
+FIREBASE_SA_PATH: str = os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH", "")
+if FIREBASE_SA_PATH and not os.path.isabs(FIREBASE_SA_PATH):
     FIREBASE_SA_PATH = str(BASE_DIR / FIREBASE_SA_PATH)
 HAZARD_BASE: str = os.environ.get("HAZARD_PLATFORM_BASE_URL", "http://localhost:8000")
 POLL_INTERVAL: int = int(os.environ.get("BRIDGE_POLL_INTERVAL_SECONDS", "3600"))
@@ -80,9 +80,26 @@ def _init_firebase() -> None:
     global _fb_app
     if _fb_app is not None:
         return
-    cred = credentials.Certificate(FIREBASE_SA_PATH)
-    _fb_app = firebase_admin.initialize_app(cred)
-    log.info("Firebase Admin SDK initialised from %s", FIREBASE_SA_PATH)
+    try:
+        # 1. Check if JSON string is provided in environment
+        sa_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+        if sa_json and sa_json.strip():
+            sa_data = json.loads(sa_json)
+            cred = credentials.Certificate(sa_data)
+            _fb_app = firebase_admin.initialize_app(cred)
+            log.info("Firebase Admin SDK initialised from FIREBASE_SERVICE_ACCOUNT_JSON environment variable")
+            return
+
+        # 2. Check if file path exists on disk
+        if FIREBASE_SA_PATH and os.path.exists(FIREBASE_SA_PATH):
+            cred = credentials.Certificate(FIREBASE_SA_PATH)
+            _fb_app = firebase_admin.initialize_app(cred)
+            log.info("Firebase Admin SDK initialised from %s", FIREBASE_SA_PATH)
+            return
+
+        log.warning("Notice: Firebase service account credentials not found. Push notifications will be disabled.")
+    except Exception as exc:
+        log.warning("Notice: Firebase Admin SDK could not be initialized: %s", exc)
 
 # ---------------------------------------------------------------------------
 # Supabase helpers (thin wrapper around the REST API via httpx so we can
@@ -581,10 +598,21 @@ def _start_scheduler() -> None:
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _init_firebase()
-    _start_scheduler()
+    try:
+        _init_firebase()
+    except Exception as exc:
+        log.warning("Notice: Firebase init in alert_service lifespan: %s", exc)
+    try:
+        if not _scheduler.running:
+            _start_scheduler()
+    except Exception as exc:
+        log.warning("Notice: Scheduler start in alert_service lifespan: %s", exc)
     yield
-    _scheduler.shutdown(wait=False)
+    try:
+        if _scheduler.running:
+            _scheduler.shutdown(wait=False)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
