@@ -32,16 +32,26 @@ export default function HomeSection() {
           <div className="mt-8 flex flex-wrap gap-3 sm:mt-9 sm:gap-4">
             <Link
               href="/redzone"
-              className="rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:px-7 sm:py-4 sm:text-base"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-semibold text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
             >
-              Explore Live Map →
+              <span>🗺️</span>
+              <span>Explore Live Map →</span>
             </Link>
 
             <Link
-              href="/redzone"
-              className="rounded-xl bg-red-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-red-700 sm:px-7 sm:py-4 sm:text-base"
+              href="/relocation"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
             >
-              🔔 Get Alerts →
+              <span>🛡️</span>
+              <span>Safe Relocation →</span>
+            </Link>
+
+            <Link
+              href="/alerts"
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3.5 text-sm font-semibold text-white shadow-md shadow-red-600/20 transition hover:bg-red-700 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
+            >
+              <span>🔔</span>
+              <span>Get Alerts →</span>
             </Link>
           </div>
 
