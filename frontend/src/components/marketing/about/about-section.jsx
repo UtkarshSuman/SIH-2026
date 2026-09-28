@@ -22,6 +22,7 @@ import {
   ServerCrash,
   Sparkles,
 } from "lucide-react";
+import WorkflowDiagram from "./workflow-diagram";
 
 // Automated Pipeline Step Sequence
 const pipelineSteps = [
@@ -285,6 +286,11 @@ export default function AboutSection() {
               alerts, carrying capacity evaluation, safe shelter allocation, and
               zero-downtime offline caching.
             </p>
+          </div>
+
+          {/* INTERACTIVE WORKFLOW DIAGRAM */}
+          <div className="mt-10">
+            <WorkflowDiagram />
           </div>
 
           {/* WORKFLOW PIPELINE CARDS */}

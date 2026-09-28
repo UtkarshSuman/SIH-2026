@@ -1,3 +1,90 @@
+# Rescue Arc — Intelligent Identification of Hazard-Based Red Zones, Carrying Capacity Assessment, and Immediate Relocation Needs for Vulnerable Habitations
+
+> **Smart India Hackathon • Problem Statement 26191**  
+> **Theme**: Disaster Management & Geospatial Intelligence  
+> **Platform**: Unified Multi-Hazard GIS Ingestion, Machine Learning Risk Inference, Multi-Channel Alerting & Evacuation Relocation Engine
+
+### 🔄 Automated Connectivity Workflow
+```
+Live Data Fetching ➔ Transforming Data to Required Format ➔ Putting in ML Model ➔ Model Predicts the Hazard Score ➔ Alert System Triggers for Zones Change (Green ➔ Yellow and Yellow ➔ Red) ➔ Relocation Engine Finds Safe Locations for all Red & Yellow Zone Areas ➔ Updates the Database and Loads Latest Zones & Relocation Sites on Map [if backend or database offline: Latest Cached Data is Used]
+```
+
+---
+
+### ⚡ What We Have:
+1. **Live Data Ingestion Pipeline**:
+   - Automated live fetching from 9+ authoritative APIs: **Open-Meteo Weather**, **NASA POWER Agroclimatology API**, **OpenStreetMap (Overpass & Nominatim)**, **OSRM (Open Source Routing Machine)**, **Google Flood Forecasting API**, **Google Earth Engine (GEE) / SoilGrids**, **UN OCHA ReliefWeb Disasters API**, **USGS Earthquake Hazards API**, and **Agromonitoring Sentinel NDVI API**.
+2. **RandomForest & GradientBoosting ML Models**:
+   - Multi-hazard evaluation across Floods, Landslides, Coastal Erosion, and Cloudbursts, predicting objective hazard risk scores (0.00 – 1.00), color tiers (GREEN, YELLOW, RED), and urgency priority ratings.
+3. **Automated Multi-Channel Alert System**:
+   - Real-time emergency escalation triggers on **Green ➔ Yellow** and **Yellow ➔ Red** status transitions. Dispatches **Firebase Cloud Messaging (FCM)** web/mobile push notifications, **Fast2SMS** direct mobile alerts, and **Brevo** emergency email broadcasts.
+4. **Relocation Engine & Safety Assessment**:
+   - Terrain carrying capacity assessment, environmental threshold limits, and automated nearest safe shelter pairing via **OSRM turn-by-turn road routes** for vulnerable habitations.
+5. **Interactive Live Zone Map**:
+   - Geospatial interactive map with verified OpenStreetMap boundary polygon overlays and on-the-fly **"Click anywhere to analyze"** (`/api/analyze-point`) telemetry and ML risk classification.
+6. **Live Analysis & Telemetry Page**:
+   - Real-time sensor dashboard with live gauges for 24h & 72h rainfall, river discharge ($m^3/s$), soil saturation (%), slope inclination in degrees, and disaster recurrence logs.
+7. **Responder & Admin Command Portal**:
+   - Dedicated governance portal for NDRF/SDMA/DDMA officials to update shelter capacity, manage zone emergency states, track population movements, and dispatch manual override alerts.
+
+---
+
+### 📸 Web Platform Previews & Live Screenshots
+
+<div align="center">
+
+#### 🗺️ 1. Interactive Live Zone Map (Click-to-Analyze Telemetry)
+*Real-time GIS interface with OSM boundary polygons, live hazard scores, and on-demand point analysis.*
+
+<img src="./frontend/public/livemap.png" alt="Live Zone Map" width="95%" />
+
+<br/><br/>
+
+#### 🛡️ 2. Relocation Engine & Evacuation Route Planning
+*Automated carrying capacity assessment pairing red and yellow zones to the nearest safe relocation shelters via road routing.*
+
+<img src="./frontend/public/relocationpage.png" alt="Relocation Engine" width="95%" />
+
+<br/><br/>
+
+#### 📊 3. Live Telemetry & Multi-Hazard Analysis Dashboard
+*Continuous live telemetry monitoring rainfall accumulation, river discharge rates, soil moisture, and slope risk.*
+
+<img src="./frontend/public/analysispage.png" alt="Live Analysis Page" width="95%" />
+
+<br/><br/>
+
+#### 🚨 4. Automated Alert & Multi-Channel Broadcast System
+*Automated state transition triggers firing Firebase Cloud Messaging (FCM) push, SMS, and emergency broadcast emails.*
+
+<img src="./frontend/public/alertspage.png" alt="Alerts System" width="95%" />
+
+<br/><br/>
+
+#### 🏛️ 5. Official Disaster Authority & Admin Command Portal
+*Role-based command center for NDRF, SDMA, and DDMA officers to manage capacity, emergency alerts, and zones.*
+
+<img src="./frontend/public/adminpage.png" alt="Admin Command Portal" width="95%" />
+
+<br/><br/>
+
+#### ⚙️ 6. Admin Zone Emergency Management & Relocation Capacity Features
+
+| Zone Emergency Management | Relocation Site Capacity Allocation |
+| :---: | :---: |
+| <img src="./frontend/public/admin-zonefeature.png" alt="Admin Zone Feature" width="100%" /> | <img src="./frontend/public/admin-capacityfeature.png" alt="Admin Capacity Feature" width="100%" /> |
+
+<br/>
+
+#### 🤖 7. RAG Knowledge Assistant & Disaster SOP Chatbot
+*Interactive disaster guideline retrieval and SOP knowledge engine powered by RAG and streaming AI.*
+
+<img src="./frontend/public/ragchatbot.png" alt="RAG Chatbot Assistant" width="70%" />
+
+</div>
+
+---
+
 # SIH Project — Rescue Arc Setup & Architecture Guide
 
 > 📖 **Comprehensive Guides & Documentation**:
