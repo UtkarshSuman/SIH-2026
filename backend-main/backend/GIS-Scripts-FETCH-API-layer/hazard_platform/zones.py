@@ -62,6 +62,19 @@ _SEED_ZONES = [
     ("Z-GUJARAT-KUTCH-01", "Kutch, Gujarat", 69.8500, 23.7300),
     ("Z-KERALA-IDUKKI-01", "Idukki, Kerala", 76.9700, 9.8500),
     ("Z-TAMILNADU-NILGIRIS-01", "Nilgiris, Tamil Nadu", 76.7000, 11.4100),
+    # ---- 12 new zones added (zones 14-25) ----
+    ("Z-ODISHA-KENDRAPARA-01", "Kendrapara, Odisha", 86.4242, 20.5021),
+    ("Z-ANDHRA-KRISHNA-01", "Krishna District, Andhra Pradesh", 80.6305, 16.5193),
+    ("Z-WESTBENGAL-SUNDARBANS-01", "Sundarbans, West Bengal", 88.9327, 21.9497),
+    ("Z-MANIPUR-CHURACHANDPUR-01", "Churachandpur, Manipur", 93.6833, 24.3333),
+    ("Z-RAJASTHAN-BARMER-01", "Barmer, Rajasthan", 71.3933, 25.7521),
+    ("Z-MEGHALAYA-CHERRAPUNJI-01", "Cherrapunji, Meghalaya", 91.7333, 25.2500),
+    ("Z-TAMILNADU-NAGAPATTINAM-01", "Nagapattinam, Tamil Nadu", 79.8449, 10.7672),
+    ("Z-ASSAM-MAJULI-01", "Majuli, Assam", 94.2000, 26.9500),
+    ("Z-UTTARAKHAND-KEDARNATH-01", "Kedarnath, Uttarakhand", 79.0669, 30.7346),
+    ("Z-GUJARAT-SURAT-01", "Surat, Gujarat", 72.8311, 21.1702),
+    ("Z-HIMACHAL-KULLU-01", "Kullu, Himachal Pradesh", 77.1089, 31.9592),
+    ("Z-MAHARASHTRA-RAIGAD-01", "Raigad, Maharashtra", 73.1800, 18.5140),
 ]
 
 # Mutable at runtime -- zone_from_point() adds to this dict, which is
