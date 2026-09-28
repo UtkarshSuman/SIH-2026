@@ -1061,6 +1061,51 @@ ON CONFLICT (id) DO UPDATE SET
     "routeStatus" = EXCLUDED."routeStatus",
     "estimatedTransitHours" = EXCLUDED."estimatedTransitHours";
 
+-- ====================================================================
+-- 13. Two-Way Sync for REST API Tables (zones, relocation_sites, etc.)
+-- Ensures that frontend REST API and backend alert endpoints stay synchronized
+-- ====================================================================
+INSERT INTO public.zones (zone_id, name, state, district, lat, lng, min_lon, min_lat, max_lon, max_lat, population, elevation_m, slope_class, is_red_zone, updated_at)
+SELECT 
+    "zoneId", name, state, district, lat, lng, "minLon", "minLat", "maxLon", "maxLat", population, "elevationM", "slopeClass", "isRedZone", now()
+FROM public."Zone"
+ON CONFLICT (zone_id) DO UPDATE SET
+    name = EXCLUDED.name,
+    state = EXCLUDED.state,
+    district = EXCLUDED.district,
+    lat = EXCLUDED.lat,
+    lng = EXCLUDED.lng,
+    min_lon = EXCLUDED.min_lon,
+    min_lat = EXCLUDED.min_lat,
+    max_lon = EXCLUDED.max_lon,
+    max_lat = EXCLUDED.max_lat,
+    population = EXCLUDED.population,
+    elevation_m = EXCLUDED.elevation_m,
+    slope_class = EXCLUDED.slope_class,
+    is_red_zone = EXCLUDED.is_red_zone,
+    updated_at = now();
+
+INSERT INTO public.relocation_sites (id, site_code, name, district, state, lat, lng, total_area_sqm, usable_area_sqm, sphere_standard_sqm_per_person, sphere_capacity, current_occupancy, remaining_capacity, water_source_type, road_connectivity_rating, hospital_distance_km, power_grid_status, status, updated_at)
+SELECT 
+    id, "siteCode", name, district, state, lat, lng, "totalAreaSqm", "usableAreaSqm", "sphereStandardSqmPerPerson", "sphereCapacity", "currentOccupancy", "remainingCapacity", "waterSourceType", "roadConnectivityRating", "hospitalDistanceKm", "powerGridStatus", status::text, now()
+FROM public."RelocationSite"
+ON CONFLICT (site_code) DO UPDATE SET
+    name = EXCLUDED.name,
+    district = EXCLUDED.district,
+    state = EXCLUDED.state,
+    lat = EXCLUDED.lat,
+    lng = EXCLUDED.lng,
+    total_area_sqm = EXCLUDED.total_area_sqm,
+    usable_area_sqm = EXCLUDED.usable_area_sqm,
+    sphere_capacity = EXCLUDED.sphere_capacity,
+    current_occupancy = EXCLUDED.current_occupancy,
+    remaining_capacity = EXCLUDED.remaining_capacity,
+    water_source_type = EXCLUDED.water_source_type,
+    road_connectivity_rating = EXCLUDED.road_connectivity_rating,
+    hospital_distance_km = EXCLUDED.hospital_distance_km,
+    status = EXCLUDED.status,
+    updated_at = now();
+
 -- Grant permissions to Supabase roles
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
