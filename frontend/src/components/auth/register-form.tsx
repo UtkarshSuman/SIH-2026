@@ -1,63 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import {
+  User,
+  Mail,
+  Lock,
+  Phone,
+  MapPin,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { registerSchema, type RegisterFormValues } from "@/lib/validators";
 import { locations } from "@/data/location";
 
-function UserIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
+interface RegisterFormProps {
+  onSwitchToLogin?: (email?: string) => void;
 }
 
-function MailIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="20" height="16" x="2" y="4" rx="2" />
-      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-    </svg>
-  );
-}
-
-function LockIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function PhoneIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
-}
-
-function PinIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  );
-}
-
-export function RegisterForm() {
+export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const [values, setValues] = useState<RegisterFormValues>({
     name: "",
     email: "",
@@ -65,6 +29,8 @@ export function RegisterForm() {
     mobileNumber: "",
     location: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
@@ -73,9 +39,17 @@ export function RegisterForm() {
     e.preventDefault();
     setError(null);
 
-    const parsed = registerSchema.safeParse(values);
+    const emailClean = values.email.trim().toLowerCase();
+    const nameClean = values.name.trim();
+
+    const parsed = registerSchema.safeParse({
+      ...values,
+      name: nameClean,
+      email: emailClean,
+    });
+
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Invalid input");
+      setError(parsed.error.issues[0]?.message ?? "Please check the form inputs");
       return;
     }
 
@@ -89,13 +63,13 @@ export function RegisterForm() {
       const json = await res.json();
 
       if (!json.success) {
-        setError(json.error.message);
+        setError(json.error?.message || "Failed to create account. Please try again.");
         return;
       }
 
-      setSubmittedEmail(values.email);
+      setSubmittedEmail(emailClean);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Unable to connect to server. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -103,126 +77,152 @@ export function RegisterForm() {
 
   if (submittedEmail) {
     return (
-      <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-xs text-emerald-950 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-emerald-900">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white text-xs">✓</span>
-          Account Created Successfully!
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center text-xs text-emerald-950 space-y-4 animate-in fade-in">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+          <CheckCircle2 size={24} />
         </div>
-        <p className="leading-relaxed text-slate-700">
-          We sent a verification link to <strong className="text-emerald-900">{submittedEmail}</strong>.
-          Please click it to activate your authority account, then switch to the Log in tab to access the dashboard.
-        </p>
+        <div>
+          <h3 className="text-base font-bold text-slate-900">
+            Account Created Successfully!
+          </h3>
+          <p className="mt-1.5 text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+            Your official responder profile for <strong className="text-slate-900">{submittedEmail}</strong> is ready. You can now sign in to access the command telemetry.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onSwitchToLogin?.(submittedEmail)}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:bg-emerald-800 active:scale-[0.99] cursor-pointer"
+        >
+          <span>Proceed to Sign In</span>
+          <ArrowRight size={15} />
+        </button>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3.5">
+      {/* ERROR NOTICE */}
       {error && (
-        <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs font-semibold text-rose-900">
-          {error}
+        <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-900 shadow-xs animate-in fade-in">
+          <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1 font-medium">{error}</div>
         </div>
       )}
 
       {/* FULL NAME */}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="name" className="text-xs font-bold text-slate-700">
-          Full Name / Authority Officer
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="reg-name" className="text-xs font-semibold text-slate-700">
+          Full Name / Officer Designation
         </label>
         <div className="relative flex items-center">
-          <span className="absolute left-3.5 text-slate-400">
-            <UserIcon />
+          <span className="pointer-events-none absolute left-3.5 text-slate-400">
+            <User size={16} />
           </span>
           <input
-            id="name"
+            id="reg-name"
             type="text"
-            placeholder="e.g. District Collector Rajesh Kumar"
+            autoComplete="name"
+            placeholder="e.g. Officer Rajesh Kumar"
             value={values.name}
             onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             required
           />
         </div>
       </div>
 
       {/* EMAIL */}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-xs font-bold text-slate-700">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="reg-email" className="text-xs font-semibold text-slate-700">
           Official Email
         </label>
         <div className="relative flex items-center">
-          <span className="absolute left-3.5 text-slate-400">
-            <MailIcon />
+          <span className="pointer-events-none absolute left-3.5 text-slate-400">
+            <Mail size={16} />
           </span>
           <input
-            id="email"
+            id="reg-email"
             type="email"
-            placeholder="officer@ddma.gov.in"
+            autoComplete="email"
+            placeholder="officer@disaster.gov.in"
             value={values.email}
             onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             required
           />
         </div>
       </div>
 
       {/* PASSWORD */}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-xs font-bold text-slate-700">
-          Password
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="reg-password" className="text-xs font-semibold text-slate-700">
+          Password <span className="font-normal text-slate-400">(min. 8 characters)</span>
         </label>
         <div className="relative flex items-center">
-          <span className="absolute left-3.5 text-slate-400">
-            <LockIcon />
+          <span className="pointer-events-none absolute left-3.5 text-slate-400">
+            <Lock size={16} />
           </span>
           <input
-            id="password"
-            type="password"
-            placeholder="Minimum 8 characters"
+            id="reg-password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            placeholder="••••••••"
             value={values.password}
             onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-10 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors p-1"
+          >
+            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
         </div>
       </div>
 
-      {/* MOBILE NUMBER & LOCATION IN 2 COLUMNS ON SM */}
+      {/* MOBILE NUMBER & ASSESSMENT ZONE (2 COLUMNS ON SM) */}
       <div className="grid gap-3.5 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="mobileNumber" className="text-xs font-bold text-slate-700">
-            Mobile Number <span className="text-slate-400 font-normal">(SMS Alerts)</span>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="reg-mobile" className="text-xs font-semibold text-slate-700">
+            Mobile <span className="font-normal text-slate-400">(SMS Alerts)</span>
           </label>
           <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-slate-400">
-              <PhoneIcon />
+            <span className="pointer-events-none absolute left-3.5 text-slate-400">
+              <Phone size={15} />
             </span>
             <input
-              id="mobileNumber"
+              id="reg-mobile"
               type="tel"
               value={values.mobileNumber}
               onChange={(e) => setValues((v) => ({ ...v, mobileNumber: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
-              placeholder="+91 9876543210"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
+              placeholder="9876543210"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="location" className="text-xs font-bold text-slate-700">
-            Assigned Assessment Zone
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="reg-location" className="text-xs font-semibold text-slate-700">
+            Assigned Zone
           </label>
           <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-slate-400">
-              <PinIcon />
+            <span className="pointer-events-none absolute left-3.5 text-slate-400">
+              <MapPin size={15} />
             </span>
             <select
-              id="location"
+              id="reg-location"
               value={values.location}
               onChange={(e) => setValues((v) => ({ ...v, location: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 py-2.5 text-xs text-slate-800 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-3 text-xs text-slate-800 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             >
-              <option value="">Select district / red zone</option>
+              <option value="">Select district / zone</option>
               {locations.map((loc) => (
                 <option key={loc.value} value={loc.value}>
                   {loc.label}
@@ -237,10 +237,19 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:bg-emerald-800 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
       >
-        {loading ? "Registering Authority Cell..." : "Create Authority Account"}
-        {!loading && <ArrowRightIcon />}
+        {loading ? (
+          <>
+            <Loader2 size={15} className="animate-spin" />
+            <span>Creating Account...</span>
+          </>
+        ) : (
+          <>
+            <span>Register Agency Account</span>
+            <ArrowRight size={15} />
+          </>
+        )}
       </button>
     </form>
   );

@@ -98,8 +98,12 @@ async function restPatch<T>(table: string, filter: Record<string, string>, body:
 // ============================================================
 
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
-  const rows = await restGet<DbUser>("users", { email: `eq.${encodeURIComponent(email)}` });
-  return rows[0] ?? null;
+  const normalized = (email || "").trim().toLowerCase();
+  if (!normalized) return null;
+  const rows = await restGet<DbUser>("users", { email: `eq.${normalized}` });
+  if (rows && rows.length > 0) return rows[0];
+  const fallbackRows = await restGet<DbUser>("users", { email: `ilike.${normalized}` });
+  return fallbackRows[0] ?? null;
 }
 
 export async function findUserById(id: string): Promise<DbUser | null> {
@@ -114,14 +118,16 @@ export async function createUser(data: {
   role?: string;
   mobileNumber?: string | null;
   location?: string | null;
+  emailVerified?: string | null;
 }): Promise<DbUser> {
   const rows = await restPost<DbUser>("users", {
-    name: data.name,
-    email: data.email,
+    name: data.name.trim(),
+    email: data.email.trim().toLowerCase(),
     password_hash: data.passwordHash,
     role: data.role ?? "CITIZEN",
-    mobile_number: data.mobileNumber ?? null,
+    mobile_number: data.mobileNumber?.trim() ?? null,
     location: data.location ?? null,
+    email_verified: data.emailVerified ?? null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });

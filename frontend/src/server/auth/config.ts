@@ -32,7 +32,8 @@ export const authOptions: NextAuthOptions = {
 
         let user;
         try {
-          user = await findUserByEmail(parsed.data.email);
+          const email = parsed.data.email.trim().toLowerCase();
+          user = await findUserByEmail(email);
         } catch (err) {
           console.error("[Auth] Database lookup failed:", err);
           return null;

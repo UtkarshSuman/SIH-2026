@@ -1,88 +1,62 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Loader2,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 import { loginSchema, type LoginFormValues } from "@/lib/validators";
 
-function MailIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="16" x="2" y="4" rx="2" />
-      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-    </svg>
-  );
+interface LoginFormProps {
+  prefillEmail?: string;
+  onSwitchToRegister?: () => void;
 }
 
-function LockIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  );
-}
-
-export function LoginForm() {
-  const router = useRouter();
+export function LoginForm({ prefillEmail, onSwitchToRegister }: LoginFormProps) {
   const searchParams = useSearchParams();
 
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const verified = searchParams.get("verified");
 
   const [values, setValues] = useState<LoginFormValues>({
-    email: "",
+    email: prefillEmail || "",
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function fillAdminDemo() {
+    setValues({
+      email: "teamsih12@gmail.com",
+      password: "12345678",
+    });
+    setError(null);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const parsed = loginSchema.safeParse(values);
+    const emailClean = values.email.trim().toLowerCase();
+    const parsed = loginSchema.safeParse({
+      email: emailClean,
+      password: values.password,
+    });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Invalid input");
+      setError(parsed.error.issues[0]?.message ?? "Please check your input");
       return;
     }
 
@@ -90,7 +64,7 @@ export function LoginForm() {
 
     try {
       const result = await signIn("credentials", {
-        email: values.email,
+        email: emailClean,
         password: values.password,
         redirect: false,
       });
@@ -99,7 +73,7 @@ export function LoginForm() {
         setError(
           result.error === "EMAIL_NOT_VERIFIED"
             ? "Please verify your email before logging in - check your inbox."
-            : "Invalid email or password",
+            : "Invalid official email or password. Please verify your credentials."
         );
         return;
       }
@@ -125,11 +99,10 @@ export function LoginForm() {
         }
       }
 
-      // Hardcoded fallback for known admin accounts if session role is lagging
+      // Fallback for primary administrative account
       if (
         !isAdmin &&
-        (values.email.toLowerCase() === "teamsih12@gmail.com" ||
-          values.email.toLowerCase().includes("admin"))
+        (emailClean === "teamsih12@gmail.com" || emailClean.includes("admin"))
       ) {
         isAdmin = true;
       }
@@ -140,6 +113,8 @@ export function LoginForm() {
       } else {
         window.location.href = callbackUrl;
       }
+    } catch {
+      setError("An unexpected error occurred during login. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -147,94 +122,129 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      {/* VERIFICATION NOTICES */}
       {verified === "1" && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900">
-          <span>✓</span> Email verified successfully - you can now log in.
+        <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/90 p-3 text-xs font-medium text-emerald-900 shadow-xs">
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>Email verified successfully. You can now log in.</span>
         </div>
       )}
 
       {verified === "0" && (
-        <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs font-semibold text-rose-900">
-          That verification link is invalid or expired.
+        <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 bg-rose-50/90 p-3 text-xs font-medium text-rose-900 shadow-xs">
+          <AlertCircle size={16} className="text-rose-600 shrink-0" />
+          <span>The verification link is invalid or has expired.</span>
         </div>
       )}
 
+      {/* ERROR NOTICE */}
       {error && (
-        <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs font-semibold text-rose-900">
-          {error}
+        <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-900 shadow-xs animate-in fade-in">
+          <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1 font-medium">{error}</div>
         </div>
       )}
 
-      {/* EMAIL */}
+      {/* EMAIL FIELD */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-xs font-bold text-slate-700">
-          Official Email
+        <label htmlFor="email" className="text-xs font-semibold text-slate-700">
+          Official Email Address
         </label>
-
         <div className="relative flex items-center">
-          <span className="absolute left-3.5 text-slate-400">
-            <MailIcon />
+          <span className="pointer-events-none absolute left-3.5 text-slate-400">
+            <Mail size={16} />
           </span>
-
           <input
             id="email"
             type="email"
+            autoComplete="email"
             placeholder="officer@disaster.gov.in"
             value={values.email}
             onChange={(e) =>
               setValues((v) => ({ ...v, email: e.target.value }))
             }
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             required
           />
         </div>
       </div>
 
-      {/* PASSWORD */}
+      {/* PASSWORD FIELD */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label
             htmlFor="password"
-            className="text-xs font-bold text-slate-700"
+            className="text-xs font-semibold text-slate-700"
           >
             Password
           </label>
-
           <Link
             href="/forgot-password"
-            className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+            className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
           >
             Forgot password?
           </Link>
         </div>
-
         <div className="relative flex items-center">
-          <span className="absolute left-3.5 text-slate-400">
-            <LockIcon />
+          <span className="pointer-events-none absolute left-3.5 text-slate-400">
+            <Lock size={16} />
           </span>
-
           <input
             id="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="••••••••"
             value={values.password}
             onChange={(e) =>
               setValues((v) => ({ ...v, password: e.target.value }))
             }
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-10 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-emerald-600 focus:bg-white focus:ring-3 focus:ring-emerald-500/15"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors p-1"
+          >
+            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
         </div>
+      </div>
+
+      {/* QUICK ADMIN HELPER BADGE */}
+      <div className="flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-[11px] text-emerald-800">
+        <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+          <Sparkles size={13} className="text-emerald-600" />
+          Default Admin: teamsih12@gmail.com
+        </span>
+        <button
+          type="button"
+          onClick={fillAdminDemo}
+          className="font-bold text-emerald-800 hover:text-emerald-950 underline hover:no-underline ml-2 text-[11px]"
+        >
+          Quick Fill
+        </button>
       </div>
 
       {/* SUBMIT BUTTON */}
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:-translate-y-0.5 hover:bg-emerald-800 disabled:pointer-events-none disabled:opacity-50"
+        className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition-all hover:bg-emerald-800 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
       >
-        {loading ? "Verifying Credentials..." : "Sign in to Command"}
-        {!loading && <ArrowRightIcon />}
+        {loading ? (
+          <>
+            <Loader2 size={15} className="animate-spin" />
+            <span>Verifying Credentials...</span>
+          </>
+        ) : (
+          <>
+            <span>Sign In to Command</span>
+            <ArrowRight size={15} />
+          </>
+        )}
       </button>
     </form>
   );

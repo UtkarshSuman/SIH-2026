@@ -13,6 +13,7 @@ import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validators";
 import { generateSecureToken, hoursFromNow } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/server/services/email";
+import { env } from "@/lib/env";
 import {
   findUserByEmail,
   createUser,
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
   // Create user (role = CITIZEN by default)
   let user;
   try {
+    const emailVerified = !env.REQUIRE_EMAIL_VERIFICATION ? new Date().toISOString() : null;
     user = await createUser({
       name,
       email,
@@ -72,6 +74,7 @@ export async function POST(req: NextRequest) {
       role: "CITIZEN",
       mobileNumber: mobileNumber || null,
       location: location || null,
+      emailVerified,
     });
   } catch (err) {
     console.error("[Register] User creation error:", err);

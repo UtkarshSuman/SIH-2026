@@ -15,25 +15,16 @@ export default async function LoginPage({ searchParams }) {
   const initialMode = mode === "register" ? "register" : "login";
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#f4fbf7] via-white to-[#f0fdf4] px-4 py-6 font-sans text-slate-800 flex flex-col justify-between selection:bg-emerald-200 selection:text-emerald-950">
-      {/* BACKGROUND PATTERN */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.035]"
-        style={{
-          backgroundImage: "url('/background-image.png')",
-        }}
-      />
-
-      {/* SOFT SAGE & EMERALD BLUR ORBS */}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-20 top-12 h-96 w-96 rounded-full bg-emerald-200/40 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-20 bottom-20 h-96 w-96 rounded-full bg-teal-100/50 blur-3xl" />
+    <main className="relative min-h-screen bg-slate-50/70 px-4 py-6 font-sans text-slate-800 flex flex-col justify-between selection:bg-emerald-200 selection:text-emerald-950">
+      {/* SOFT SAGE & EMERALD AMBIENT ORBS */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-20 top-12 h-96 w-96 rounded-full bg-emerald-100/50 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-20 bottom-20 h-96 w-96 rounded-full bg-teal-100/40 blur-3xl" />
 
       {/* TOP BAR */}
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-2 sm:px-6">
         {/* LOGO */}
         <Link href="/" className="group flex items-center gap-3">
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 p-1 shadow-sm">
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 p-1 shadow-xs">
             <Image
               src="/logo.jpeg"
               alt="Rescue Arc Logo"
@@ -65,7 +56,7 @@ export default async function LoginPage({ searchParams }) {
 
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/90 px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900 transition-all"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900 transition-all"
           >
             <span>&larr;</span> Back to Home
           </Link>
@@ -73,12 +64,12 @@ export default async function LoginPage({ searchParams }) {
       </header>
 
       {/* MAIN CONTAINER */}
-      <section className="relative z-10 mx-auto my-auto flex w-full max-w-5xl items-center justify-center py-8">
+      <section className="relative z-10 mx-auto my-auto flex w-full max-w-md sm:max-w-lg items-center justify-center py-8">
         <AuthCard initialMode={initialMode} />
       </section>
 
       {/* FOOTER */}
-      <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-4 text-xs text-slate-500 border-t border-emerald-200/50 pt-4">
+      <footer className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-4 text-xs text-slate-500 border-t border-slate-200/60 pt-4">
         <span>© {new Date().getFullYear()} Rescue Arc &bull; Smart India Hackathon</span>
         <span className="hidden sm:inline font-medium text-emerald-800">
           NDRF & State Disaster Management Authority Telemetry Gateway
