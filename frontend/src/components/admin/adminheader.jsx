@@ -56,11 +56,9 @@ export default function Adminheader({ onPipelineSuccess }) {
         />
 
         {/* Date */}
-
-        <div className="flex items-center gap-3 text-sm text-slate-600">
-          <CalendarDays size={24} className="text-slate-700" />
-
-          <p className="font-medium">{formattedDate}</p>
+        <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-600">
+          <CalendarDays size={18} className="text-slate-600 shrink-0" />
+          <p>{formattedDate}</p>
         </div>
 
         {/* System Status */}

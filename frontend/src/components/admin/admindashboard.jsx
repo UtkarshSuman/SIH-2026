@@ -260,7 +260,7 @@ export default function Admindashboard() {
       ================================ */}
       <Navbar />
 
-      <main className="px-6 py-6 space-y-6">
+      <main className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12 py-6 space-y-6">
         {/* ===============================
             HEADER & ACTIONS
         ================================ */}
