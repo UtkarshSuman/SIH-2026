@@ -337,3 +337,4 @@ To run GIS weather telemetry queries and ML model scoring automatically in the b
 > $$\text{Sphere Capacity} = \left\lfloor \frac{\text{Usable Shelter Area in m}^2}{45\text{ m}^2/\text{person}} \right\rfloor$$
 > Editing usable area in `/admin/relocation-sites` automatically recalculates this capacity.
 
+
