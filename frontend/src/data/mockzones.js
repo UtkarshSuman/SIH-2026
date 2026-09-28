@@ -276,7 +276,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 20.5021,
     lng: 86.4242,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-ODISHA-KENDRAPARA-01"] || [
       [20.52, 86.40],
       [20.53, 86.45],
       [20.48, 86.45],
@@ -296,7 +296,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 16.5193,
     lng: 80.6305,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-ANDHRA-KRISHNA-01"] || [
       [16.54, 80.61],
       [16.55, 80.66],
       [16.50, 80.66],
@@ -316,7 +316,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 21.9497,
     lng: 88.9327,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-WESTBENGAL-SUNDARBANS-01"] || [
       [21.97, 88.91],
       [21.98, 88.96],
       [21.93, 88.96],
@@ -336,7 +336,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 24.3333,
     lng: 93.6833,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-MANIPUR-CHURACHANDPUR-01"] || [
       [24.35, 93.66],
       [24.36, 93.71],
       [24.31, 93.71],
@@ -356,7 +356,7 @@ export const mockzones = [
     riskLevel: "Moderate",
     lat: 25.7521,
     lng: 71.3933,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-RAJASTHAN-BARMER-01"] || [
       [25.77, 71.37],
       [25.78, 71.42],
       [25.73, 71.42],
@@ -376,7 +376,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 25.2500,
     lng: 91.7333,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-MEGHALAYA-CHERRAPUNJI-01"] || [
       [25.27, 91.71],
       [25.28, 91.76],
       [25.23, 91.76],
@@ -396,7 +396,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 10.7672,
     lng: 79.8449,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-TAMILNADU-NAGAPATTINAM-01"] || [
       [10.79, 79.82],
       [10.80, 79.87],
       [10.75, 79.87],
@@ -416,7 +416,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 26.9500,
     lng: 94.2000,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-ASSAM-MAJULI-01"] || [
       [26.97, 94.18],
       [26.98, 94.23],
       [26.93, 94.23],
@@ -436,7 +436,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 30.7346,
     lng: 79.0669,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-UTTARAKHAND-KEDARNATH-01"] || [
       [30.75, 79.04],
       [30.76, 79.09],
       [30.71, 79.09],
@@ -456,7 +456,7 @@ export const mockzones = [
     riskLevel: "Moderate",
     lat: 21.1702,
     lng: 72.8311,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-GUJARAT-SURAT-01"] || [
       [21.19, 72.81],
       [21.20, 72.86],
       [21.15, 72.86],
@@ -476,7 +476,7 @@ export const mockzones = [
     riskLevel: "High",
     lat: 31.9592,
     lng: 77.1089,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-HIMACHAL-KULLU-01"] || [
       [31.98, 77.08],
       [31.99, 77.13],
       [31.94, 77.13],
@@ -496,7 +496,7 @@ export const mockzones = [
     riskLevel: "Moderate",
     lat: 18.5140,
     lng: 73.1800,
-    coordinates: [
+    coordinates: KNOWN_ZONE_BOUNDARIES["Z-MAHARASHTRA-RAIGAD-01"] || [
       [18.53, 73.16],
       [18.54, 73.21],
       [18.49, 73.21],

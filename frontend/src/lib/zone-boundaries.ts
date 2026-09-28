@@ -56,11 +56,21 @@ if (cachedBoundariesData && Array.isArray((cachedBoundariesData as any).features
         KNOWN_ZONE_BOUNDARIES[zoneId] = geom.coordinates[0].map(
           ([lon, lat]: [number, number]) => [lat, lon] as [number, number]
         );
-      } else if (geom.type === "MultiPolygon" && Array.isArray(geom.coordinates[0]?.[0])) {
-        // Pick the largest ring
-        KNOWN_ZONE_BOUNDARIES[zoneId] = geom.coordinates[0][0].map(
-          ([lon, lat]: [number, number]) => [lat, lon] as [number, number]
-        );
+      } else if (geom.type === "MultiPolygon" && Array.isArray(geom.coordinates)) {
+        // Pick the largest ring across all polygon parts
+        let largestRing: [number, number][] = [];
+        for (const poly of geom.coordinates) {
+          if (Array.isArray(poly) && Array.isArray(poly[0])) {
+            if (poly[0].length > largestRing.length) {
+              largestRing = poly[0];
+            }
+          }
+        }
+        if (largestRing.length > 0) {
+          KNOWN_ZONE_BOUNDARIES[zoneId] = largestRing.map(
+            ([lon, lat]: [number, number]) => [lat, lon] as [number, number]
+          );
+        }
       }
     }
   }
