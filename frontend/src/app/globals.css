@@ -46,8 +46,10 @@ body {
    ──────────────────────────────────────────────────────────────────────── */
 
 /* Isolate the map from the rest of the page's stacking context */
-.rescue-leaflet-map {
+.rescue-leaflet-map,
+.leaflet-container {
   isolation: isolate;
+  z-index: 0;
 }
 
 /* Ping animation used in glowing marker dots */

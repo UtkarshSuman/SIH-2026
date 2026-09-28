@@ -28,6 +28,7 @@ function RelocationContent() {
   const [lastVersion, setLastVersion] = useState(0);
   const [isFallback, setIsFallback] = useState(false);
   const [fallbackWarning, setFallbackWarning] = useState("");
+  const [zoneFilterTab, setZoneFilterTab] = useState<"ALL" | "RED" | "YELLOW">("ALL");
 
   const loadData = async () => {
     try {
@@ -188,6 +189,11 @@ function RelocationContent() {
     return plans.find((p) => p.zoneId === activeZoneId) || plans[0];
   }, [plans, activeZoneId]);
 
+  const filteredPlans = useMemo(() => {
+    if (zoneFilterTab === "ALL") return plans;
+    return plans.filter((p) => p.worstStatus === zoneFilterTab);
+  }, [plans, zoneFilterTab]);
+
   const filteredSites = useMemo(() => {
     if (selectedSiteFilter === "ALL") return sites;
     return sites.filter((s) => s.district.toLowerCase() === selectedSiteFilter.toLowerCase());
@@ -203,54 +209,43 @@ function RelocationContent() {
 
       <main>
         {/* Top Header Banner */}
-        <section className="border-b border-slate-200 bg-white px-5 py-8 sm:px-8 lg:px-12">
+        <section className="border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/50 to-white px-5 py-8 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            {/* Header Title & Trigger */}
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2.5">
                   {isFallback ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-0.5 text-xs font-bold text-amber-800">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-3 py-1 text-xs font-bold text-amber-800 shadow-xs">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                       Offline Cache Mode
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                      Live Database Connected
+                      Live Relocation Engine
                     </span>
                   )}
-                  <span className="text-xs text-slate-400 font-medium">Sphere Standard: 45 m²/person</span>
+                  <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                    {plans.length || 25} Monitored Corridors
+                  </span>
+                  <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-1 text-[11px] font-semibold text-indigo-700">
+                    Sphere Standard: 45 m²/person
+                  </span>
                 </div>
-                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                  Relocation Corridors &amp; Carrying Capacity Engine
+                <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+                  Strategic Relocation &amp; Capacity Command
                 </h1>
-                <p className="mt-1 text-sm text-slate-500 max-w-3xl">
-                  Real-time road evacuation routing from high-risk Red Zones to certified safe resettlement townships.
-                  All sites are evaluated against Sphere humanitarian space &amp; lifeline standards.
+                <p className="mt-1.5 text-sm text-slate-600 max-w-3xl leading-relaxed">
+                  Real-time algorithmic routing from high-vulnerability disaster zones to certified safe resettlement havens. All routes dynamically compute transit times, road status, and humanitarian capacity thresholds.
                 </p>
               </div>
 
-              {/* Quick Filter by Zone + Pipeline Trigger */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-400 uppercase">Focus Zone:</span>
-                  {plans.map((p) => (
-                    <button
-                      key={p.zoneId}
-                      onClick={() => setActiveZoneId(p.zoneId)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
-                        activeZoneId === p.zoneId
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {p.zoneName.split(",")[0]}
-                    </button>
-                  ))}
-                </div>
+              {/* Action Pipeline Trigger */}
+              <div className="shrink-0 flex items-center gap-3">
                 <PipelineTriggerButton
                   variant="slate"
-                  buttonText="⚡ Trigger Live Assessment Pipeline"
+                  buttonText="⚡ Run Live Assessment"
                   showStatusBanner={false}
                   onSuccess={async () => { await loadData(); }}
                 />
@@ -274,36 +269,160 @@ function RelocationContent() {
               <p className="mt-4 text-sm font-medium text-red-700">{loadError}</p>
             )}
 
-            {/* Metric KPI Badges */}
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-              <div className="rounded-xl border border-red-100 bg-red-50/60 p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-red-700">Evacuee Demand</p>
-                <p className="mt-1 text-xl font-black text-red-900">{metrics.totalEvacuees.toLocaleString()}</p>
-                <p className="text-[11px] text-red-600 font-medium">{metrics.redZoneCount} Red + {metrics.yellowZoneCount} Yellow Zones</p>
+            {/* Metric KPI Cards (5 Cards) */}
+            <div className="mt-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+              {/* Card 1: Evacuee Demand */}
+              <div className="group rounded-2xl border border-red-200/80 bg-gradient-to-br from-red-50/80 via-white to-red-50/30 p-4 shadow-xs transition-all hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-700">Evacuee Demand</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-100 text-xs">🚨</span>
+                </div>
+                <p className="mt-2 text-2xl font-black text-red-950">{metrics.totalEvacuees.toLocaleString()}</p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-red-700 font-medium">
+                  <span>{metrics.redZoneCount} Red + {metrics.yellowZoneCount} Yellow</span>
+                  <span className="rounded-full bg-red-100 px-1.5 py-0.5 font-bold text-[10px]">Active</span>
+                </div>
               </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Sphere Capacity</p>
-                <p className="mt-1 text-xl font-black text-emerald-900">{metrics.totalCapacity.toLocaleString()}</p>
-                <p className="text-[11px] text-emerald-600 font-medium">Safe Green Zones ({metrics.greenZoneCount} Areas)</p>
+              {/* Card 2: Sphere Capacity */}
+              <div className="group rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 p-4 shadow-xs transition-all hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Sphere Capacity</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-xs">🛡️</span>
+                </div>
+                <p className="mt-2 text-2xl font-black text-emerald-950">{metrics.totalCapacity.toLocaleString()}</p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-emerald-700 font-medium">
+                  <span>Certified Standard</span>
+                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-bold text-[10px]">45 m²/person</span>
+                </div>
               </div>
 
-              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">Available Headroom</p>
-                <p className="mt-1 text-xl font-black text-blue-900">{metrics.totalRemaining.toLocaleString()}</p>
-                <p className="text-[11px] text-blue-600 font-medium">Vacant verified capacity</p>
+              {/* Card 3: Available Headroom */}
+              <div className="group rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50/30 p-4 shadow-xs transition-all hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Net Buffer</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-xs">⚖️</span>
+                </div>
+                <p className="mt-2 text-2xl font-black text-indigo-950">{metrics.totalRemaining.toLocaleString()}</p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-indigo-700 font-medium">
+                  <span>Vacant Headroom</span>
+                  <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 font-bold text-[10px]">Surplus Safe</span>
+                </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Usable Land Area</p>
-                <p className="mt-1 text-xl font-black text-slate-900">{(metrics.totalUsableArea / 10000).toFixed(1)} ha</p>
-                <p className="text-[11px] text-slate-500 font-medium">{metrics.totalUsableArea.toLocaleString()} m² built</p>
+              {/* Card 4: Usable Land Area */}
+              <div className="group rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50/50 p-4 shadow-xs transition-all hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Usable Land Area</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-xs">📐</span>
+                </div>
+                <p className="mt-2 text-2xl font-black text-slate-900">{(metrics.totalUsableArea / 10000).toFixed(1)} <span className="text-base font-bold text-slate-500">ha</span></p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                  <span>{metrics.totalUsableArea.toLocaleString()} m² built</span>
+                  <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-bold text-[10px]">Lifeline Grids</span>
+                </div>
               </div>
 
-              <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Shelter Network</p>
-                <p className="mt-1 text-xl font-black text-slate-900">{metrics.siteCount} Townships</p>
-                <p className="text-[11px] text-emerald-600 font-medium">100% Road Connected</p>
+              {/* Card 5: Shelter Network */}
+              <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50/50 p-4 shadow-xs transition-all hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Safe Townships</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-xs">🏛️</span>
+                </div>
+                <p className="mt-2 text-2xl font-black text-slate-900">{metrics.siteCount} <span className="text-base font-bold text-slate-500">Sites</span></p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-emerald-700 font-medium">
+                  <span>100% Road Connected</span>
+                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-bold text-[10px]">Verified</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Redesigned Clean Zone Navigation Bar */}
+            <div className="mt-7 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                  <button
+                    onClick={() => setZoneFilterTab("ALL")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shrink-0 ${
+                      zoneFilterTab === "ALL"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    All Corridors ({plans.length})
+                  </button>
+                  <button
+                    onClick={() => setZoneFilterTab("RED")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                      zoneFilterTab === "RED"
+                        ? "bg-red-600 text-white shadow-xs"
+                        : "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/60"
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-ping" />
+                    Immediate Evacuation ({metrics.redZoneCount})
+                  </button>
+                  <button
+                    onClick={() => setZoneFilterTab("YELLOW")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                      zoneFilterTab === "YELLOW"
+                        ? "bg-amber-500 text-white shadow-xs"
+                        : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/60"
+                    }`}
+                  >
+                    Planned Transit ({metrics.yellowZoneCount})
+                  </button>
+                </div>
+
+                {/* Dropdown Quick Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                    Jump to Zone:
+                  </span>
+                  <select
+                    value={activeZoneId}
+                    onChange={(e) => setActiveZoneId(e.target.value)}
+                    className="w-full md:w-72 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    {plans.map((p) => (
+                      <option key={p.zoneId} value={p.zoneId}>
+                        {p.worstStatus === "RED" ? "🔴" : "🟡"} {p.zoneName} ({p.hazardType})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Clean Horizontal Scrollable Carousel of Filtered Zone Chips */}
+              <div className="mt-3.5 flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
+                {filteredPlans.map((p) => {
+                  const isSelected = p.zoneId === activeZoneId;
+                  const isRed = p.worstStatus === "RED";
+                  return (
+                    <button
+                      key={p.zoneId}
+                      onClick={() => setActiveZoneId(p.zoneId)}
+                      className={`group flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-all ${
+                        isSelected
+                          ? isRed
+                            ? "border-red-500 bg-red-50 text-red-950 ring-2 ring-red-400/30 shadow-xs"
+                            : "border-amber-500 bg-amber-50 text-amber-950 ring-2 ring-amber-400/30 shadow-xs"
+                          : "border-slate-200 bg-slate-50/70 text-slate-700 hover:border-slate-300 hover:bg-white"
+                      }`}
+                    >
+                      <span
+                        className={`h-2 w-2 rounded-full shrink-0 ${
+                          isRed ? "bg-red-500" : "bg-amber-500"
+                        } ${isSelected ? "animate-pulse" : ""}`}
+                      />
+                      <span className="font-bold">{p.zoneName.split(",")[0]}</span>
+                      <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                        {p.hazardType}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -322,7 +441,7 @@ function RelocationContent() {
               <span className="text-xs text-slate-400">Click any marker to inspect</span>
             </div>
 
-            <div className="h-[460px] sm:h-[520px] w-full">
+            <div className="relative isolate z-0 h-[460px] sm:h-[520px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
               {isLoading ? (
                 <div className="flex h-full w-full items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-400">
                   Loading GIS Corridors...

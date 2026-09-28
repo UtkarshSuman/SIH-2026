@@ -80,4 +80,18 @@ self.addEventListener("message", (event) => {
     }
     self.__firebase_initialized = true;
   }
+
+  /* Direct system push trigger from page (e.g. Instant Push Test Notification) */
+  if (event.data?.type === "SHOW_SYSTEM_NOTIFICATION") {
+    const { title, options } = event.data;
+    self.registration.showNotification(title || "🚨 Rescue-Arc Alert", {
+      icon: "/logo.jpeg",
+      badge: "/icons/badge-96.png",
+      vibrate: [300, 100, 300, 100, 300],
+      requireInteraction: true,
+      tag: `rescue-arc-${Date.now()}`,
+      data: { url: "/alerts" },
+      ...options,
+    });
+  }
 });

@@ -246,17 +246,17 @@ export default function RedZoneMap({
   const basemap = basemaps[activeBasemap] || basemaps.terrain;
 
   return (
-    <div className="relative min-h-[620px] h-[620px] w-full rounded-2xl border border-slate-200/80 shadow-inner bg-slate-950">
+    <div className="relative isolate z-0 min-h-[620px] h-[620px] w-full rounded-2xl border border-slate-200/80 shadow-inner bg-slate-950 overflow-hidden">
       {/* Offline/Fallback status indicator */}
       {isFallback && (
-        <div className="absolute top-3 left-3 z-[1000] max-w-sm rounded-lg bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-md backdrop-blur flex items-center gap-2">
+        <div className="absolute top-3 left-3 z-20 max-w-sm rounded-lg bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-md backdrop-blur flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-slate-950 animate-ping" />
           <span>{warningMessage || "Offline data mode active"}</span>
         </div>
       )}
 
       {/* Layer switcher controls */}
-      <div className="absolute top-3 right-3 z-[1000] flex items-center rounded-lg bg-white/90 p-1 shadow-md backdrop-blur border border-slate-200/60 text-xs">
+      <div className="absolute top-3 right-3 z-20 flex items-center rounded-lg bg-white/90 p-1 shadow-md backdrop-blur border border-slate-200/60 text-xs">
         {Object.keys(basemaps).map((bm) => (
           <button
             key={bm}

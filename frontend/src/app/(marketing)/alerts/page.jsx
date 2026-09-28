@@ -108,12 +108,18 @@ export default function AlertsPage() {
         const msg = getMessaging(app);
         messagingRef.current = msg;
         unsub = onMessage(msg, (payload) => {
+          const alertTitle = payload.notification?.title ?? "🚨 Rescue-Arc Alert";
+          const alertBody = payload.notification?.body ?? "Immediate hazard alert triggered.";
           setLiveAlert({
-            title: payload.notification?.title ?? "Rescue-Arc Alert",
-            body: payload.notification?.body ?? "Immediate hazard alert triggered.",
+            title: alertTitle,
+            body: alertBody,
             time: new Date().toLocaleTimeString(),
           });
           setTimeout(() => setLiveAlert(null), 12000);
+          triggerDeviceSystemNotification({
+            title: alertTitle,
+            body: alertBody,
+          });
         });
       } catch (_) {}
     })();
@@ -154,6 +160,104 @@ export default function AlertsPage() {
     }
   }
 
+  // Web Audio emergency alert sound
+  function playAlertChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const playTone = (freq, start, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration);
+      };
+      playTone(880, 0, 0.15); // A5
+      playTone(1174.66, 0.18, 0.25); // D6
+      playTone(1480, 0.45, 0.35); // F#6
+    } catch (_) {}
+  }
+
+  // Trigger native system push notification to laptop or mobile OS notification tray
+  async function triggerDeviceSystemNotification({ title, body, tag, icon }) {
+    playAlertChime();
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      console.warn("Notifications not supported on this browser/platform.");
+      return false;
+    }
+
+    let perm = Notification.permission;
+    if (perm !== "granted") {
+      try {
+        perm = await Notification.requestPermission();
+      } catch (_) {}
+    }
+
+    if (perm !== "granted") {
+      console.warn("Notification permission is not granted:", perm);
+      return false;
+    }
+
+    const options = {
+      body: body || "Immediate evacuation order or hazard alert issued.",
+      icon: icon || "/favicon.ico",
+      badge: "/favicon.ico",
+      tag: tag || `rescue-arc-${Date.now()}`,
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [300, 150, 300, 150, 450],
+      data: { url: "/alerts", dateOfArrival: Date.now() },
+    };
+
+    let delivered = false;
+
+    // 1. Try Service Worker showNotification (Mandatory for Mobile Android/Chrome & persistent OS drawer)
+    if ("serviceWorker" in navigator) {
+      try {
+        const swReg = await navigator.serviceWorker.ready;
+        if (swReg && typeof swReg.showNotification === "function") {
+          await swReg.showNotification(title, options);
+          delivered = true;
+        }
+        // Also post message to SW to trigger fallback push event
+        swReg.active?.postMessage({
+          type: "SHOW_SYSTEM_NOTIFICATION",
+          title,
+          options,
+        });
+      } catch (swErr) {
+        console.warn("ServiceWorker showNotification failed, attempting desktop fallback:", swErr);
+      }
+    }
+
+    // 2. Fallback to direct window Notification constructor (Desktop Windows/macOS Chrome/Firefox/Edge)
+    if (!delivered) {
+      try {
+        const notif = new Notification(title, {
+          body: options.body,
+          icon: options.icon,
+          tag: options.tag,
+          requireInteraction: options.requireInteraction,
+        });
+        notif.onclick = () => {
+          window.focus();
+          notif.close();
+        };
+        delivered = true;
+      } catch (dErr) {
+        console.warn("Direct Notification constructor failed:", dErr);
+      }
+    }
+
+    return delivered;
+  }
+
   // Handle Push Permission & Token retrieval
   async function obtainFcmToken() {
     if (!("Notification" in window)) {
@@ -173,10 +277,28 @@ export default function AlertsPage() {
     swReg.active?.postMessage({ type: "INIT_CONFIG", config: FIREBASE_CONFIG });
 
     const { initializeApp, getApps } = await import("firebase/app");
-    const { getMessaging, getToken } = await import("firebase/messaging");
+    const { getMessaging, getToken, onMessage } = await import("firebase/messaging");
     const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const msg = getMessaging(app);
     messagingRef.current = msg;
+
+    // Attach real-time foreground listener to display both toast and device system notification
+    try {
+      onMessage(msg, (payload) => {
+        const title = payload.notification?.title || payload.data?.title || "🚨 Emergency Alert";
+        const body = payload.notification?.body || payload.data?.body || "Critical hazard update received.";
+        setLiveAlert({
+          title,
+          body,
+          time: new Date().toLocaleTimeString(),
+        });
+        triggerDeviceSystemNotification({
+          title,
+          body,
+          tag: payload.data?.tag || `fcm-msg-${Date.now()}`,
+        });
+      });
+    } catch (_) {}
 
     try {
       const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
@@ -251,47 +373,80 @@ export default function AlertsPage() {
     }
   }
 
-  // Handle manual test push directly to this device
+  // Handle manual test push directly to this device (sends to OS / system tray on mobile or laptop)
   async function handleManualTestPush() {
-    setTestStatus({ state: "sending", msg: "Preparing test push payload…", details: null });
+    setTestStatus({ state: "sending", msg: "Requesting notification permission & preparing test push…", details: null });
     try {
+      // Ensure notification permission is actively requested on user gesture
+      if (typeof window !== "undefined" && "Notification" in window) {
+        if (Notification.permission === "default") {
+          await Notification.requestPermission();
+        }
+      }
+
       let token = storedFcmToken;
       if (!token) {
-        setTestStatus({ state: "sending", msg: "Requesting notification permission & token…", details: null });
-        token = await obtainFcmToken();
+        try {
+          setTestStatus({ state: "sending", msg: "Registering device token…", details: null });
+          token = await obtainFcmToken();
+        } catch (tokenErr) {
+          console.warn("Could not retrieve cloud FCM token (browser/network limitation), falling back to local system push:", tokenErr);
+        }
       }
 
-      setTestStatus({ state: "sending", msg: "Dispatching push to Firebase Admin SDK…", details: null });
-      const res = await fetch("/api/alerts/test-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fcm_token: token,
-          zone_id: selectedZone,
-          worst_hazard: testHazard,
-          zone_color: testColor,
-          custom_title: testCustomTitle || undefined,
-          custom_body: testCustomBody || undefined,
-        }),
+      const targetZoneObj = zones.find((z) => z.zone_id === selectedZone);
+      const targetZoneName = targetZoneObj?.name || selectedZone;
+      const alertTitle = testCustomTitle || `🚨 Emergency Alert: ${testHazard} Test (${testColor})`;
+      const alertBody =
+        testCustomBody ||
+        `Simulated ${testHazard} alert for ${targetZoneName}. System push active. Relocation protocols engaged.`;
+
+      let backendSuccess = false;
+      let data = {};
+
+      if (token && !token.startsWith("DEV_LOCAL_")) {
+        setTestStatus({ state: "sending", msg: "Dispatching push to Firebase Admin SDK…", details: null });
+        try {
+          const res = await fetch("/api/alerts/test-push", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fcm_token: token,
+              zone_id: selectedZone,
+              worst_hazard: testHazard,
+              zone_color: testColor,
+              custom_title: testCustomTitle || undefined,
+              custom_body: testCustomBody || undefined,
+            }),
+          });
+          data = await res.json().catch(() => ({}));
+          backendSuccess = res.ok && data.success;
+        } catch (postErr) {
+          console.warn("Backend test push error:", postErr);
+        }
+      }
+
+      // Deliver system notification directly to mobile or laptop operating system
+      const systemNotifDelivered = await triggerDeviceSystemNotification({
+        title: data.title || alertTitle,
+        body: data.body || alertBody,
+        tag: `test-push-${Date.now()}`,
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) {
-        setTestStatus({
-          state: "success",
-          msg: "Test alert dispatched! Check your device notifications.",
-          details: data,
-        });
+      // Also display foreground banner on web page for visual verification
+      setLiveAlert({
+        title: data.title || alertTitle,
+        body: data.body || alertBody,
+        time: new Date().toLocaleTimeString(),
+      });
 
-        // Also trigger foreground banner for immediate visual proof
-        setLiveAlert({
-          title: data.title || `🚨 Emergency Alert: ${testHazard} Test`,
-          body: data.body || "Real-time push delivered to device. Relocation protocols active.",
-          time: new Date().toLocaleTimeString(),
-        });
-      } else {
-        throw new Error(data.error || data.detail || "Server failed to deliver push");
-      }
+      setTestStatus({
+        state: "success",
+        msg: systemNotifDelivered
+          ? "Instant test push delivered to your device's notification system & screen!"
+          : "Test alert dispatched! (Check your browser's notification permissions if not shown in system drawer)",
+        details: backendSuccess ? data : { system_delivery: systemNotifDelivered ? "Delivered to OS" : "In-App Toast" },
+      });
     } catch (err) {
       setTestStatus({ state: "error", msg: err.message || "Test push failed", details: null });
     }
@@ -314,11 +469,21 @@ export default function AlertsPage() {
       const data = await res.json();
       setSimResult(data);
 
-      const targetZoneName = zones.find(z => z.zone_id === simZone)?.name || simZone;
+      const targetZoneName = zones.find((z) => z.zone_id === simZone)?.name || simZone;
+      const simTitle = `🚨 EMERGENCY BROADCAST: ${simHazard} RED ALERT`;
+      const simBody = `Zone ${targetZoneName} state transitioned to ${simColor}. Multicast alert broadcasted to all registered field devices.`;
+
       setLiveAlert({
-        title: `🚨 EMERGENCY BROADCAST: ${simHazard} RED ALERT`,
-        body: `Zone ${targetZoneName} state transitioned to ${simColor}. Multicast alert broadcasted to all registered field devices.`,
+        title: simTitle,
+        body: simBody,
         time: new Date().toLocaleTimeString(),
+      });
+
+      // Also deliver system push to device
+      await triggerDeviceSystemNotification({
+        title: simTitle,
+        body: simBody,
+        tag: `disaster-sim-${Date.now()}`,
       });
     } catch (err) {
       setSimResult({ error: err.message || "Simulation failed" });

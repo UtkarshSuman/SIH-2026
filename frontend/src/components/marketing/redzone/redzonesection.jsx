@@ -289,7 +289,7 @@ export default function RedZoneSection() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
             {/* Map Container */}
-            <div className="relative min-h-[620px] rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+            <div className="relative isolate z-0 min-h-[620px] rounded-2xl border border-slate-200 bg-slate-950 shadow-sm overflow-hidden">
               <RedZoneMap
                 zones={zones}
                 selectedZone={selectedLocation}
@@ -297,7 +297,7 @@ export default function RedZoneSection() {
                 onPointAnalyzed={handlePointAnalyzed}
               />
               <RiskLegend />
-              <div className="absolute left-4 top-4 z-[1000] flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
+              <div className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>{zones.length} Monitored Zones</span>
               </div>

@@ -9,11 +9,11 @@ import { useSession, signOut } from "next-auth/react";
 const baseNavItems = [
   { label: "Home", href: "/" },
   { label: "Relocation", href: "/relocation" },
+  { label: "Live Map", href: "/redzone" },
+  { label: "Alerts", href: "/alerts" },
   { label: "Analytics", href: "/analytics" },
   { label: "Features", href: "/features" },
   { label: "How It Works", href: "/how-it-works" },
-  { label: "Live Map", href: "/redzone" },
-  { label: "🔔 Alerts", href: "/alerts" },
   { label: "About", href: "/about" },
 ];
 
@@ -37,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-[1000] w-full border-b border-slate-200 bg-white/95 backdrop-blur shadow-xs">
+    <header className="sticky top-0 z-[9999] w-full border-b border-slate-200 bg-white/95 backdrop-blur shadow-xs">
       <nav className="mx-auto flex h-[76px] max-w-[1440px] items-center px-5 sm:px-8 lg:px-12">
         {/* Brand */}
         <Link href="/" className="flex shrink-0 items-center gap-3">

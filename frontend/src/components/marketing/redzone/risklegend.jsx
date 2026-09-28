@@ -1,6 +1,6 @@
 export default function RiskLegend() {
   return (
-    <div className="absolute bottom-4 left-4 z-[1000] rounded-xl border border-white/10 bg-slate-950/85 p-4 text-white shadow-xl backdrop-blur">
+    <div className="absolute bottom-4 left-4 z-20 rounded-xl border border-white/10 bg-slate-950/85 p-4 text-white shadow-xl backdrop-blur">
       <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300">
         Risk Level
       </p>
