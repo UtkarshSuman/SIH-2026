@@ -58,7 +58,11 @@ def _min_distance_to_way_m(center_lat: float, center_lon: float, nodes: list[tup
 @register_provider("osm")
 class OverpassProvider(GISDataProvider):
     requires_api_key = False
-    BASE_URL = "https://overpass-api.de/api/interpreter"
+    BASE_URLS = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    ]
 
     async def fetch(self, bbox: BBox, **params) -> list:
         # e.g. tag="amenity=hospital" or tag="natural=coastline"
@@ -67,7 +71,7 @@ class OverpassProvider(GISDataProvider):
 
         south, west, north, east = bbox.min_lat, bbox.min_lon, bbox.max_lat, bbox.max_lon
         overpass_query = f"""
-        [out:json][timeout:25];
+        [out:json][timeout:15];
         (
           node[{key!r}={value!r}]({south},{west},{north},{east});
           way[{key!r}={value!r}]({south},{west},{north},{east});
@@ -75,16 +79,29 @@ class OverpassProvider(GISDataProvider):
         out geom;
         """.replace("'", '"')
 
-        # overpass-api.de's usage policy asks clients to self-identify;
-        # the default aiohttp User-Agent gets a 406 from their WAF.
         headers = {
             "User-Agent": "hazard-platform-sih2026/1.0 (SIH26191 Rescue Arc)",
         }
-        async with self.session.post(
-            self.BASE_URL, data={"data": overpass_query}, headers=headers
-        ) as resp:
-            resp.raise_for_status()
-            data = await resp.json()
+
+        data = None
+        for endpoint in self.BASE_URLS:
+            try:
+                import aiohttp
+                async with self.session.post(
+                    endpoint,
+                    data={"data": overpass_query},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=8),
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        break
+            except Exception:
+                continue
+
+        if not data:
+            # If all mirrors are unreachable or rate-limited, return empty features gracefully
+            return []
 
         center_lat, center_lon = (south + north) / 2, (west + east) / 2
 

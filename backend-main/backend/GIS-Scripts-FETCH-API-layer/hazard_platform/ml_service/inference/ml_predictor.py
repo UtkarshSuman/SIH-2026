@@ -44,6 +44,12 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import warnings
+try:
+    from sklearn.exceptions import InconsistentVersionWarning
+    warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
+except ImportError:
+    pass
 
 from data_pipeline.models import HazardType
 from ml_service.inference.predictor import ScoreResult
