@@ -452,6 +452,147 @@ ON CONFLICT ("zoneId") DO UPDATE SET
     "isStale" = EXCLUDED."isStale",
     "updatedAt" = now();
 
+-- 6b. Insert 12 Additional Zones (zones 14-25)
+INSERT INTO public."Zone" (
+    id, "zoneId", name, state, district, lat, lng,
+    "minLon", "minLat", "maxLon", "maxLat",
+    population, "householdCount", "elevationM", "slopeClass",
+    "isRedZone", "zoneColor", "worstHazard", "worstScore",
+    priority, "priorityScore", "floodScore", "landslideScore",
+    "erosionScore", "cloudburstScore", "lastAssessedAt", "isStale", "updatedAt"
+)
+VALUES
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-ODISHA-KENDRAPARA-01'), 'zone-od-kendrapara-01'),
+    'Z-ODISHA-KENDRAPARA-01', 'Kendrapara Mahanadi Delta Flood Zone, Odisha', 'Odisha', 'Kendrapara',
+    20.5021, 86.4242, 86.4042, 20.4821, 86.4442, 20.5221,
+    41000, 9200, 8.0, 'Coastal Delta Plain (0-2 deg)',
+    true, 'RED', 'FLOOD', 0.882,
+    'IMMEDIATE', 0.855, 0.882, 0.05, 0.65, 0.18,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-ANDHRA-KRISHNA-01'), 'zone-ap-krishna-01'),
+    'Z-ANDHRA-KRISHNA-01', 'Krishna Delta Low-Lying Inundation Zone, Andhra Pradesh', 'Andhra Pradesh', 'Krishna',
+    16.5193, 80.6305, 80.6105, 16.4993, 80.6505, 16.5393,
+    56000, 12800, 6.0, 'Alluvial Delta Plain (0-2 deg)',
+    true, 'RED', 'FLOOD', 0.875,
+    'IMMEDIATE', 0.848, 0.875, 0.04, 0.58, 0.12,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-WESTBENGAL-SUNDARBANS-01'), 'zone-wb-sundarbans-01'),
+    'Z-WESTBENGAL-SUNDARBANS-01', 'Sundarbans Coastal Erosion & Cyclone Zone, West Bengal', 'West Bengal', 'South 24 Parganas',
+    21.9497, 88.9327, 88.9127, 21.9297, 88.9527, 21.9697,
+    62000, 14500, 4.0, 'Mangrove Tidal Flat (0-1 deg)',
+    true, 'RED', 'FLOOD', 0.891,
+    'IMMEDIATE', 0.872, 0.891, 0.08, 0.78, 0.15,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-MANIPUR-CHURACHANDPUR-01'), 'zone-mn-churachandpur-01'),
+    'Z-MANIPUR-CHURACHANDPUR-01', 'Churachandpur Hill Slope Landslide Zone, Manipur', 'Manipur', 'Churachandpur',
+    24.3333, 93.6833, 93.6633, 24.3133, 93.7033, 24.3533,
+    18500, 4100, 920.0, 'Steep Hill Slope (>25 deg)',
+    true, 'RED', 'LANDSLIDE', 0.864,
+    'IMMEDIATE', 0.832, 0.35, 0.864, 0.32, 0.72,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-RAJASTHAN-BARMER-01'), 'zone-rj-barmer-01'),
+    'Z-RAJASTHAN-BARMER-01', 'Barmer Flash Flood & Desert Storm Zone, Rajasthan', 'Rajasthan', 'Barmer',
+    25.7521, 71.3933, 71.3733, 25.7321, 71.4133, 25.7721,
+    29000, 6400, 228.0, 'Semi-Arid Sandy Plain (0-4 deg)',
+    false, 'YELLOW', 'FLOOD', 0.612,
+    'SHORT_TERM', 0.578, 0.612, 0.08, 0.0, 0.45,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-MEGHALAYA-CHERRAPUNJI-01'), 'zone-ml-cherrapunji-01'),
+    'Z-MEGHALAYA-CHERRAPUNJI-01', 'Cherrapunji Cloudburst & Landslide Zone, Meghalaya', 'Meghalaya', 'East Khasi Hills',
+    25.2500, 91.7333, 91.7133, 25.2300, 91.7533, 25.2700,
+    14200, 3100, 1313.0, 'Escarpment Cliff (>30 deg)',
+    true, 'RED', 'LANDSLIDE', 0.876,
+    'IMMEDIATE', 0.845, 0.55, 0.876, 0.12, 0.94,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-TAMILNADU-NAGAPATTINAM-01'), 'zone-tn-nagapattinam-01'),
+    'Z-TAMILNADU-NAGAPATTINAM-01', 'Nagapattinam Cyclone Coastal Storm Zone, Tamil Nadu', 'Tamil Nadu', 'Nagapattinam',
+    10.7672, 79.8449, 79.8249, 10.7472, 79.8649, 10.7872,
+    34000, 7600, 5.0, 'Coastal Littoral Plain (0-2 deg)',
+    true, 'RED', 'FLOOD', 0.855,
+    'IMMEDIATE', 0.822, 0.855, 0.06, 0.75, 0.20,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-ASSAM-MAJULI-01'), 'zone-as-majuli-01'),
+    'Z-ASSAM-MAJULI-01', 'Majuli Island River Erosion Zone, Assam', 'Assam', 'Majuli',
+    26.9500, 94.2000, 94.1800, 26.9300, 94.2200, 26.9700,
+    37500, 8400, 84.0, 'River Island Floodplain (0-2 deg)',
+    true, 'RED', 'FLOOD', 0.848,
+    'IMMEDIATE', 0.818, 0.848, 0.10, 0.82, 0.22,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-UTTARAKHAND-KEDARNATH-01'), 'zone-uk-kedarnath-01'),
+    'Z-UTTARAKHAND-KEDARNATH-01', 'Kedarnath Valley Cloudburst Flash Zone, Uttarakhand', 'Uttarakhand', 'Rudraprayag',
+    30.7346, 79.0669, 79.0469, 30.7146, 79.0869, 30.7546,
+    8800, 1900, 3553.0, 'High Altitude Alpine Valley (>35 deg)',
+    true, 'RED', 'LANDSLIDE', 0.918,
+    'IMMEDIATE', 0.892, 0.62, 0.918, 0.0, 0.96,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-GUJARAT-SURAT-01'), 'zone-gj-surat-01'),
+    'Z-GUJARAT-SURAT-01', 'Surat Tapi River Flash Flood Zone, Gujarat', 'Gujarat', 'Surat',
+    21.1702, 72.8311, 72.8111, 21.1502, 72.8511, 21.1902,
+    88000, 21000, 14.0, 'Estuarine Floodplain (0-3 deg)',
+    false, 'YELLOW', 'FLOOD', 0.658,
+    'SHORT_TERM', 0.625, 0.658, 0.05, 0.42, 0.28,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-HIMACHAL-KULLU-01'), 'zone-hp-kullu-01'),
+    'Z-HIMACHAL-KULLU-01', 'Kullu Beas Valley Cloudburst Zone, Himachal Pradesh', 'Himachal Pradesh', 'Kullu',
+    31.9592, 77.1089, 77.0889, 31.9392, 77.1289, 31.9792,
+    21500, 4800, 1220.0, 'Valley Gorge (20-30 deg)',
+    true, 'RED', 'LANDSLIDE', 0.832,
+    'IMMEDIATE', 0.804, 0.48, 0.832, 0.18, 0.88,
+    now(), false, now()
+),
+(
+    COALESCE((SELECT id FROM public."Zone" WHERE "zoneId" = 'Z-MAHARASHTRA-RAIGAD-01'), 'zone-mh-raigad-01'),
+    'Z-MAHARASHTRA-RAIGAD-01', 'Raigad Konkan Coastal Landslide Zone, Maharashtra', 'Maharashtra', 'Raigad',
+    18.5140, 73.1800, 73.1600, 18.4940, 73.2000, 18.5340,
+    27000, 6100, 165.0, 'Laterite Slope (12-22 deg)',
+    false, 'YELLOW', 'LANDSLIDE', 0.645,
+    'SHORT_TERM', 0.618, 0.42, 0.645, 0.08, 0.52,
+    now(), false, now()
+)
+ON CONFLICT ("zoneId") DO UPDATE SET
+    name = EXCLUDED.name,
+    state = EXCLUDED.state,
+    district = EXCLUDED.district,
+    lat = EXCLUDED.lat,
+    lng = EXCLUDED.lng,
+    population = EXCLUDED.population,
+    "elevationM" = EXCLUDED."elevationM",
+    "slopeClass" = EXCLUDED."slopeClass",
+    "isRedZone" = EXCLUDED."isRedZone",
+    "zoneColor" = EXCLUDED."zoneColor",
+    "worstHazard" = EXCLUDED."worstHazard",
+    "worstScore" = EXCLUDED."worstScore",
+    priority = EXCLUDED.priority,
+    "priorityScore" = EXCLUDED."priorityScore",
+    "floodScore" = EXCLUDED."floodScore",
+    "landslideScore" = EXCLUDED."landslideScore",
+    "erosionScore" = EXCLUDED."erosionScore",
+    "cloudburstScore" = EXCLUDED."cloudburstScore",
+    "lastAssessedAt" = EXCLUDED."lastAssessedAt",
+    "isStale" = EXCLUDED."isStale",
+    "updatedAt" = now();
+
 -- 7. Insert Static Zone Fields (GIS Attributes)
 INSERT INTO public."StaticZoneField" (id, "zoneId", "fieldName", value, source)
 VALUES
@@ -605,6 +746,128 @@ ON CONFLICT ("siteCode") DO UPDATE SET
     status = EXCLUDED.status,
     "updatedAt" = now();
 
+-- 10b. Insert Relocation Sites for new zones (14-25)
+INSERT INTO public."RelocationSite" (
+    id, "siteCode", name, district, state, lat, lng,
+    "totalAreaSqm", "usableAreaSqm", "sphereStandardSqmPerPerson",
+    "sphereCapacity", "currentOccupancy", "remainingCapacity",
+    "waterSourceType", "roadConnectivityRating", "hospitalDistanceKm",
+    "powerGridStatus", status, "updatedAt"
+)
+VALUES
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-KENDRAPARA-MARSHAGHAI-01'), 'site-009'),
+    'SITE-KENDRAPARA-MARSHAGHAI-01', 'Marshaghai Elevated Relief Township', 'Kendrapara', 'Odisha',
+    20.5685, 86.5042, 225000.0, 180000.0, 45.0,
+    4000, 2200, 1800,
+    'Mahanadi Canal Treatment + Deep Borewells', 5, 3.8,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-KRISHNA-VIJAYAWADA-01'), 'site-010'),
+    'SITE-KRISHNA-VIJAYAWADA-01', 'Vijayawada Elevated Safe Zone', 'Krishna', 'Andhra Pradesh',
+    16.5062, 80.6480, 280000.0, 220000.0, 45.0,
+    4888, 2500, 2388,
+    'Municipal Corporation Water Supply', 5, 2.5,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-24PGS-BARUIPUR-01'), 'site-011'),
+    'SITE-24PGS-BARUIPUR-01', 'Baruipur Inland Safe Zone Camp', 'South 24 Parganas', 'West Bengal',
+    22.3600, 88.4400, 310000.0, 248000.0, 45.0,
+    5511, 2800, 2711,
+    'Bidyadhari River Treated Supply + RO Banks', 4, 5.2,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-MANIPUR-BISHNUPUR-01'), 'site-012'),
+    'SITE-MANIPUR-BISHNUPUR-01', 'Bishnupur Relief & Transit Camp', 'Bishnupur', 'Manipur',
+    24.6500, 93.7700, 135000.0, 108000.0, 45.0,
+    2400, 1100, 1300,
+    'PHED Supply + Portable Purifiers', 4, 8.5,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-BARMER-BALOTRA-01'), 'site-013'),
+    'SITE-BARMER-BALOTRA-01', 'Balotra Safe Ground Relief Colony', 'Barmer', 'Rajasthan',
+    25.8300, 72.2300, 170000.0, 136000.0, 45.0,
+    3022, 1400, 1622,
+    'Narmada Canal Branch + Tankers', 3, 12.0,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-MEGHALAYA-SHILLONG-01'), 'site-014'),
+    'SITE-MEGHALAYA-SHILLONG-01', 'Shillong Plateau Emergency Relief Hub', 'East Khasi Hills', 'Meghalaya',
+    25.5800, 91.8930, 120000.0, 96000.0, 45.0,
+    2133, 900, 1233,
+    'Municipal Gravity Supply + 100kL Storage', 5, 4.1,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-NAGAPATTINAM-MAYILADUTHURAI-01'), 'site-015'),
+    'SITE-NAGAPATTINAM-MAYILADUTHURAI-01', 'Mayiladuthurai Inland Relief Camp', 'Nagapattinam', 'Tamil Nadu',
+    11.1030, 79.6540, 200000.0, 160000.0, 45.0,
+    3555, 1800, 1755,
+    'Cauvery Canal Treated Supply', 5, 3.2,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-MAJULI-JORHAT-01'), 'site-016'),
+    'SITE-MAJULI-JORHAT-01', 'Jorhat Mainland Relief Township', 'Jorhat', 'Assam',
+    26.7500, 94.2200, 260000.0, 208000.0, 45.0,
+    4622, 2100, 2522,
+    'Brahmaputra Elevated Filtration Plant', 5, 2.8,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-RUDRAPRAYAG-AGASTMUNI-01'), 'site-017'),
+    'SITE-RUDRAPRAYAG-AGASTMUNI-01', 'Agastyamuni River Terrace Safe Camp', 'Rudraprayag', 'Uttarakhand',
+    30.6100, 79.0700, 90000.0, 72000.0, 45.0,
+    1600, 600, 1000,
+    'Mandakini Treated Spring + Tankers', 4, 5.8,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-SURAT-BARDOLI-01'), 'site-018'),
+    'SITE-SURAT-BARDOLI-01', 'Bardoli Elevated Flood Relief Township', 'Surat', 'Gujarat',
+    21.1200, 73.1100, 450000.0, 360000.0, 45.0,
+    8000, 4500, 3500,
+    'GWSSB Water Grid + On-site RO Plant', 5, 4.0,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-KULLU-BHUNTAR-01'), 'site-019'),
+    'SITE-KULLU-BHUNTAR-01', 'Bhuntar Airport Valley Safe Zone', 'Kullu', 'Himachal Pradesh',
+    31.8780, 77.1350, 145000.0, 116000.0, 45.0,
+    2577, 1200, 1377,
+    'Beas River Gravity Filtration Depot', 4, 3.5,
+    true, 'ACTIVE', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationSite" WHERE "siteCode" = 'SITE-RAIGAD-ALIBAUG-01'), 'site-020'),
+    'SITE-RAIGAD-ALIBAUG-01', 'Alibaug Coastal Safe Resettlement Camp', 'Raigad', 'Maharashtra',
+    18.6415, 72.8720, 185000.0, 148000.0, 45.0,
+    3288, 1500, 1788,
+    'MIDC Water Supply + Mobile Purifiers', 4, 6.5,
+    true, 'ACTIVE', now()
+)
+ON CONFLICT ("siteCode") DO UPDATE SET
+    name = EXCLUDED.name,
+    district = EXCLUDED.district,
+    state = EXCLUDED.state,
+    lat = EXCLUDED.lat,
+    lng = EXCLUDED.lng,
+    "totalAreaSqm" = EXCLUDED."totalAreaSqm",
+    "usableAreaSqm" = EXCLUDED."usableAreaSqm",
+    "sphereCapacity" = EXCLUDED."sphereCapacity",
+    "currentOccupancy" = EXCLUDED."currentOccupancy",
+    "remainingCapacity" = EXCLUDED."remainingCapacity",
+    "waterSourceType" = EXCLUDED."waterSourceType",
+    "roadConnectivityRating" = EXCLUDED."roadConnectivityRating",
+    "hospitalDistanceKm" = EXCLUDED."hospitalDistanceKm",
+    status = EXCLUDED.status,
+    "updatedAt" = now();
+
 -- 11. Insert Relocation Plans
 INSERT INTO public."RelocationPlan" (
     id, "zoneId", "totalEvacuees", timeline, shortfall,
@@ -635,6 +898,81 @@ VALUES
     COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-WESTBENGAL-DARJEELING-01'), 'plan-005'),
     'Z-WESTBENGAL-DARJEELING-01', 2500, '0-6 Hours (Immediate Evacuation)', 0,
     true, 1, 'Teesta gorge hillside descent to Kurseong via Hill Cart Road (NH-110).', now()
+)
+ON CONFLICT ("zoneId") DO UPDATE SET
+    "totalEvacuees" = EXCLUDED."totalEvacuees",
+    timeline = EXCLUDED.timeline,
+    shortfall = EXCLUDED.shortfall,
+    "isFullyAccommodated" = EXCLUDED."isFullyAccommodated",
+    "priorityRank" = EXCLUDED."priorityRank",
+    notes = EXCLUDED.notes,
+    "updatedAt" = now();
+
+-- 11b. Insert Relocation Plans for 12 new zones
+INSERT INTO public."RelocationPlan" (
+    id, "zoneId", "totalEvacuees", timeline, shortfall,
+    "isFullyAccommodated", "priorityRank", notes, "updatedAt"
+)
+VALUES
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-ODISHA-KENDRAPARA-01'), 'plan-006'),
+    'Z-ODISHA-KENDRAPARA-01', 8200, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Delta flood evacuation via NH-53 to Marshaghai elevated zone. NDRF boats on standby.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-ANDHRA-KRISHNA-01'), 'plan-007'),
+    'Z-ANDHRA-KRISHNA-01', 11200, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Krishna riverine evacuation to Vijayawada elevated sectors via NH-65 corridor.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-WESTBENGAL-SUNDARBANS-01'), 'plan-008'),
+    'Z-WESTBENGAL-SUNDARBANS-01', 12400, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Coastal island evacuation by ferry + bus convoy to Baruipur safe zone via SH-1.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-MANIPUR-CHURACHANDPUR-01'), 'plan-009'),
+    'Z-MANIPUR-CHURACHANDPUR-01', 3700, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Hill slope landslide evacuation to Bishnupur lowland camp via NH-37.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-RAJASTHAN-BARMER-01'), 'plan-010'),
+    'Z-RAJASTHAN-BARMER-01', 5800, '12-24 Hours (Planned Transit)', 0,
+    true, 2, 'Flash flood area evacuation to Balotra safe grounds via SH-25 desert highway.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-MEGHALAYA-CHERRAPUNJI-01'), 'plan-011'),
+    'Z-MEGHALAYA-CHERRAPUNJI-01', 2840, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Escarpment cloudburst evacuation to Shillong plateau hub via SH-5.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-TAMILNADU-NAGAPATTINAM-01'), 'plan-012'),
+    'Z-TAMILNADU-NAGAPATTINAM-01', 6800, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Cyclone coastal zone evacuation to Mayiladuthurai inland camp via NH-181.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-ASSAM-MAJULI-01'), 'plan-013'),
+    'Z-ASSAM-MAJULI-01', 7500, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Brahmaputra river island evacuation by ferry to Jorhat mainland township via NH-715.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-UTTARAKHAND-KEDARNATH-01'), 'plan-014'),
+    'Z-UTTARAKHAND-KEDARNATH-01', 1760, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'High altitude valley evacuation by helicopter + foot descent to Agastyamuni terrace camp.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-GUJARAT-SURAT-01'), 'plan-015'),
+    'Z-GUJARAT-SURAT-01', 17600, '12-24 Hours (Planned Transit)', 0,
+    true, 2, 'Tapi River flood zone evacuation to Bardoli elevated township via SH-64.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-HIMACHAL-KULLU-01'), 'plan-016'),
+    'Z-HIMACHAL-KULLU-01', 4300, '0-6 Hours (Immediate Evacuation)', 0,
+    true, 1, 'Beas valley cloudburst evacuation to Bhuntar safe zone via Manali-Kullu NH-3.', now()
+),
+(
+    COALESCE((SELECT id FROM public."RelocationPlan" WHERE "zoneId" = 'Z-MAHARASHTRA-RAIGAD-01'), 'plan-017'),
+    'Z-MAHARASHTRA-RAIGAD-01', 5400, '12-24 Hours (Planned Transit)', 0,
+    true, 2, 'Konkan slope evacuation to Alibaug coastal safe resettlement via NH-66.', now()
 )
 ON CONFLICT ("zoneId") DO UPDATE SET
     "totalEvacuees" = EXCLUDED."totalEvacuees",
