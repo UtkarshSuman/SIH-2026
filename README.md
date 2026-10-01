@@ -4,7 +4,20 @@
 > **Team:** Team Rescue-Arc  
 > **Platform:** Rescue Arc (Multi-Hazard GIS Ingestion, Machine Learning Risk Inference, Multi-Channel Alerting & Evacuation Relocation Engine)  
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](.) [![Tests](https://img.shields.io/badge/tests-25%2F25-brightgreen)](.) [![ML Flood R²](https://img.shields.io/badge/flood_R%C2%B2-0.9578-blue)](.) [![ML Erosion R²](https://img.shields.io/badge/erosion_R%C2%B2-0.9710-blue)](.) [![License](https://img.shields.io/badge/license-MIT-blue)](.)
+![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![React 19](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Python 3.11+](https://img.shields.io/badge/Python_3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![Supabase PostgreSQL](https://img.shields.io/badge/Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Prisma ORM](https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Leaflet GIS](https://img.shields.io/badge/Leaflet_GIS-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white)
+![Firebase FCM](https://img.shields.io/badge/Firebase_FCM-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![Groq Llama 3.3](https://img.shields.io/badge/Groq_Llama_3.3_70B-F05A28?style=for-the-badge&logo=meta&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
@@ -263,8 +276,8 @@ Verify or create the respective `.env` files:
 
 **1. `sih-main/.env` and `sih-main/packages/database/.env`:**
 ```env
-DATABASE_URL="postgresql://postgres:Rt4o3HvKDeJwgB69@db.wisugxuyzomxdayekmev.supabase.co:5432/postgres"
-DIRECT_URL="postgresql://postgres:Rt4o3HvKDeJwgB69@db.wisugxuyzomxdayekmev.supabase.co:5432/postgres"
+DATABASE_URL="postgresql_database_url"
+DIRECT_URL="postgresql_database_url"
 NEXTAUTH_SECRET="sih-rescue-arc-super-secret-key-32-chars-min"
 NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -272,8 +285,8 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 **2. `sih-main/frontend/.env.local`:**
 ```env
-DATABASE_URL="postgresql://postgres:Rt4o3HvKDeJwgB69@db.wisugxuyzomxdayekmev.supabase.co:5432/postgres"
-DIRECT_URL="postgresql://postgres:Rt4o3HvKDeJwgB69@db.wisugxuyzomxdayekmev.supabase.co:5432/postgres"
+DATABASE_URL="postgresql_database_url"
+DIRECT_URL="postgresql_database_url"
 ML_SERVICE_URL="http://localhost:8000"
 ML_SERVICE_API_KEY="rescue-arc-internal-key"
 NEXTAUTH_SECRET="sih-rescue-arc-super-secret-key-32-chars-min"
@@ -282,7 +295,7 @@ NEXTAUTH_URL="http://localhost:3000"
 
 **3. `backend-main/.env`:**
 ```env
-DATABASE_URL="postgresql://postgres:Rt4o3HvKDeJwgB69@db.wisugxuyzomxdayekmev.supabase.co:5432/postgres"
+DATABASE_URL="postgresql_database_url"
 INTERNAL_API_KEY="rescue-arc-internal-key"
 GROQ_API_KEY="your-groq-api-key"
 LLM_MODEL="llama-3.3-70b-versatile"
