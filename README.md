@@ -21,6 +21,16 @@
 
 ---
 
+### 🔗 Live Platform & Solution Video
+
+> 🚀 **Live Production Platform**: [https://rescue-arc7.vercel.app/](https://rescue-arc7.vercel.app/)  
+> 📺 **Video Explanation & Solution Walkthrough**: [https://www.youtube.com/watch?v=7krJNtkU9Fw](https://www.youtube.com/watch?v=7krJNtkU9Fw)
+
+[![Live Demo](https://img.shields.io/badge/Live_Platform-rescue--arc7.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://rescue-arc7.vercel.app/)
+[![YouTube Explanation](https://img.shields.io/badge/YouTube-Solution_Walkthrough-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=7krJNtkU9Fw)
+
+---
+
 ## 🎯 What This Platform Does
 
 Rescue Arc transforms national disaster management from **reactive disaster relief** into **proactive, AI-powered geospatial decision-support**. It continuously ingests real-time meteorological, hydrological, and geophysical telemetry across vulnerable habitations (including high-risk pilot zones such as Wayanad, Joshimath, Patna, Guwahati, Puri, and arbitrary user-selected coordinates) using a multi-hazard machine learning ensemble to:
