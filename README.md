@@ -35,13 +35,26 @@
 
 Rescue Arc transforms national disaster management from **reactive disaster relief** into **proactive, AI-powered geospatial decision-support**. It continuously ingests real-time meteorological, hydrological, and geophysical telemetry across vulnerable habitations (including high-risk pilot zones such as Wayanad, Joshimath, Patna, Guwahati, Puri, and arbitrary user-selected coordinates) using a multi-hazard machine learning ensemble to:
 
-- **Classify** habitations dynamically into objective risk color tiers (**RED** $\ge 0.70$, **YELLOW** $0.40–0.69$, **GREEN** $< 0.40$) across 4 critical hazards: Floods, Landslides, Coastal Erosion, and Cloudbursts
-- **Assess Carrying Capacity** of candidate relocation shelters evaluated against international **Sphere Project Standards** ($45\text{ m}^2/\text{person}$ in humanitarian settlements)
-- **Plan Evacuation Relocation** by algorithmically matching vulnerable populations in Red and Yellow zones to the nearest safe destinations via **OSRM turn-by-turn road corridors**
-- **Broadcast Multi-Channel Early Warnings** via **Firebase Cloud Messaging (FCM)** Web Push notifications, **Fast2SMS** direct mobile alerts, and **Brevo** emergency email broadcasts on critical zone transitions
-- **Deliver On-Demand GIS Telemetry** via an interactive **"Click Anywhere to Analyze"** map interface pulling live satellite readings within milliseconds
-- **Provide Disaster Decision Support** through an AI Knowledge Assistant powered by **Llama 3.3 70B / Gemini** with RAG over NDMA standard operating procedures and live database context injection
-- **Empower Disaster Authorities** (NDRF, SDMA, DDMA) with an Admin Command Portal to manage emergency states, shelter capacity, and manual overrides
+- ![Hazard Classification](https://img.shields.io/badge/🔴_HAZARD_CLASSIFICATION-RED_%7C_YELLOW_%7C_GREEN-FF2A55?style=flat-square)  
+  **Classify** habitations dynamically into objective risk color tiers (![RED](https://img.shields.io/badge/RED-%E2%89%A50.70-FF1744?style=flat-square) **$\ge 0.70$**, ![YELLOW](https://img.shields.io/badge/YELLOW-0.40--0.69-FF9100?style=flat-square) **$0.40–0.69$**, ![GREEN](https://img.shields.io/badge/GREEN-%3C0.40-00E676?style=flat-square) **$< 0.40$**) across 4 critical hazards: **Floods**, **Landslides**, **Coastal Erosion**, and **Cloudbursts**.
+
+- ![Carrying Capacity](https://img.shields.io/badge/🛡️_CARRYING_CAPACITY-SPHERE_STANDARDS-00B0FF?style=flat-square)  
+  **Assess Carrying Capacity** of candidate relocation shelters evaluated against international **Sphere Project Standards** (**$45\text{ m}^2/\text{person}$** in emergency settlements) with real-time occupancy limits and structural viability validation.
+
+- ![Evacuation Routing](https://img.shields.io/badge/🛣️_EVACUATION_DSS-OSRM_ROUTING-7C4DFF?style=flat-square)  
+  **Plan Evacuation Relocation** by algorithmically matching vulnerable populations in Red and Yellow zones to the nearest safe destinations via **OSRM turn-by-turn road corridors** with automated transit time and capacity deficit calculations.
+
+- ![Multi-Channel Alerts](https://img.shields.io/badge/🚨_EARLY_WARNINGS-PUSH_%7C_SMS_%7C_EMAIL-FF3D00?style=flat-square)  
+  **Broadcast Multi-Channel Early Warnings** via **Firebase Cloud Messaging (FCM)** Web Push notifications, **Fast2SMS** direct mobile alerts, and **Brevo** emergency email broadcasts on critical zone transitions.
+
+- ![Live Telemetry](https://img.shields.io/badge/📡_LIVE_TELEMETRY-CLICK--TO--ANALYZE-00E5FF?style=flat-square)  
+  **Deliver On-Demand GIS Telemetry** via an interactive **"Click Anywhere to Analyze"** map interface pulling live satellite readings (rainfall, discharge, slope, soil moisture) within milliseconds.
+
+- ![AI Copilot](https://img.shields.io/badge/🤖_AI_INTELLIGENCE-RAG_DISASTER_SOP-651FFF?style=flat-square)  
+  **Provide Disaster Decision Support** through an AI Knowledge Assistant powered by **Llama 3.3 70B / Gemini** with RAG over NDMA standard operating procedures and live database context injection.
+
+- ![Admin Command](https://img.shields.io/badge/🏛️_GOVERNANCE_PORTAL-NDRF_%7C_SDMA_%7C_DDMA-E040FB?style=flat-square)  
+  **Empower Disaster Authorities** (NDRF, SDMA, DDMA) with an Admin Command Portal to manage emergency states, shelter capacity, and manual overrides.
 
 ---
 
